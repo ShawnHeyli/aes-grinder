@@ -11,3 +11,10 @@ Meeting with supervisor:
 - Present the project (algebra behind the tool)
 - Define first goals (implementation, opening,..) 
 - Setup new appointment for next week
+
+### 18-21/02/2024
+Beginning to write specification
+
+### 22/02/2024
+Meeting with supervisor to clarify unclear issue.
+Reschedule new meeting on the 13/03/2024

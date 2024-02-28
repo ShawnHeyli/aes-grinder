@@ -1,10 +1,8 @@
 use std::collections::HashMap;
-use std::error::Error;
-use std::fmt::{Debug as Dbg, Display};
+use std::fmt::Display;
 use std::fs::File;
 use std::io::Read;
 use std::num::ParseIntError;
-use std::process;
 
 use crate::debug::Debug;
 use crate::GlobalInfos;
@@ -115,21 +113,10 @@ impl Display for ParserError {
     }
 }
 
-enum EndingProcessComment {
-    EndOfFile,
-    EndOfLine,
-    EndOfComment,
-}
-
-enum EndingProcessTerm {
-    EndOfFile,
-    EndOfLine,
-    EndOfTerm,
-}
-
-enum EndingProcessLine {
-    EndofFile,
-    EndOfline,
+enum EndOfParse {
+    File,
+    Line,
+    Comment,
 }
 
 pub struct Parser {
@@ -205,11 +192,11 @@ impl Parser {
                     Some(_) | None => {
                         let c = self.reader.next_char().unwrap();
                         println!("final take {}", c);
-                        return Err(ParserError::new(
+                        Err(ParserError::new(
                             self.reader.line,
                             self.reader.char_,
                             String::from("commentary need to have two dashes"),
-                        ));
+                        ))
                     }
                 }
             }
@@ -247,7 +234,7 @@ impl Parser {
         false
     }
 
-    fn conv_str_to_integer(&self, str: &String) -> Result<u32, ParserError> {
+    fn conv_str_to_integer(&self, str: String) -> Result<u32, ParserError> {
         self.dbg
             .print(&String::from("PARSER::conv_str_to_integer"), 2);
 
@@ -264,7 +251,7 @@ impl Parser {
     }
 
     /// return true if end of file
-    fn pass_commentary(&mut self) -> EndingProcessComment {
+    fn pass_commentary(&mut self) -> EndOfParse {
         self.dbg.print(&String::from("PARSER::pass_commentary"), 2);
 
         let mut oc: Option<char> = self.reader.next_char();
@@ -272,16 +259,16 @@ impl Parser {
         loop {
             match oc {
                 Some('\n') => {
-                    return EndingProcessComment::EndOfLine;
+                    return EndOfParse::Line;
                 }
                 Some('#') => {
-                    return EndingProcessComment::EndOfComment;
+                    return EndOfParse::Comment;
                 }
                 Some(_) => {
                     // Pass others char
                 }
                 None => {
-                    return EndingProcessComment::EndOfFile;
+                    return EndOfParse::File;
                 }
             }
 
@@ -289,17 +276,17 @@ impl Parser {
         }
     }
 
-    fn affect_string(&mut self, str_: &String, is_number: bool) -> Result<(), ParserError> {
+    fn affect_string(&mut self, str_: &str, is_number: bool) -> Result<(), ParserError> {
         self.dbg.print(&String::from("PARSER::affect_string"), 2);
 
         if !str_.is_empty() {
             if is_number {
                 self.redundancy = Some(
-                    self.conv_str_to_integer(&str_)
+                    self.conv_str_to_integer(str_.to_string())
                         .expect("Error while parsing int"),
                 );
             } else {
-                if String::from("KV").eq(str_) {
+                if String::from("KV").eq(&str_) {
                     return Err(ParserError::new(
                         self.reader.line,
                         self.reader.char_,
@@ -308,14 +295,14 @@ impl Parser {
                         ),
                     ));
                 }
-                self.var_name = Some(str_.clone());
+                self.var_name = Some(str_.to_string());
             }
         }
 
         Ok(())
     }
 
-    fn get_term(&mut self) -> Result<EndingProcessTerm, ParserError> {
+    fn get_term(&mut self) -> Result<EndOfParse, ParserError> {
         self.dbg.print(&String::from("PARSER::get_term"), 2);
 
         let mut oc: Option<char> = self.reader.next_char();
@@ -327,28 +314,32 @@ impl Parser {
         loop {
             match oc {
                 Some('#') => match self.pass_commentary() {
-                    EndingProcessComment::EndOfFile => {
-                        return Ok(EndingProcessTerm::EndOfFile);
+                    EndOfParse::File => {
+                        return Ok(EndOfParse::Line);
                     }
-                    EndingProcessComment::EndOfLine => {
-                        return Ok(EndingProcessTerm::EndOfLine);
+                    EndOfParse::Line => {
+                        return Ok(EndOfParse::Line);
                     }
-                    EndingProcessComment::EndOfComment => {}
+                    EndOfParse::Comment => {}
                 },
                 Some('+') => {
-                    self.affect_string(&str_, is_number);
-                    return Ok(EndingProcessTerm::EndOfTerm);
+                    self.affect_string(&str_, is_number)
+                        .expect("Error while affecting string");
+                    return Ok(EndOfParse::Line);
                 }
                 Some('\n') => {
-                    self.affect_string(&str_, is_number);
-                    return Ok(EndingProcessTerm::EndOfLine);
+                    self.affect_string(&str_, is_number)
+                        .expect("Error while affecting string");
+                    return Ok(EndOfParse::Line);
                 }
                 None => {
-                    self.affect_string(&str_, is_number);
-                    return Ok(EndingProcessTerm::EndOfFile);
+                    self.affect_string(&str_, is_number)
+                        .expect("Error while affecting string");
+                    return Ok(EndOfParse::Line);
                 }
                 Some('*') => {
-                    self.affect_string(&str_, is_number);
+                    self.affect_string(&str_, is_number)
+                        .expect("Error while affecting string");
                     str_.clear();
                 }
                 Some(c) => {
@@ -387,9 +378,7 @@ impl Parser {
             Some(s) => s,
             None => {
                 // Empty term
-                if self.redundancy == None {
-                    return None;
-                }
+                self.redundancy?;
                 // Only known value :: KV
                 "KV"
             }
@@ -435,35 +424,29 @@ impl Parser {
     fn add_term(&mut self) -> Result<(), ParserError> {
         self.dbg.print(&String::from("\nPARSER::add_term"), 2);
 
-        match self.get_vec_index() {
-            Some(index) => {
-                if self.matrix_count[index] == MAX_NB_MATRIX {
-                    let rdd = match self.redundancy {
-                        Some(r) => r,
-                        None => 1,
-                    };
-                    let name = match &self.var_name {
-                        Some(n) => n.clone(),
-                        None => String::from("KV"),
-                    };
+        if let Some(index) = Parser::get_vec_index(self) {
+            if self.matrix_count[index] == MAX_NB_MATRIX {
+                let rdd = self.redundancy.unwrap_or(1);
+                let name = match &self.var_name {
+                    Some(n) => n.clone(),
+                    None => String::from("KV"),
+                };
 
-                    return Err(ParserError::new(
-                        self.reader.line,
-                        self.reader.char_,
-                        format!("term {}*{} reach this maximum occurence", rdd, name),
-                    ));
-                }
-
-                self.add_redundancy(index);
-                self.matrix_count[index] += 1;
+                return Err(ParserError::new(
+                    self.reader.line,
+                    self.reader.char_,
+                    format!("term {}*{} reach this maximum occurence", rdd, name),
+                ));
             }
-            None => {}
+
+            self.add_redundancy(index);
+            self.matrix_count[index] += 1;
         }
 
         Ok(())
     }
 
-    fn process_line(&mut self) -> Result<EndingProcessLine, ParserError> {
+    fn process_line(&mut self) -> Result<EndOfParse, ParserError> {
         let mut push_matrix: bool = false;
         self.dbg.print(&String::from("\nPARSER::process_line"), 2);
 
@@ -478,8 +461,8 @@ impl Parser {
                 ));
             }
 
-            let r_es: EndingProcessTerm = self.get_term().expect("Error while getting term");
-            if (self.redundancy != None || self.var_name != None) && !push_matrix {
+            let r_es: EndOfParse = self.get_term().expect("Error while getting term");
+            if (self.redundancy.is_none() || self.var_name.is_none()) && !push_matrix {
                 self.matrix.push(vec![0; self.vars_map.len()]);
                 self.dbg.print(
                     &format!(
@@ -492,20 +475,20 @@ impl Parser {
                 push_matrix = true;
             }
 
-            self.add_term();
+            self.add_term().expect("Error while adding term");
 
             // Reset term after adding
             self.redundancy = None;
             self.var_name = None;
 
             match r_es {
-                EndingProcessTerm::EndOfFile => {
-                    return Ok(EndingProcessLine::EndofFile);
+                EndOfParse::File => {
+                    return Ok(EndOfParse::File);
                 }
-                EndingProcessTerm::EndOfLine => {
-                    return Ok(EndingProcessLine::EndOfline);
+                EndOfParse::Line => {
+                    return Ok(EndOfParse::Line);
                 }
-                EndingProcessTerm::EndOfTerm => {}
+                EndOfParse::Comment => {}
             }
 
             cmpt_iter += 1;
@@ -524,14 +507,13 @@ impl Parser {
             ));
         }
 
-        if self.section_name == None {
-            if !self.get_section().expect("Error while getting section") {
-                return Err(ParserError::new(
-                    self.reader.line,
-                    self.reader.char_,
-                    String::from("no section defined! need to defined '--my_section:'"),
-                ));
-            }
+        if self.section_name.is_none() && !self.get_section().expect("Error while getting section")
+        {
+            return Err(ParserError::new(
+                self.reader.line,
+                self.reader.char_,
+                String::from("no section defined! need to defined '--my_section:'"),
+            ));
         }
 
         let section_name = match &self.section_name {
@@ -542,23 +524,21 @@ impl Parser {
         global_infos.sys_name = section_name.to_string();
 
         loop {
-            match self.skip_whitespace() {
-                true => {
-                    break;
-                }
-                false => {}
+            if self.skip_whitespace() {
+                break;
             }
 
             if !self.get_section().expect("Error while getting section") {
                 // Stop condition
                 match self.process_line().expect("Error while processing line") {
-                    EndingProcessLine::EndofFile => {
+                    EndOfParse::File => {
                         break;
                     }
-                    EndingProcessLine::EndOfline => {}
+                    EndOfParse::Line => {}
+                    EndOfParse::Comment => {}
                 }
             } else {
-                if self.matrix.len() > 0 {
+                if !self.matrix.is_empty() {
                     self.dbg.apply_fct(Parser::print_matrix, self, 1);
                     return Ok(true);
                 }
@@ -570,16 +550,16 @@ impl Parser {
             }
         }
 
-        if self.matrix.len() > 0 {
+        if !self.matrix.is_empty() {
             self.dbg.apply_fct(Parser::print_matrix, self, 1);
             return Ok(true);
         }
 
-        return Err(ParserError::new(
+        Err(ParserError::new(
             self.reader.line,
             self.reader.char_,
             String::from("no system to parse!"),
-        ));
+        ))
     }
 
     fn print_matrix(&self) {

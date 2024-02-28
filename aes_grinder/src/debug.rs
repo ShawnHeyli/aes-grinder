@@ -3,15 +3,15 @@ pub struct Debug {
 }
 
 impl Debug {
-    pub fn new (gr_given: u8) -> Self {
+    pub fn new(gr_given: u8) -> Self {
         Debug {
             granularity: gr_given,
         }
     }
 
-    pub fn print (&self, msg: &String, gr: u8) {
+    pub fn print(&self, msg: &String, gr: u8) {
         if self.granularity >= gr {
-            println! ("{}", msg);
+            println!("{}", msg);
         }
     }
 

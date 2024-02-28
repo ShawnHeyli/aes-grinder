@@ -1,10 +1,10 @@
+use log::{debug, error, info, trace, warn};
 use std::collections::HashMap;
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 use std::fs::File;
 use std::io::Read;
 use std::num::ParseIntError;
 
-use crate::debug::Debug;
 use crate::GlobalInfos;
 
 const MAX_NB_TERM: u8 = 5;
@@ -16,11 +16,10 @@ struct Reader {
     flow: String,
     index: usize,
     prev_char: Option<char>,
-    dbg: Debug,
 }
 
 impl Reader {
-    fn new(filename: &String, dbg_granul: u8) -> Self {
+    fn new(filename: &String) -> Self {
         let mut flow = File::open(filename).unwrap();
         let mut us_flow = String::new();
         flow.read_to_string(&mut us_flow).unwrap();
@@ -31,30 +30,22 @@ impl Reader {
             flow: us_flow,
             index: 0,
             prev_char: None,
-            dbg: Debug::new(dbg_granul),
         }
     }
 
     /// .
     fn block_next(&mut self, prev_char: char) {
-        self.dbg
-            .print(&String::from("\nParser::Reader::block_next"), 2);
+        debug!("Parser::Reader::block_next");
         self.prev_char = Some(prev_char);
     }
 
     fn next_char(&mut self) -> Option<char> {
-        self.dbg
-            .print(&String::from("\nParser::Reader::next_char"), 2);
-
+        debug!("Parser::Reader::next_char");
         let oc: Option<char>;
 
         match self.prev_char {
             Some(c) => {
-                self.dbg.print(
-                    &format!("catched {} - line {} - col {}", c, self.line, self.char_),
-                    3,
-                );
-
+                trace!(target: "parser", "catched {} - line {} - col {}", c, self.line, self.char_);
                 oc = Some(c);
                 self.prev_char = None;
             }
@@ -74,11 +65,7 @@ impl Reader {
                         self.char_ = 1;
                     }
                     Some(c) => {
-                        self.dbg.print(
-                            &format!("catched {} - line {} - col {}", c, self.line, self.char_),
-                            3,
-                        );
-
+                        trace!(target: "parser", "catched {} - line {} - col {}", c, self.line, self.char_);
                         self.char_ += 1;
                     }
                     None => {}
@@ -128,12 +115,11 @@ pub struct Parser {
     matrix_count: Vec<u32>,
     var_name: Option<String>,
     redundancy: Option<u32>,
-    dbg: Debug,
 }
 
 impl Parser {
-    pub fn new(global_infos: &GlobalInfos, dbg_granul: u8) -> Self {
-        let reader = Reader::new(&global_infos.filename_eq_sys, dbg_granul);
+    pub fn new(global_infos: &GlobalInfos) -> Self {
+        let reader = Reader::new(&global_infos.filename_eq_sys);
         Parser {
             reader, //: Reader::new (global_infos.filename_eq_sys.clone()),
             filename: global_infos.filename_eq_sys.clone(),
@@ -143,12 +129,11 @@ impl Parser {
             matrix_count: vec![],
             var_name: None,
             redundancy: None,
-            dbg: Debug::new(dbg_granul),
         }
     }
 
     fn get_section(&mut self) -> Result<bool, ParserError> {
-        self.dbg.print(&String::from("PARSER::get_section"), 2);
+        debug!("Parser::get_section");
 
         let mut oc: Option<char> = self.reader.next_char();
 
@@ -212,7 +197,7 @@ impl Parser {
 
     // retur true if end of file
     fn skip_whitespace(&mut self) -> bool {
-        self.dbg.print(&String::from("PARSER::skip_whitespace"), 2);
+        debug!("Parser::skip_whitespace");
 
         let mut oc: Option<char> = self.reader.next_char();
         loop {
@@ -235,9 +220,7 @@ impl Parser {
     }
 
     fn conv_str_to_integer(&self, str: String) -> Result<u32, ParserError> {
-        self.dbg
-            .print(&String::from("PARSER::conv_str_to_integer"), 2);
-
+        debug!("Parser::conv_str_to_integer");
         let r_conv: Result<u32, ParseIntError> = str.parse::<u32>();
 
         match r_conv {
@@ -252,7 +235,7 @@ impl Parser {
 
     /// return true if end of file
     fn pass_commentary(&mut self) -> EndOfParse {
-        self.dbg.print(&String::from("PARSER::pass_commentary"), 2);
+        debug!("Parser::pass_commentary");
 
         let mut oc: Option<char> = self.reader.next_char();
 
@@ -277,7 +260,7 @@ impl Parser {
     }
 
     fn affect_string(&mut self, str_: &str, is_number: bool) -> Result<(), ParserError> {
-        self.dbg.print(&String::from("PARSER::affect_string"), 2);
+        debug!("Parser::affect_string");
 
         if !str_.is_empty() {
             if is_number {
@@ -303,7 +286,7 @@ impl Parser {
     }
 
     fn get_term(&mut self) -> Result<EndOfParse, ParserError> {
-        self.dbg.print(&String::from("PARSER::get_term"), 2);
+        debug!("Parser::get_term");
 
         let mut oc: Option<char> = self.reader.next_char();
 
@@ -371,7 +354,7 @@ impl Parser {
     }
 
     fn get_vec_index(&mut self) -> Option<usize> {
-        self.dbg.print(&String::from("PARSER::get_vec_index"), 2);
+        debug!("Parser::get_vec_index");
 
         // See if variable in term
         let str_: &str = match &self.var_name {
@@ -389,7 +372,7 @@ impl Parser {
             Some(&index) => Some(index),
             None => {
                 let index = self.vars_map.len();
-                self.dbg.print(&format!("{} at index {}", str_, index), 1);
+                debug!("{} at index {}", str_, index);
 
                 self.vars_map.insert(str_.to_string(), index);
 
@@ -407,7 +390,7 @@ impl Parser {
     }
 
     fn add_redundancy(&mut self, index: usize) {
-        self.dbg.print(&String::from("\nPARSER::add_redundancy"), 2);
+        debug!("Parser::add_redundancy");
 
         let line = self.matrix.len() - 1;
 
@@ -422,7 +405,7 @@ impl Parser {
     }
 
     fn add_term(&mut self) -> Result<(), ParserError> {
-        self.dbg.print(&String::from("\nPARSER::add_term"), 2);
+        debug!("Parser::add_term");
 
         if let Some(index) = Parser::get_vec_index(self) {
             if self.matrix_count[index] == MAX_NB_MATRIX {
@@ -447,9 +430,8 @@ impl Parser {
     }
 
     fn process_line(&mut self) -> Result<EndOfParse, ParserError> {
+        debug!("Parser::process_line");
         let mut push_matrix: bool = false;
-        self.dbg.print(&String::from("\nPARSER::process_line"), 2);
-
         let mut cmpt_iter: u8 = 0;
 
         loop {
@@ -464,13 +446,10 @@ impl Parser {
             let r_es: EndOfParse = self.get_term().expect("Error while getting term");
             if (self.redundancy.is_none() || self.var_name.is_none()) && !push_matrix {
                 self.matrix.push(vec![0; self.vars_map.len()]);
-                self.dbg.print(
-                    &format!(
-                        "Size of matrix :: {} -- size of inner matrix :: {}",
-                        self.matrix.len(),
-                        self.vars_map.len()
-                    ),
-                    2,
+                debug!(
+                    "Size of matrix :: {} -- size of inner matrix :: {}",
+                    self.matrix.len(),
+                    self.vars_map.len()
                 );
                 push_matrix = true;
             }
@@ -497,7 +476,8 @@ impl Parser {
 
     // true if there is a system to parse
     pub fn parse_system(&mut self, global_infos: &mut GlobalInfos) -> Result<bool, ParserError> {
-        self.dbg.print(&String::from("\nPARSER::parse_system"), 2);
+        info!("Start parsing system");
+        debug!("Parser::parse_system");
 
         if self.skip_whitespace() {
             return Err(ParserError::new(
@@ -539,7 +519,8 @@ impl Parser {
                 }
             } else {
                 if !self.matrix.is_empty() {
-                    self.dbg.apply_fct(Parser::print_matrix, self, 1);
+                    info!("Parsing ended with success");
+                    debug!("Matrix :: {:?}", self.matrix);
                     return Ok(true);
                 }
                 return Err(ParserError::new(
@@ -551,7 +532,8 @@ impl Parser {
         }
 
         if !self.matrix.is_empty() {
-            self.dbg.apply_fct(Parser::print_matrix, self, 1);
+            info!("Parsing ended with success");
+            debug!("Matrix :: {:?}", self.matrix);
             return Ok(true);
         }
 
@@ -560,17 +542,6 @@ impl Parser {
             self.reader.char_,
             String::from("no system to parse!"),
         ))
-    }
-
-    fn print_matrix(&self) {
-        self.dbg.print(&String::from("\nPARSER::parse_system"), 2);
-        for row in &self.matrix {
-            print!("[");
-            for (i, &element) in row.iter().enumerate() {
-                print!("{}{} ", element, if i < row.len() - 1 { "," } else { "" });
-            }
-            println!("]");
-        }
     }
 }
 
@@ -581,7 +552,7 @@ mod tests {
     #[test]
     fn empty_system() {
         let mut global_infos = GlobalInfos::new(String::from("test/empty.eqs"));
-        let mut parser_mod = Parser::new(&global_infos, 0);
+        let mut parser_mod = Parser::new(&global_infos);
 
         assert!(parser_mod.parse_system(&mut global_infos).is_err());
     }
@@ -589,7 +560,7 @@ mod tests {
     #[test]
     fn only_commentary() {
         let mut global_infos = GlobalInfos::new(String::from("test/only_comments.eqs"));
-        let mut parser_mod = Parser::new(&global_infos, 0);
+        let mut parser_mod = Parser::new(&global_infos);
 
         assert!(parser_mod.parse_system(&mut global_infos).is_err());
     }
@@ -597,7 +568,7 @@ mod tests {
     #[test]
     fn valid_system() {
         let mut global_infos = GlobalInfos::new(String::from("test/valid.eqs"));
-        let mut parser_mod = Parser::new(&global_infos, 0);
+        let mut parser_mod = Parser::new(&global_infos);
 
         assert!(parser_mod.parse_system(&mut global_infos).is_ok());
     }

@@ -15,9 +15,9 @@ pub struct Cli {
     #[arg(short, long, value_name = "Unsigned Integer")]
     pub characteristic_polynomial: u64,
     */
-    /// Turn debugging information on
-    #[arg(short, long, action = clap::ArgAction::Count)]
-    pub debug: u8,
+    // Quiet or verbose mode
+    #[command(flatten)]
+    verbose: clap_verbosity_flag::Verbosity,
 
     #[command(subcommand)]
     command: Option<Commands>,
@@ -40,19 +40,10 @@ pub fn cli_check(cli: &mut Cli) {
     println!("Equation System input : {}", cli.equation_system);
     //println! ("Characteristic plynomial       : {}", cli.characteristic_polynomial);
 
-    // You can see how many times a particular flag or argument occurred
-    // Note, only flags can have multiple occurrences
-    match cli.debug {
-        0 => println!("Debug mode is off"),
-        1 => println!("Debug mode is on and set to 1"),
-        2 => println!("Debug mode is on and set to 2"),
-        3 => println!("Debug mode is on and set to 3"),
-        4 => println!("Debug mode is on and set to 4"),
-        5 => println!("Debug mode is on and set to 5"),
-        _ => {
-            cli.debug = 5;
-        }
-    }
+    // Initialize the program-wide logger
+    env_logger::Builder::new()
+        .filter_level(cli.verbose.log_level_filter())
+        .init();
 
     // You can check for the existence of subcommands, and if found use their
     // matches just as you would the top level cmd

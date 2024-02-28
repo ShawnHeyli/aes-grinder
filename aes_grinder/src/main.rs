@@ -3,7 +3,6 @@ use clap::Parser as ClapParser;
 use parser::Parser;
 
 mod cli;
-mod debug;
 
 struct GlobalInfos {
     filename_eq_sys: String,
@@ -24,7 +23,7 @@ fn main() {
     cli::cli_check(&mut cli);
 
     let mut globals: GlobalInfos = GlobalInfos::new(cli.equation_system);
-    let mut parser_mod = Parser::new(&globals, cli.debug);
+    let mut parser_mod = Parser::new(&globals);
 
     // NEED TO CATCH MATRIX
     parser_mod

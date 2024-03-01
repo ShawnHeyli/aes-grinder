@@ -18,3 +18,7 @@ Beginning to write specification
 ### 22/02/2024
 Meeting with supervisor to clarify unclear issue.
 Reschedule new meeting on the 13/03/2024
+
+### 27/02/2024
+First version of the file parser
+

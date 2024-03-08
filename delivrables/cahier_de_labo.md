@@ -22,3 +22,5 @@ Reschedule new meeting on the 13/03/2024
 ### 27/02/2024
 First version of the file parser
 
+### 01/09/2024 - 08/09/2024
+Nothing done

@@ -23,4 +23,7 @@ Reschedule new meeting on the 13/03/2024
 First version of the file parser
 
 ### 01/09/2024 - 08/09/2024
-First iteration of a sparse matrix (Coordinate list) 
+First iteration of a sparse matrix (Coordinate list)
+
+### 15/03/24
+Meeting with our supervisor during the week : review about the next steps to do

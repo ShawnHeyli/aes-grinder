@@ -2,8 +2,10 @@ use log::{debug, error, info, trace, warn};
 use std::collections::HashMap;
 use std::fmt::{Debug, Display};
 use std::fs::File;
+use std::hash::Hash;
 use std::io::Read;
 use std::num::ParseIntError;
+use std::vec;
 
 use crate::GlobalInfos;
 
@@ -575,4 +577,135 @@ mod tests {
 
         assert!(parser_mod.parse_system(&mut global_infos).is_ok());
     }
+
+    #[test]
+    fn process_linearity() {
+        let mut global_infos = GlobalInfos::new(String::from("test/valid.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        parser_mod.parse_system(&mut global_infos).expect("No error while parsing system");
+
+        print!("{:?}", get_non_linear_variables(parser_mod.vars_map.clone()));
+    }
+
+    #[test]
+    fn process_linearity2() {
+        let mut global_infos = GlobalInfos::new(String::from("test/valid.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        parser_mod.parse_system(&mut global_infos).expect("No error while parsing system");
+
+        print!("{:?}", eliminate_linear_variables(parser_mod));
+    }
+}
+
+/**
+ * We obtain a hash map containing variables xi and S(xi) 
+ */
+fn get_non_linear_variables(vars_map: HashMap<String, usize>) -> HashMap<String, usize> {
+    //For each var_name in p.vars_map
+    //if name contains S(x) then add to non_linear_variables x and S(x)
+    let mut non_linear_variables: HashMap<String, usize> = HashMap::new();
+    let mut linear_variables: HashMap<String, usize> = HashMap::new();
+    for (var_name, index) in vars_map.iter() {
+        if var_name.contains("S(") {
+            non_linear_variables.insert(var_name.clone(), *index);
+        } else {
+            linear_variables.insert(var_name.clone(), *index);
+        }
+    }
+    let non_linear_variables2 = non_linear_variables.clone();
+    for (var_name, index) in non_linear_variables2.iter() {
+        let mut var_name = var_name.clone();
+        var_name = format!("{}{}", &var_name[2..], &var_name[..var_name.len() - 1]);
+        for (var_name2, index2) in linear_variables.iter() {
+            if *var_name2 == *var_name {
+                non_linear_variables.insert(var_name2.clone(), *index2);
+            }
+        }
+    }
+    non_linear_variables
+}
+
+fn sort_non_linear_variables(non_linear_variables: HashMap<String, usize>, matrix: Vec<Vec<u32>>, vars_map: HashMap<String, usize>) -> (Vec<Vec<u32>>, HashMap<String, usize>) {
+    let mut new_matrix = matrix.clone(); 
+    let mut new_vars_map: HashMap<String, usize> = HashMap::new();
+    //Swap columns to have S(xi) following xi
+    let mut next_index = 0;
+    let mut non_linear_indexes: Vec<usize> = Vec::new();
+    while let Some((var_name, index)) = non_linear_variables.iter().next() {
+        if next_index >= matrix[0].len() {
+            print!("Error");
+            break;
+        }
+        non_linear_indexes.push(*index);
+        let mut var_name2 = var_name.clone();
+        if var_name2.contains("S(") {
+            var_name2 = format!("{}{}", &var_name2[2..], &var_name2[..var_name2.len()-1]);
+            match vars_map.get(&var_name2) {
+                Some(index2) => {
+                    //put index2 at nextIndex and index at nextIndex +1
+                    for i in 0..matrix.len() {
+                        new_matrix[i][next_index] = matrix[i][*index2];
+                        new_matrix[i][next_index + 1] = matrix[i][*index];
+                    }
+                    //Swap in vars_map
+                    new_vars_map.insert(var_name2.clone(), next_index);
+                    new_vars_map.insert(var_name.clone(), next_index + 1);
+                    next_index += 2;
+                },
+                None => {
+                    //put column index at nextIndex
+                    for i in 0..matrix.len() {
+                        new_matrix[i][next_index] = matrix[i][*index];
+                    }
+                    new_vars_map.insert(var_name.clone(), next_index);
+                    next_index += 1;
+                }
+            }
+            
+        }else{
+            //Get S(var_name)
+            let var_name2 = format!("S({})", var_name);
+            match vars_map.get(&var_name2) {
+                Some(index2) => {
+                    //put index at nextIndex and index2 at nextIndex +1
+                    for i in 0..matrix.len() {
+                        new_matrix[i][next_index] = matrix[i][*index];
+                        new_matrix[i][next_index + 1] = matrix[i][*index2];
+                    }
+                    new_vars_map.insert(var_name2.clone(), next_index);
+                    new_vars_map.insert(var_name.clone(), next_index + 1);
+                    next_index += 2;
+                },
+                None => {
+                    //put column from index to nextIndex
+                    for i in 0..matrix.len() {
+                        new_matrix[i][next_index] = matrix[i][*index];
+                    }
+                    new_vars_map.insert(var_name.clone(), next_index);
+                    next_index += 1;
+                }
+            }
+            
+        }
+    }
+    //Add linear variables
+    for (var_name, index) in vars_map.iter() {
+        if !non_linear_indexes.contains(index) {
+            for i in 0..matrix.len() {
+                new_matrix[i][next_index] = matrix[i][*index];
+                new_vars_map.insert(var_name.clone(), next_index);
+            }
+            next_index += 1;
+        }
+    }
+    (new_matrix, new_vars_map)
+}
+
+fn eliminate_linear_variables(p: Parser) -> (Vec<Vec<u32>>, HashMap<String, usize>){
+    //Separate equations containing linear and non linear 
+    //non linear variables are like x and S(x), the others are linear
+    let non_linear_variables = get_non_linear_variables(p.vars_map.clone());
+    sort_non_linear_variables(non_linear_variables, p.matrix, p.vars_map)
 }

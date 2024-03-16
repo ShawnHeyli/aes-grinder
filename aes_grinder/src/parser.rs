@@ -595,7 +595,7 @@ mod tests {
 
         parser_mod.parse_system(&mut global_infos).expect("No error while parsing system");
 
-        print!("{:?}", eliminate_linear_variables(parser_mod));
+        eliminate_linear_variables(parser_mod);
     }
 }
 
@@ -630,12 +630,12 @@ fn get_non_linear_variables(vars_map: HashMap<String, usize>) -> HashMap<String,
 fn sort_non_linear_variables(non_linear_variables: HashMap<String, usize>, matrix: Vec<Vec<u32>>, vars_map: HashMap<String, usize>) -> (Vec<Vec<u32>>, HashMap<String, usize>) {
     let mut new_matrix = matrix.clone(); 
     let mut new_vars_map: HashMap<String, usize> = HashMap::new();
-    //Swap columns to have S(xi) following xi
-    let mut next_index = 0;
     let mut non_linear_indexes: Vec<usize> = Vec::new();
-    while let Some((var_name, index)) = non_linear_variables.iter().next() {
+    //Swap columns to have S(xi) following xi
+    let mut next_column_index = 0;
+    for (var_name, index) in non_linear_variables.iter() {
         non_linear_indexes.push(*index);
-        let var_name2: String ;
+        let var_name2: String;
         if var_name.contains("S(") {
             var_name2 = format!("{}{}", &var_name[2..], &var_name[..var_name.len()-1]);            
         }else{
@@ -644,23 +644,23 @@ fn sort_non_linear_variables(non_linear_variables: HashMap<String, usize>, matri
         }
         match vars_map.get(&var_name2) {
             Some(index2) => {
-                //put index2 at nextIndex and index at nextIndex +1
+                //put col index2 at nextIndex and col index at nextIndex +1
                 for i in 0..matrix.len() {
-                    new_matrix[i][next_index] = matrix[i][*index2];
-                    new_matrix[i][next_index + 1] = matrix[i][*index];
+                    new_matrix[i][next_column_index] = matrix[i][*index2];
+                    new_matrix[i][next_column_index + 1] = matrix[i][*index];
                 }
                 //Swap in vars_map
-                new_vars_map.insert(var_name2.clone(), next_index);
-                new_vars_map.insert(var_name.clone(), next_index + 1);
-                next_index += 2;
+                new_vars_map.insert(var_name2.clone(), next_column_index);
+                new_vars_map.insert(var_name.clone(), next_column_index + 1);
+                next_column_index += 2;
             },
             None => {
                 //put column index at nextIndex
                 for i in 0..matrix.len() {
-                    new_matrix[i][next_index] = matrix[i][*index];
+                    new_matrix[i][next_column_index] = matrix[i][*index];
                 }
-                new_vars_map.insert(var_name.clone(), next_index);
-                next_index += 1;
+                new_vars_map.insert(var_name.clone(), next_column_index);
+                next_column_index += 1;
             }
         }
     }
@@ -669,10 +669,10 @@ fn sort_non_linear_variables(non_linear_variables: HashMap<String, usize>, matri
         if !non_linear_indexes.contains(index) {
             //put column index at nextIndex
             for i in 0..matrix.len() {
-                new_matrix[i][next_index] = matrix[i][*index];
-                new_vars_map.insert(var_name.clone(), next_index);
+                new_matrix[i][next_column_index] = matrix[i][*index];
+                new_vars_map.insert(var_name.clone(), next_column_index);
             }
-            next_index += 1;
+            next_column_index += 1;
         }
     }
     (new_matrix, new_vars_map)

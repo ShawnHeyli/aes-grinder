@@ -634,65 +634,40 @@ fn sort_non_linear_variables(non_linear_variables: HashMap<String, usize>, matri
     let mut next_index = 0;
     let mut non_linear_indexes: Vec<usize> = Vec::new();
     while let Some((var_name, index)) = non_linear_variables.iter().next() {
-        if next_index >= matrix[0].len() {
-            print!("Error");
-            break;
-        }
         non_linear_indexes.push(*index);
-        let mut var_name2 = var_name.clone();
-        if var_name2.contains("S(") {
-            var_name2 = format!("{}{}", &var_name2[2..], &var_name2[..var_name2.len()-1]);
-            match vars_map.get(&var_name2) {
-                Some(index2) => {
-                    //put index2 at nextIndex and index at nextIndex +1
-                    for i in 0..matrix.len() {
-                        new_matrix[i][next_index] = matrix[i][*index2];
-                        new_matrix[i][next_index + 1] = matrix[i][*index];
-                    }
-                    //Swap in vars_map
-                    new_vars_map.insert(var_name2.clone(), next_index);
-                    new_vars_map.insert(var_name.clone(), next_index + 1);
-                    next_index += 2;
-                },
-                None => {
-                    //put column index at nextIndex
-                    for i in 0..matrix.len() {
-                        new_matrix[i][next_index] = matrix[i][*index];
-                    }
-                    new_vars_map.insert(var_name.clone(), next_index);
-                    next_index += 1;
-                }
-            }
-            
+        let var_name2: String ;
+        if var_name.contains("S(") {
+            var_name2 = format!("{}{}", &var_name[2..], &var_name[..var_name.len()-1]);            
         }else{
             //Get S(var_name)
-            let var_name2 = format!("S({})", var_name);
-            match vars_map.get(&var_name2) {
-                Some(index2) => {
-                    //put index at nextIndex and index2 at nextIndex +1
-                    for i in 0..matrix.len() {
-                        new_matrix[i][next_index] = matrix[i][*index];
-                        new_matrix[i][next_index + 1] = matrix[i][*index2];
-                    }
-                    new_vars_map.insert(var_name2.clone(), next_index);
-                    new_vars_map.insert(var_name.clone(), next_index + 1);
-                    next_index += 2;
-                },
-                None => {
-                    //put column from index to nextIndex
-                    for i in 0..matrix.len() {
-                        new_matrix[i][next_index] = matrix[i][*index];
-                    }
-                    new_vars_map.insert(var_name.clone(), next_index);
-                    next_index += 1;
+            var_name2 = format!("S({})", var_name);
+        }
+        match vars_map.get(&var_name2) {
+            Some(index2) => {
+                //put index2 at nextIndex and index at nextIndex +1
+                for i in 0..matrix.len() {
+                    new_matrix[i][next_index] = matrix[i][*index2];
+                    new_matrix[i][next_index + 1] = matrix[i][*index];
                 }
+                //Swap in vars_map
+                new_vars_map.insert(var_name2.clone(), next_index);
+                new_vars_map.insert(var_name.clone(), next_index + 1);
+                next_index += 2;
+            },
+            None => {
+                //put column index at nextIndex
+                for i in 0..matrix.len() {
+                    new_matrix[i][next_index] = matrix[i][*index];
+                }
+                new_vars_map.insert(var_name.clone(), next_index);
+                next_index += 1;
             }
-            
         }
     }
-    //Add linear variables
+    //Add linear variables to the matrix
     for (var_name, index) in vars_map.iter() {
         if !non_linear_indexes.contains(index) {
+            //put column index at nextIndex
             for i in 0..matrix.len() {
                 new_matrix[i][next_index] = matrix[i][*index];
                 new_vars_map.insert(var_name.clone(), next_index);

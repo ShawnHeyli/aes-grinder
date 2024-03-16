@@ -4,6 +4,7 @@ use std::fmt::{Debug, Display};
 use std::fs::File;
 use std::io::Read;
 use std::num::ParseIntError;
+use std::vec;
 
 use crate::GlobalInfos;
 
@@ -575,4 +576,121 @@ mod tests {
 
         assert!(parser_mod.parse_system(&mut global_infos).is_ok());
     }
+
+    #[test]
+    fn process_linearity() {
+        let mut global_infos = GlobalInfos::new(String::from("test/valid.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        parser_mod.parse_system(&mut global_infos).expect("No error while parsing system");
+
+        let (matrix, vars_map) = eliminate_linear_variables(parser_mod);
+    }
+}
+
+/**
+ * We obtain a hash map containing variables xi and S(xi) 
+ */
+fn get_non_linear_variables(vars_map: HashMap<String, usize>) -> HashMap<String, usize> {
+    //For each var_name in p.vars_map
+    //if name contains S(x) then add to non_linear_variables x and S(x)
+    let mut non_linear_variables: HashMap<String, usize> = HashMap::new();
+    let mut linear_variables: HashMap<String, usize> = HashMap::new();
+    for (var_name, index) in vars_map.iter() {
+        if var_name.contains("S(") {
+            non_linear_variables.insert(var_name.clone(), *index);
+        } else {
+            linear_variables.insert(var_name.clone(), *index);
+        }
+    }
+    let non_linear_variables2 = non_linear_variables.clone();
+    for (var_name, index) in non_linear_variables2.iter() {
+        let mut var_name = var_name.clone();
+        var_name.remove(0);
+        var_name.remove(0);
+        var_name.pop();
+        for (var_name2, index2) in linear_variables.iter() {
+            if (*var_name2 == *var_name) {
+                non_linear_variables.insert(var_name2.clone(), *index2);
+            }
+        }
+    }
+    non_linear_variables
+}
+
+fn eliminate_linear_variables(p: Parser) -> (Vec<Vec<u32>>, HashMap<String, usize>){
+    //Separate equations containing linear and non linear 
+    //non linear variables are like x and S(x), the others are linear
+    let non_linear_variables = get_non_linear_variables(p.vars_map.clone());
+    let mut matrix = p.matrix.clone(); 
+    let mut vars_map: HashMap<String, usize> = HashMap::new();
+    //Swap columns to have S(xi) following xi
+    let mut next_index = 0;
+    let mut non_linear_indexes: Vec<usize> = Vec::new();
+    while let Some((var_name, index)) = non_linear_variables.iter().next() {
+        non_linear_indexes.push(*index);
+        let mut var_name2 = var_name.clone();
+        if var_name2.contains("S(") {
+            var_name2.remove(0);
+            var_name2.remove(0);
+            var_name2.pop();
+            match vars_map.get(&var_name2) {
+                Some(index2) => {
+                    //put index2 at nextIndex and index at nextIndex +1
+                    for i in 0..matrix.len() {
+                        matrix[i][next_index] = p.matrix[i][*index2];
+                        matrix[i][next_index + 1] = p.matrix[i][*index];
+                    }
+                    //Swap in vars_map
+                    vars_map.insert(var_name2.clone(), next_index);
+                    vars_map.insert(var_name.clone(), next_index + 1);
+                    next_index += 2;
+                },
+                None => {
+                    //put index at nextIndex
+                    for i in 0..matrix.len() {
+                        matrix[i][next_index] = p.matrix[i][*index];
+                    }
+                    vars_map.insert(var_name.clone(), next_index);
+                    next_index += 1;
+                }
+            }
+            
+        }else{
+            //Get S(var_name)
+            let mut var_name2 = "S(".to_string();
+            var_name2.push_str(&var_name);
+            var_name2.push_str(")");
+            match vars_map.get(&var_name2) {
+                Some(index2) => {
+                    //put index2 at nextIndex and index at nextIndex +1
+                    for i in 0..matrix.len() {
+                        matrix[i][next_index] = p.matrix[i][*index];
+                        matrix[i][next_index + 1] = p.matrix[i][*index2];
+                    }
+                    vars_map.insert(var_name.clone(), next_index);
+                    vars_map.insert(var_name.clone(), next_index + 1);
+                },
+                None => {
+                    //put index at nextIndex
+                    for i in 0..matrix.len() {
+                        matrix[i][next_index] = p.matrix[i][*index];
+                    }
+                    vars_map.insert(var_name.clone(), next_index);
+                    next_index += 1;
+                }
+            }
+            
+        }
+    }
+    //Add linear variables
+    for (var_name, index) in p.vars_map.iter() {
+        if !non_linear_indexes.contains(index) {
+            for i in 0..matrix.len() {
+                matrix[i][next_index] = p.matrix[i][*index];
+                vars_map.insert(var_name.clone(), next_index);
+            }
+        }
+    }
+    (matrix, vars_map)
 }

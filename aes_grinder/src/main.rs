@@ -1,4 +1,5 @@
 mod parser;
+mod algo;
 use clap::Parser as ClapParser;
 use parser::Parser;
 

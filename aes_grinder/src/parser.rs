@@ -475,7 +475,10 @@ impl Parser {
     }
 
     // true if there is a system to parse
-    pub fn parse_system(&mut self, global_infos: &mut GlobalInfos) -> Result<bool, ParserError> {
+    pub fn parse_system(
+        &mut self,
+        global_infos: &mut GlobalInfos,
+    ) -> Result<Vec<Vec<u32>>, ParserError> {
         info!("Start parsing system");
         debug!("Parser::parse_system");
 
@@ -521,7 +524,7 @@ impl Parser {
                 if !self.matrix.is_empty() {
                     info!("Parsing ended with success");
                     debug!("Matrix :: {:?}", self.matrix);
-                    return Ok(true);
+                    return Ok(self.matrix.clone());
                 }
                 return Err(ParserError::new(
                     self.reader.line,
@@ -534,7 +537,7 @@ impl Parser {
         if !self.matrix.is_empty() {
             info!("Parsing ended with success");
             debug!("Matrix :: {:?}", self.matrix);
-            return Ok(true);
+            return Ok(self.matrix.clone());
         }
 
         Err(ParserError::new(

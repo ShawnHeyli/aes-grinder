@@ -26,9 +26,11 @@ fn main() {
     let mut parser_mod = Parser::new(&globals);
 
     // NEED TO CATCH MATRIX
-    parser_mod
+    let matrix = parser_mod
         .parse_system(&mut globals)
         .expect("Error while parsing system");
+
+    println!("{:?}", matrix);
 
     //parser::parser (cli.equation_system);
     // Continued program logic goes here...

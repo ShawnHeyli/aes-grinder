@@ -27,3 +27,7 @@ First iteration of a sparse matrix (Coordinate list)
 
 ### 15/03/24
 Meeting with our supervisor during the week : review about the next steps to do
+
+### 22/03/24
+Delayed a meeting with our supervisor to have some feature-complete code
+and review our advancement with our supervisor next week

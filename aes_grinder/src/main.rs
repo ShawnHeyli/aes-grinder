@@ -1,9 +1,11 @@
-mod parser;
 mod algo;
-use clap::Parser as ClapParser;
-use parser::Parser;
-
 mod cli;
+mod matrix;
+mod parser;
+
+use clap::Parser as ClapParser;
+use matrix::Matrix;
+use parser::Parser;
 
 struct GlobalInfos {
     filename_eq_sys: String,
@@ -26,12 +28,8 @@ fn main() {
     let mut globals: GlobalInfos = GlobalInfos::new(cli.equation_system);
     let mut parser_mod = Parser::new(&globals);
 
-    // NEED TO CATCH MATRIX
-    let matrix = parser_mod
-        .parse_system(&mut globals)
-        .expect("Error while parsing system");
-
-    println!("{:?}", matrix);
+    let matrix = Matrix::new(2, 2);
+    println!("{}", matrix);
 
     //parser::parser (cli.equation_system);
     // Continued program logic goes here...

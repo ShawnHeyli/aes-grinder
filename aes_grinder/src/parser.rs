@@ -583,9 +583,14 @@ mod tests {
         let mut global_infos = GlobalInfos::new(String::from("test/valid.eqs"));
         let mut parser_mod = Parser::new(&global_infos);
 
-        parser_mod.parse_system(&mut global_infos).expect("No error while parsing system");
+        parser_mod
+            .parse_system(&mut global_infos)
+            .expect("No error while parsing system");
 
-        print!("{:?}", get_non_linear_variables(parser_mod.vars_map.clone()));
+        print!(
+            "{:?}",
+            get_non_linear_variables(parser_mod.vars_map.clone())
+        );
     }
 
     #[test]
@@ -593,14 +598,16 @@ mod tests {
         let mut global_infos = GlobalInfos::new(String::from("test/valid.eqs"));
         let mut parser_mod = Parser::new(&global_infos);
 
-        parser_mod.parse_system(&mut global_infos).expect("No error while parsing system");
+        parser_mod
+            .parse_system(&mut global_infos)
+            .expect("No error while parsing system");
 
         eliminate_linear_variables(parser_mod);
     }
 }
 
 /**
- * We obtain a hash map containing variables xi and S(xi) 
+ * We obtain a hash map containing variables xi and S(xi)
  */
 fn get_non_linear_variables(vars_map: HashMap<String, usize>) -> HashMap<String, usize> {
     //For each var_name in p.vars_map
@@ -627,8 +634,12 @@ fn get_non_linear_variables(vars_map: HashMap<String, usize>) -> HashMap<String,
     non_linear_variables
 }
 
-fn sort_non_linear_variables(non_linear_variables: HashMap<String, usize>, matrix: Vec<Vec<u32>>, vars_map: HashMap<String, usize>) -> (Vec<Vec<u32>>, HashMap<String, usize>) {
-    let mut new_matrix = matrix.clone(); 
+fn sort_non_linear_variables(
+    non_linear_variables: HashMap<String, usize>,
+    matrix: Vec<Vec<u32>>,
+    vars_map: HashMap<String, usize>,
+) -> (Vec<Vec<u32>>, HashMap<String, usize>) {
+    let mut new_matrix = matrix.clone();
     let mut new_vars_map: HashMap<String, usize> = HashMap::new();
     let mut non_linear_indexes: Vec<usize> = Vec::new();
     //Swap columns to have S(xi) following xi
@@ -637,8 +648,8 @@ fn sort_non_linear_variables(non_linear_variables: HashMap<String, usize>, matri
         non_linear_indexes.push(*index);
         let var_name2: String;
         if var_name.contains("S(") {
-            var_name2 = format!("{}{}", &var_name[2..], &var_name[..var_name.len()-1]);            
-        }else{
+            var_name2 = format!("{}{}", &var_name[2..], &var_name[..var_name.len() - 1]);
+        } else {
             //Get S(var_name)
             var_name2 = format!("S({})", var_name);
         }
@@ -653,7 +664,7 @@ fn sort_non_linear_variables(non_linear_variables: HashMap<String, usize>, matri
                 new_vars_map.insert(var_name2.clone(), next_column_index);
                 new_vars_map.insert(var_name.clone(), next_column_index + 1);
                 next_column_index += 2;
-            },
+            }
             None => {
                 //put column index at nextIndex
                 for i in 0..matrix.len() {
@@ -678,8 +689,8 @@ fn sort_non_linear_variables(non_linear_variables: HashMap<String, usize>, matri
     (new_matrix, new_vars_map)
 }
 
-fn eliminate_linear_variables(p: Parser) -> (Vec<Vec<u32>>, HashMap<String, usize>){
-    //Separate equations containing linear and non linear 
+fn eliminate_linear_variables(p: Parser) -> (Vec<Vec<u32>>, HashMap<String, usize>) {
+    //Separate equations containing linear and non linear
     //non linear variables are like x and S(x), the others are linear
     let non_linear_variables = get_non_linear_variables(p.vars_map.clone());
     sort_non_linear_variables(non_linear_variables, p.matrix, p.vars_map)

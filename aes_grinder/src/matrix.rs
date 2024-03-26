@@ -68,6 +68,7 @@ impl From<Vec<Vec<usize>>> for Matrix {
         let rows = data.len();
         let cols = data[0].len();
         let mut matrix = Matrix::new(rows, cols);
+        matrix.data.clear();
 
         for i in 0..rows {
             for j in 0..cols {
@@ -84,6 +85,7 @@ impl From<Vec<Vec<u32>>> for Matrix {
         let rows = data.len();
         let cols = data[0].len();
         let mut matrix = Matrix::new(rows, cols);
+        matrix.data.clear();
 
         for i in 0..rows {
             for j in 0..cols {

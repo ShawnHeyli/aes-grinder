@@ -1,0 +1,1 @@
+cargo run -- -e equation_system/dp_example.eqs

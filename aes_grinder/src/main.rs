@@ -30,7 +30,11 @@ fn main() {
 
     let matrix = Matrix::new(2, 2);
     println!("{}", matrix);
+    let matrix_just_parsed = parser_mod.parse_system(&mut globals).unwrap();
+    let matrix:Matrix = matrix_just_parsed.into();
 
-    //parser::parser (cli.equation_system);
+    print!("{:?}", matrix);
+
+    // parser::parser (cli.equation_system);
     // Continued program logic goes here...
 }

@@ -79,6 +79,22 @@ impl From<Vec<Vec<usize>>> for Matrix {
     }
 }
 
+impl From<Vec<Vec<u32>>> for Matrix {
+    fn from(data: Vec<Vec<u32>>) -> Self {
+        let rows = data.len();
+        let cols = data[0].len();
+        let mut matrix = Matrix::new(rows, cols);
+
+        for i in 0..rows {
+            for j in 0..cols {
+                matrix.data.push(data[i][j] as usize);
+            }
+        }
+
+        matrix
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

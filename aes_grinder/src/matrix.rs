@@ -1,5 +1,6 @@
-//! Matrix abstraction
-#[derive(Debug, PartialEq)]
+use::num_integer::Integer;
+
+#[derive(Debug, PartialEq, Clone)]
 pub struct Matrix {
     rows: usize,
     cols: usize,
@@ -25,6 +26,65 @@ impl Matrix {
         }
 
         columns
+    }
+
+    pub fn gaussian_elimination_inv(&mut self, modulus: usize) -> Matrix {
+        for j in 0..self.cols {
+            //Find the max
+            let mut max = 0;
+            let mut max_row = 0;
+            for i in j..self.rows {
+                if self[(i, j)] > max {
+                    max = self[(i, j)];
+                    max_row = i;
+                }
+            }
+            for i in 0..self.cols {
+                if self[(max_row, i)] != 0 && i == max_row { //This is the pivot
+                    //Set the pivot to one by multiplying the inverse of it in the field
+                    //Use bigInt extended gcd to find the inverse
+                    let pivot = self[(max_row, j)];
+                    let mut inverse = (pivot as isize).extended_gcd(&(modulus as isize)).x;
+                    while inverse < 0 {
+                        inverse += modulus as isize;
+                    }
+                    let inverse = inverse as usize;
+                    //Normalize the pivot line
+                    for k in 0..self.cols {
+                        self[(max_row, k)] = self[(max_row, k)] * inverse % modulus;
+                    }
+                    //Swap the line
+                    for k in 0..self.rows {
+                        let temp = self[(j, k)];
+                        self[(j, k)] = self[(max_row, k)];
+                        self[(max_row, k)] = temp;
+                    }
+                    //Set 0 under the pivot
+                    for k in j + 1..self.rows {
+                        let factor = self[(k, j)];
+                        for l in 0..self.cols {
+                            let a = self[(k, l)] as isize;
+                            let b = factor as isize * self[(j, l)] as isize;
+                            let mut ab = a - b;
+                            while ab < 0 {
+                                ab += modulus as isize;
+                            }
+                            let ab = ab as usize;
+                            self[(k, l)] = ab % modulus;
+                        }
+                    }
+                    break;
+                }
+            }
+
+        }
+        //Backward substitution
+        for j in (0..self.cols).rev() {
+            for i in (0..j).rev() {
+                    self[(i, j)] = 0;
+            }
+        }
+        self.clone()
     }
 }
 
@@ -97,6 +157,22 @@ impl From<Vec<Vec<u32>>> for Matrix {
     }
 }
 
+impl From<Vec<Vec<i32>>> for Matrix {
+    fn from(data: Vec<Vec<i32>>) -> Self {
+        let rows = data.len();
+        let cols = data[0].len();
+        let mut matrix = Matrix::new(rows, cols);
+        matrix.data.clear();
+
+        for i in 0..rows {
+            for j in 0..cols {
+                matrix.data.push(data[i][j] as usize);
+            }
+        }
+        matrix
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -124,5 +200,13 @@ mod tests {
         true_matrix[(1, 1)] = 4;
 
         assert_eq!(true_matrix[(1, 1)], false_matrix[1][1]);
+    }
+
+    #[test]
+    fn test_gaussian_elimination_inv() {
+        let mut matrix = Matrix::from(vec![vec![1, 2], vec![3, 4]]);
+        let result = matrix.gaussian_elimination_inv(5);
+        let expected = Matrix::from(vec![vec![1, 0], vec![0, 1]]);
+        assert_eq!(result, expected);
     }
 }

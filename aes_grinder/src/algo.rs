@@ -1,8 +1,12 @@
+//! Struc Algo permettant de représenter des Algo
+
+
 use core::cmp::Ordering;
 use std::{cmp::{max, min}, collections::{HashMap, HashSet}};
 
 use crate::matrix::Matrix;
 
+//La struct algo
 #[derive(PartialEq)]
 pub struct Algo {
     vars_val: HashMap<String, u32>,
@@ -13,6 +17,7 @@ pub struct Algo {
     son2: Option<Box<Algo>>,
 }
 
+///Implemtation de l'ordre partiel pour comparer deux algo entre eux
 impl PartialOrd for Algo {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         if other.vars_val.keys().collect::<HashSet<_>>().is_subset(&self.vars_val.keys().collect::<HashSet<_>>()) {
@@ -31,7 +36,10 @@ impl PartialOrd for Algo {
     }
 }
 
+///Implementation de la struc algo
 impl Algo {
+
+    ///Code de samu pas documenté
     pub fn base_solver(matrix: &Matrix, var: String, modulus: usize) -> Algo {
         //Choose value for var that is a valid value in the matrix
         let mut vars = HashMap::new();
@@ -51,6 +59,8 @@ impl Algo {
         }
     }
 
+
+    ///Code de samu pas documenté
     pub fn cons(a1: Box<Algo>, a2: Box<Algo>) -> Algo {
         //Union of a1 vars_val and a2 vars_val
         let union_vars = a1.vars_val.clone().into_iter().chain(a2.vars_val.clone()).collect();
@@ -69,6 +79,7 @@ impl Algo {
 
 }
 
+///Test de l'implementation de la struct algo
 #[cfg(test)]
 mod tests {
     use super::*;

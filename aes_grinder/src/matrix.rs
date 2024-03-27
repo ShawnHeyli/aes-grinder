@@ -1,7 +1,10 @@
+use std::collections::HashMap;
+
 use::num_integer::Integer;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Matrix {
+    vars_map: HashMap<String, usize>,
     rows: usize,
     cols: usize,
     data: Vec<usize>,
@@ -10,6 +13,7 @@ pub struct Matrix {
 impl Matrix {
     pub fn new(rows: usize, cols: usize) -> Self {
         Matrix {
+            vars_map: HashMap::new(),
             rows,
             cols,
             data: vec![0; rows * cols],
@@ -95,6 +99,14 @@ impl Matrix {
             }
         }
         self.clone()
+    }
+
+    pub fn number_solutions(&self, vars: HashMap<String, u32>, modulus: usize) -> u32 {
+        todo!();
+    }
+
+    pub fn are_valid_values(&self, vars: &HashMap<String, u32>) -> bool {
+        todo!();
     }
 }
 

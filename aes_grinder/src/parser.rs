@@ -1,11 +1,12 @@
-use log::{debug, error, info, trace, warn};
 use std::collections::HashMap;
 use std::fmt::{Debug, Display};
 use std::fs::File;
-use std::hash::Hash;
 use std::io::Read;
 use std::num::ParseIntError;
 use std::vec;
+use log::info;
+use log::debug;
+use log::trace;
 
 use crate::GlobalInfos;
 

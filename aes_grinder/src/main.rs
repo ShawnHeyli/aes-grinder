@@ -4,8 +4,6 @@ mod matrix;
 mod parser;
 
 use clap::Parser as ClapParser;
-use matrix::Matrix;
-use parser::Parser;
 
 struct GlobalInfos {
     filename_eq_sys: String,

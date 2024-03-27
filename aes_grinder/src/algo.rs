@@ -1,7 +1,7 @@
 use core::cmp::Ordering;
 use std::{cmp::{max, min}, collections::{HashMap, HashSet}};
 
-use crate::matrix::{self, Matrix};
+use crate::matrix::Matrix;
 
 #[derive(PartialEq)]
 pub struct Algo {
@@ -54,13 +54,14 @@ impl Algo {
     pub fn cons(a1: Box<Algo>, a2: Box<Algo>) -> Algo {
         //Union of a1 vars_val and a2 vars_val
         let union_vars = a1.vars_val.clone().into_iter().chain(a2.vars_val.clone()).collect();
-        let nb_sol = Matrix::number_solutions(matrix, union_vars, modulus);
+        //let nb_sol = Matrix::number_solutions(matrix, union_vars, modulus);
+        let nb_sol=1;
         Algo {
             vars_val: union_vars,
             //Compute the number of solutions
             nb_solutions: nb_sol,
-            time: max(a1.time, a2.time, nb_sol),
-            memory: max(a1.memory, a2.memory, min(a1.nb_solutions, a2.nb_solutions)),
+            time: max(a1.time, max(a2.time, nb_sol)),
+            memory: max(a1.memory, max(a2.memory, min(a1.nb_solutions, a2.nb_solutions))),
             son1: Some(a1),
             son2: Some(a2),
         }

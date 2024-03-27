@@ -81,7 +81,17 @@ impl Matrix {
         //Backward substitution
         for j in (0..self.cols).rev() {
             for i in (0..j).rev() {
-                    self[(i, j)] = 0;
+                let factor = self[(i, j)];
+                for k in 0..self.cols {
+                    let a = self[(i, k)] as isize;
+                    let b = factor as isize * self[(j, k)] as isize;
+                    let mut ab = a - b;
+                    while ab < 0 {
+                        ab += modulus as isize;
+                    }
+                    let ab = ab as usize;
+                    self[(i, k)] = ab % modulus;
+                }
             }
         }
         self.clone()

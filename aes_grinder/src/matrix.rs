@@ -102,10 +102,17 @@ impl Matrix {
     }
 
     pub fn number_solutions(&self, vars: HashMap<String, u32>, modulus: usize) -> u32 {
+        //Sort the columns by vars and non-vars
+        
+        //Apply gauss elimination on non-vars columns
+
+        //Count the number of equations below
+        
         todo!();
     }
 
     pub fn are_valid_values(&self, vars: &HashMap<String, u32>) -> bool {
+        //Check in the equations where the vars appears if the values are possible
         todo!();
     }
 }

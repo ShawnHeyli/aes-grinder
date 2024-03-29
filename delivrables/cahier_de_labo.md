@@ -31,3 +31,6 @@ Meeting with our supervisor during the week : review about the next steps to do
 ### 22/03/24
 Delayed a meeting with our supervisor to have some feature-complete code
 and review our advancement with our supervisor next week
+
+## 29/03/24
+implementing the elimination of gauss and some comparison fonctions of Algo

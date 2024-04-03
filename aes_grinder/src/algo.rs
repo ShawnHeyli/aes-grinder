@@ -39,7 +39,7 @@ impl PartialOrd for Algo {
 ///Implementation de la struc algo
 impl Algo {
 
-    ///Code de samu pas documenté
+    ///Constructeur d'un base solver
     pub fn base_solver(matrix: &Matrix, var: String, modulus: usize) -> Algo {
         //Choose value for var that is a valid value in the matrix
         let mut vars = HashMap::new();
@@ -60,8 +60,8 @@ impl Algo {
     }
 
 
-    ///Code de samu pas documenté
-    pub fn cons(a1: Box<Algo>, a2: Box<Algo>) -> Algo {
+    ///Fonction de fusion de deux algo
+    pub fn fusion_two_algo(a1: Box<Algo>, a2: Box<Algo>) -> Algo {
         //Union of a1 vars_val and a2 vars_val
         let union_vars = a1.vars_val.clone().into_iter().chain(a2.vars_val.clone()).collect();
         //let nb_sol = Matrix::number_solutions(matrix, union_vars, modulus);

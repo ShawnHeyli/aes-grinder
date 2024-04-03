@@ -19,10 +19,12 @@ pub struct Algo {
 
 ///Implemtation de l'ordre partiel pour comparer deux algo entre eux
 impl PartialOrd for Algo {
+    todo!()//Verifier la comparaison inferieur + equal
+    // faire des test sur des égalité
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         if other.vars_val.keys().collect::<HashSet<_>>().is_subset(&self.vars_val.keys().collect::<HashSet<_>>()) {
-            if self.time < other.time {
-                if self.memory < other.memory {
+            if self.time <= other.time {
+                if self.memory <= other.memory {
                     return Some(Ordering::Greater);
                 } else {
                     return Some(Ordering::Less);
@@ -64,6 +66,7 @@ impl Algo {
     pub fn fusion_two_algo(a1: Box<Algo>, a2: Box<Algo>) -> Algo {
         //Union of a1 vars_val and a2 vars_val
         let union_vars = a1.vars_val.clone().into_iter().chain(a2.vars_val.clone()).collect();
+
         //let nb_sol = Matrix::number_solutions(matrix, union_vars, modulus);
         let nb_sol=1;
         Algo {

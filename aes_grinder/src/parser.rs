@@ -606,6 +606,7 @@ mod tests {
         eliminate_linear_variables(parser_mod);
     }
 }
+todo!() //BOUGER LES TEST EN BAS
 
 /**
  * We obtain a hash map containing variables xi and S(xi)
@@ -633,6 +634,7 @@ fn get_non_linear_variables(vars_map: HashMap<String, usize>) -> HashMap<String,
         }
     }
     non_linear_variables
+    todo!() //MAKE TEST
 }
 
 fn sort_non_linear_variables(
@@ -688,6 +690,7 @@ fn sort_non_linear_variables(
         }
     }
     (new_matrix, new_vars_map)
+    todo!() //MAKE TEST
 }
 
 fn eliminate_linear_variables(p: Parser) -> (Vec<Vec<u32>>, HashMap<String, usize>) {
@@ -695,4 +698,10 @@ fn eliminate_linear_variables(p: Parser) -> (Vec<Vec<u32>>, HashMap<String, usiz
     //non linear variables are like x and S(x), the others are linear
     let non_linear_variables = get_non_linear_variables(p.vars_map.clone());
     sort_non_linear_variables(non_linear_variables, p.matrix, p.vars_map)
+    todo!() //MAKE TEST
 }
+
+todo!() //MAKE TEST
+todo!() //MAKE TEST
+todo!() //MAKE TEST
+todo!() //MAKE TEST

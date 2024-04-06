@@ -103,9 +103,16 @@ impl Display for ParserError {
     }
 }
 
-enum EndOfParse {
+enum EndOfLineParse {
     File,
     Line,
+    Comment,
+}
+
+enum EndOfTermParse {
+    File,
+    Line,
+    Term,
     Comment,
 }
 
@@ -135,73 +142,32 @@ impl Parser {
         }
     }
 
-    fn get_section(&mut self) -> Result<bool, ParserError> {
-        debug!("Parser::get_section");
+    fn conv_str_to_integer(&self, str: String) -> Result<u32, ParserError> {
+        debug!("Parser::conv_str_to_integer");
+        let r_conv: Result<u32, ParseIntError> = str.parse::<u32>();
 
-        let mut oc: Option<char> = self.reader.next_char();
-
-        match oc {
-            Some('-') => {
-                oc = self.reader.next_char();
-
-                match oc {
-                    Some('-') => {
-                        let mut section_name: String = String::new();
-                        let mut is_reach_colon: bool = false;
-                        oc = self.reader.next_char();
-
-                        loop {
-                            match oc {
-                                Some('\n') | None => {
-                                    if !is_reach_colon {
-                                        return Err(ParserError::new(
-                                            self.reader.line,
-                                            self.reader.char_,
-                                            String::from("section name need to finish by colon"),
-                                        ));
-                                    }
-                                    return Ok(true);
-                                }
-                                Some(':') => {
-                                    is_reach_colon = true;
-                                    self.section_name = Some(section_name.clone());
-                                }
-                                Some(c) => {
-                                    if !is_reach_colon {
-                                        section_name.push(c);
-                                    }
-                                }
-                            }
-
-                            oc = self.reader.next_char();
-                        }
-                    }
-                    // No double dashes
-                    Some(_) | None => {
-                        let c = self.reader.next_char().unwrap();
-                        println!("final take {}", c);
-                        Err(ParserError::new(
-                            self.reader.line,
-                            self.reader.char_,
-                            String::from("commentary need to have two dashes"),
-                        ))
-                    }
-                }
-            }
-            // Others than dash
-            Some(c) => {
-                self.reader.block_next(c);
-                Ok(false)
-            }
-            // EndOfFile
-            None => Ok(false),
+        match r_conv {
+            Ok(number) => Ok(number),
+            Err(e) => Err(ParserError::new(
+                self.reader.line,
+                self.reader.char_,
+                format!("Error while parsing integer :: {}", e),
+            )),
         }
     }
 
-    // retur true if end of file
-    fn skip_whitespace(&mut self) -> bool {
-        debug!("Parser::skip_whitespace");
+    /* skip_withespace
+        Arguments   ::
 
+        Description :: Skip all withespaces,
+                       stop before encountering an other character
+
+        Return      :: - true if end of file
+                       - false either
+     */
+    fn skip_whitespaces(&mut self) -> bool {
+        debug!("Parser::skip_whitespaces");
+    
         let mut oc: Option<char> = self.reader.next_char();
         loop {
             match oc {
@@ -218,43 +184,39 @@ impl Parser {
                 }
             }
         }
-
         false
     }
 
-    fn conv_str_to_integer(&self, str: String) -> Result<u32, ParserError> {
-        debug!("Parser::conv_str_to_integer");
-        let r_conv: Result<u32, ParseIntError> = str.parse::<u32>();
+    /* pass_commentary
+        Arguments   ::
 
-        match r_conv {
-            Ok(number) => Ok(number),
-            Err(e) => Err(ParserError::new(
-                self.reader.line,
-                self.reader.char_,
-                format!("Error while parsing integer :: {}", e),
-            )),
-        }
-    }
+        Description ::  Pass commentary,
+                        FORM OF COMMENTARY :
+                        __input__ #<MY_COMMENTARY># __input__
+                        __input__ #<MY_COMMENTARY>END_OF_LINE
+                        START_OF_LINE#<MY_COMMENTARY>END_OF_LINE
 
-    /// return true if end of file
-    fn pass_commentary(&mut self) -> EndOfParse {
+        Return      ::  - true if end of file
+                        - false either
+     */
+    fn pass_commentary(&mut self) -> EndOfLineParse {
         debug!("Parser::pass_commentary");
 
         let mut oc: Option<char> = self.reader.next_char();
 
         loop {
             match oc {
-                Some('\n') => {
-                    return EndOfParse::Line;
+                Some('\n') => { // END OF LINE
+                    return EndOfLineParse::Line;
                 }
-                Some('#') => {
-                    return EndOfParse::Comment;
+                Some('#') => { // END OF COMMENT
+                    return EndOfLineParse::Comment;
                 }
                 Some(_) => {
-                    // Pass others char
+                    // Pass char of commentary
                 }
-                None => {
-                    return EndOfParse::File;
+                None => { // END OF FILE
+                    return EndOfLineParse::File;
                 }
             }
 
@@ -262,17 +224,102 @@ impl Parser {
         }
     }
 
-    fn affect_string(&mut self, str_: &str, is_number: bool) -> Result<(), ParserError> {
-        debug!("Parser::affect_string");
+    /* get_section
+        Arguments   ::
 
-        if !str_.is_empty() {
-            if is_number {
+        Description ::  get the name of section and set Parser struct with.
+                        section is declare like that : 
+                            -- my_section:
+
+        Return      :: Ok with
+                        - true if section found
+                        - false either
+                       OR
+                       Err with parsing error
+     */
+    fn get_section(&mut self) -> Result<bool, ParserError> {
+        debug!("Parser::get_section");
+
+        let mut oc: Option<char> = self.reader.next_char();
+
+        match oc {
+            Some('-') => { // first dash CHECK 
+                oc = self.reader.next_char();
+
+                match oc {
+                    Some('-') => { // second dash CHECK
+                        let mut section_name: String = String::new();
+                        let mut reach_colon: bool = false;
+                        oc = self.reader.next_char();
+
+                        loop {
+                            match oc {
+                                Some('\n') | None => { // end of line | or end of file
+                                    if !reach_colon {
+                                        return Err(ParserError::new(
+                                            self.reader.line,
+                                            self.reader.char_,
+                                            String::from("section name need to finish by colon"),
+                                        ));
+                                    }
+                                    return Ok(true);
+                                }
+                                Some(':') => { // reach colon
+                                    reach_colon = true;
+                                    self.section_name = Some(section_name.clone());
+                                }
+                                Some(c) => { // other characteres
+                                    if !reach_colon {
+                                        section_name.push(c);
+                                    }
+                                }
+                            }
+
+                            oc = self.reader.next_char();
+                        }
+                    }
+                    Some(_) | None => { // NO second dash
+                        Err(ParserError::new(
+                            self.reader.line,
+                            self.reader.char_,
+                            String::from("commentary need to have two dashes"),
+                        ))
+                    }
+                }
+            }
+            Some(c) => { // NO first dash
+                self.reader.block_next(c);
+                Ok(false)
+            }
+            None => { // End of file
+                Ok(false)
+            }
+        }
+    }
+
+    /* prestore_term
+        Arguments   ::  - str : &str to 
+
+        Description ::  Store in self structure, redundancy or name of term, depending
+                        of the contain of str
+
+        Return      :: Ok with
+                        - true if store something into self structure
+                        - false either
+                       OR
+                       Err with parsing error
+     */
+    fn prestore_term (&mut self, str: &str, is_number: bool) -> Result<(), ParserError> {
+        debug!("Parser::prestore_term");
+
+        if !str.is_empty() {
+            if is_number { // BUILD REDUNDANCY OF TERM
                 self.redundancy = Some(
-                    self.conv_str_to_integer(str_.to_string())
+                    self.conv_str_to_integer(str.to_string())
                         .expect("Error while parsing int"),
                 );
-            } else {
-                if String::from("KV").eq(&str_) {
+            } else {      // BUILD NAME OF TERM
+                if String::from("KV").eq(&str) { // str == KV
                     return Err(ParserError::new(
                         self.reader.line,
                         self.reader.char_,
@@ -281,86 +328,114 @@ impl Parser {
                         ),
                     ));
                 }
-                self.var_name = Some(str_.to_string());
+                self.var_name = Some(str.to_string());
             }
+
         }
 
         Ok(())
     }
 
-    fn get_term(&mut self) -> Result<EndOfParse, ParserError> {
+    /* get_term
+        Arguments   ::
+
+        Description :: browse term and set
+                            self.redundancy and/or self.var_name
+
+                       term :: + <(Redundancy) * (Var)> +
+                       possible to have redundancy or var or both
+
+        Return      :: Ok with possible EndOfTermParse
+                       Err if an IO error
+     */
+    fn get_term(&mut self) -> Result<EndOfTermParse, ParserError> {
         debug!("Parser::get_term");
 
-        let mut oc: Option<char> = self.reader.next_char();
-
         let mut is_number: bool = true;
-        let mut is_blank_appear: bool = false;
-        let mut str_: String = String::new();
+        let mut blank_appear_inside_str: bool = false;
+        let mut str: String = String::new();
 
-        loop {
-            match oc {
-                Some('#') => match self.pass_commentary() {
-                    EndOfParse::File => {
-                        return Ok(EndOfParse::Line);
+        while let Some (char_) = self.reader.next_char() {
+            match char_ {
+                '#' => { // START OF COMMENTARY
+                    match self.pass_commentary() {
+                        EndOfLineParse::File => {
+                            return Ok(EndOfTermParse::File);
+                        }
+                        EndOfLineParse::Line => {
+                            return Ok(EndOfTermParse::Line);
+                        }
+                        EndOfLineParse::Comment => {}
                     }
-                    EndOfParse::Line => {
-                        return Ok(EndOfParse::Line);
-                    }
-                    EndOfParse::Comment => {}
                 },
-                Some('+') => {
-                    self.affect_string(&str_, is_number)
+                '+' => { // END OF TERM
+                    self.prestore_term(&str, is_number)
                         .expect("Error while affecting string");
-                    return Ok(EndOfParse::Line);
+                    return Ok(EndOfTermParse::Term);
                 }
-                Some('\n') => {
-                    self.affect_string(&str_, is_number)
+                '\n' => { // END OF LINE
+                    self.prestore_term(&str, is_number)
                         .expect("Error while affecting string");
-                    return Ok(EndOfParse::Line);
+                    return Ok(EndOfTermParse::Line);
                 }
-                None => {
-                    self.affect_string(&str_, is_number)
+                '*' => { // MIDDLE OF TERM
+                    self.prestore_term(&str, is_number)
                         .expect("Error while affecting string");
-                    return Ok(EndOfParse::Line);
+                    str.clear(); // clean string for next
+                    is_number = true; // reset for next
                 }
-                Some('*') => {
-                    self.affect_string(&str_, is_number)
-                        .expect("Error while affecting string");
-                    str_.clear();
-                }
-                Some(c) => {
+                c => { // BUILD TERM PART - REDUNDANCY OR NAME
                     if c.is_whitespace() {
-                        is_blank_appear = true;
+                        blank_appear_inside_str = true;
                     } else {
-                        if is_blank_appear && !str_.is_empty() {
+                        // CHECK THAT REDUNDANCY AND NAME are separate with *
+                        if !str.is_empty() && blank_appear_inside_str {
                             return Err(ParserError::new(
                                 self.reader.line,
                                 self.reader.char_,
                                 String::from(
-                                    "impossible to have following string without '*' or '+'",
+                                    "impossible to have following strings without '*' or '+'",
                                 ),
                             ));
                         }
 
-                        is_blank_appear = false;
+                        if str.is_empty() {
+                            // unset blank_appear at start of new string
+                            blank_appear_inside_str = false;
+                        }
 
                         if is_number && c.is_alphabetic() {
+                            // set for valid prestore_term call
                             is_number = false;
                         }
-                        str_.push(c);
+
+                        str.push(c);
                     }
                 }
             }
-
-            oc = self.reader.next_char();
         }
+
+        // NO MORE CHARACTER
+        self.prestore_term(&str, is_number)
+            .expect("Error while affecting string");
+
+        return Ok(EndOfTermParse::File);
     }
 
-    fn get_vec_index(&mut self) -> Option<usize> {
+    /* get_vec_ndx
+        Arguments   ::
+
+        Description ::  get the index in which column self.var_name
+                        need to be stored
+
+        Return      :: Some with the valid index
+                       None if nobody in self.var_name and self_redudancy
+     */
+    fn get_vec_ndx(&mut self) -> Option<usize> {
         debug!("Parser::get_vec_index");
 
         // See if variable in term
-        let str_: &str = match &self.var_name {
+        let str: &str = match &self.var_name {
             Some(s) => s,
             None => {
                 // Empty term
@@ -371,15 +446,16 @@ impl Parser {
         };
 
         // Search in map if variable exist
-        match self.vars_map.get(str_) {
+        match self.vars_map.get(str) {
             Some(&index) => Some(index),
-            None => {
+            None => { // Create new index
                 let index = self.vars_map.len();
-                debug!("{} at index {}", str_, index);
+                debug!("{} at index {}", str, index);
 
-                self.vars_map.insert(str_.to_string(), index);
+                self.vars_map.insert(str.to_string(), index);
 
                 let line = self.matrix.len() - 1;
+
                 // extend matrix
                 for i in 0..=line {
                     self.matrix[i].push(0);
@@ -392,32 +468,22 @@ impl Parser {
         }
     }
 
-    fn add_redundancy(&mut self, index: usize) {
-        debug!("Parser::add_redundancy");
+    /* store_term
+        Arguments   ::
 
-        let line = self.matrix.len() - 1;
+        Description :: store the term in matrix
 
-        match self.redundancy {
-            Some(rdd) => {
-                self.matrix[line][index] = rdd;
-            }
-            None => {
-                self.matrix[line][index] = 1;
-            }
-        }
-    }
+        Return      :: Ok
+                       Err either
+     */
+    fn store_term(&mut self) -> Result<(), ParserError> {
+        debug!("Parser::store_term");
 
-    fn add_term(&mut self) -> Result<(), ParserError> {
-        debug!("Parser::add_term");
-
-        if let Some(index) = Parser::get_vec_index(self) {
+        if let Some(index) = Parser::get_vec_ndx(self) {
+            let rdd = self.redundancy.unwrap_or(1);
+    
             if self.matrix_count[index] == MAX_NB_MATRIX {
-                let rdd = self.redundancy.unwrap_or(1);
-                let name = match &self.var_name {
-                    Some(n) => n.clone(),
-                    None => String::from("KV"),
-                };
-
+                let name = &self.var_name.unwrap_or(String::from("KV"));
                 return Err(ParserError::new(
                     self.reader.line,
                     self.reader.char_,
@@ -425,20 +491,34 @@ impl Parser {
                 ));
             }
 
-            self.add_redundancy(index);
+            let line = self.matrix.len() - 1;
+            self.matrix[line][index] = rdd; // SET REDUNDANCY ON MATRIX
             self.matrix_count[index] += 1;
         }
+
+        // Reset term after storing
+        self.redundancy = None;
+        self.var_name = None;
 
         Ok(())
     }
 
-    fn process_line(&mut self) -> Result<EndOfParse, ParserError> {
-        debug!("Parser::process_line");
-        let mut push_matrix: bool = false;
+    /* parse_line
+        Arguments   ::
+
+        Description ::  parse line of the input file 
+
+        Return      ::  Ok with possible EndOfLineParse
+                        Err either
+     */
+    fn parse_line(&mut self) -> Result<EndOfLineParse, ParserError> {
+        debug!("Parser::parse_line");
+
         let mut cmpt_iter: u8 = 0;
+        self.matrix.push(vec![0; self.vars_map.len()]);
 
         loop {
-            if cmpt_iter == MAX_NB_TERM {
+            if cmpt_iter == MAX_NB_TERM { // CHECK THE MAX NUMBER of term in ONE line
                 return Err(ParserError::new(
                     self.reader.line,
                     self.reader.char_,
@@ -446,38 +526,42 @@ impl Parser {
                 ));
             }
 
-            let r_es: EndOfParse = self.get_term().expect("Error while getting term");
-            if (self.redundancy.is_none() || self.var_name.is_none()) && !push_matrix {
-                self.matrix.push(vec![0; self.vars_map.len()]);
-                debug!(
-                    "Size of matrix :: {} -- size of inner matrix :: {}",
-                    self.matrix.len(),
-                    self.vars_map.len()
-                );
-                push_matrix = true;
-            }
-
-            self.add_term().expect("Error while adding term");
-
-            // Reset term after adding
-            self.redundancy = None;
-            self.var_name = None;
-
+            let r_es: EndOfTermParse = self.get_term().expect("Error while getting term");
+            self.store_term().expect("Error while adding term");
+            
             match r_es {
-                EndOfParse::File => {
-                    return Ok(EndOfParse::File);
+                EndOfTermParse::File => {
+                    if self.matrix[self.matrix.len()-1].is_empty() {
+                        self.matrix.pop();
+                    }
+                    return Ok(EndOfLineParse::File);
                 }
-                EndOfParse::Line => {
-                    return Ok(EndOfParse::Line);
+                EndOfTermParse::Line => {
+                    if self.matrix[self.matrix.len()-1].is_empty() {
+                        self.matrix.pop();
+                    }
+                    return Ok(EndOfLineParse::Line);
                 }
-                EndOfParse::Comment => {}
+                EndOfTermParse::Term |
+                EndOfTermParse::Comment => {}
             }
 
             cmpt_iter += 1;
         }
     }
 
-    // true if there is a system to parse
+    /* parse_system
+        Arguments   ::  - global_infos : &mut GlobalInfos
+
+        Description ::  Open the file given in global_infos and parse it
+                        to build the corresponding section
+                        In other call try to build next section
+                        and again to reach the end of file
+
+        Return      :: Ok with the section matrix
+                       OR
+                       Err with parsing error
+     */
     pub fn parse_system(
         &mut self,
         global_infos: &mut GlobalInfos,
@@ -485,7 +569,7 @@ impl Parser {
         info!("Start parsing system");
         debug!("Parser::parse_system");
 
-        if self.skip_whitespace() {
+        if self.skip_whitespaces() { // PARSE ALL WHITESPACES
             return Err(ParserError::new(
                 self.reader.line,
                 self.reader.char_,
@@ -493,61 +577,65 @@ impl Parser {
             ));
         }
 
-        if self.section_name.is_none() && !self.get_section().expect("Error while getting section")
-        {
+        if self.section_name.is_none() // SEARCH FOR SECTION NAME
+            && !self.get_section().expect("Error while getting section") {
             return Err(ParserError::new(
                 self.reader.line,
                 self.reader.char_,
-                String::from("no section defined! need to defined '--my_section:'"),
+                String::from("No section defined! Need to start with <--my_section:>"),
             ));
         }
-
         let section_name = match &self.section_name {
-            Some(str_) => str_,
+            Some(str) => str,
             None => unreachable!(),
         };
 
         global_infos.sys_name = section_name.to_string();
 
+
         loop {
-            if self.skip_whitespace() {
+            if self.skip_whitespaces() {
                 break;
             }
 
-            if !self.get_section().expect("Error while getting section") {
-                // Stop condition
-                match self.process_line().expect("Error while processing line") {
-                    EndOfParse::File => {
+            if self.get_section() // CATCH NEW SECTION => ENDING OF SYSTEM
+            .expect("Error while getting section") {
+                if self.matrix.is_empty() {
+                    return Err(ParserError::new(
+                        self.reader.line,
+                        self.reader.char_,
+                        String::from("no system to parse!"),
+                    ));
+                }
+
+                info!("Parsing ended with success");
+                debug!("Matrix :: {:?}", self.matrix);
+                return Ok(self.matrix.clone());
+                
+
+            } else { // CONTINUE TO BUILD MATRIX
+                match self.parse_line().expect("Error while processing line") {
+                    EndOfLineParse::File => {
                         break;
                     }
-                    EndOfParse::Line => {}
-                    EndOfParse::Comment => {}
+                    EndOfLineParse::Line |
+                    EndOfLineParse::Comment => {}
                 }
-            } else {
-                if !self.matrix.is_empty() {
-                    info!("Parsing ended with success");
-                    debug!("Matrix :: {:?}", self.matrix);
-                    return Ok(self.matrix.clone());
-                }
-                return Err(ParserError::new(
-                    self.reader.line,
-                    self.reader.char_,
-                    String::from("no system to parse!"),
-                ));
             }
         }
 
-        if !self.matrix.is_empty() {
-            info!("Parsing ended with success");
-            debug!("Matrix :: {:?}", self.matrix);
-            return Ok(self.matrix.clone());
+        // END OF FILE
+        if self.matrix.is_empty() {
+            return Err(ParserError::new(
+                self.reader.line,
+                self.reader.char_,
+                String::from("no system to parse!"),
+            ));
         }
 
-        Err(ParserError::new(
-            self.reader.line,
-            self.reader.char_,
-            String::from("no system to parse!"),
-        ))
+        info!("Parsing ended with success");
+        debug!("Matrix :: {:?}", self.matrix);
+        Ok(self.matrix.clone())
     }
 }
 

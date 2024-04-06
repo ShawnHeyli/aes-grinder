@@ -32,5 +32,8 @@ Meeting with our supervisor during the week : review about the next steps to do
 Delayed a meeting with our supervisor to have some feature-complete code
 and review our advancement with our supervisor next week
 
-## 29/03/24
+### 29/03/24
 implementing the elimination of gauss and some comparison fonctions of Algo
+
+### 05/04/2024
+This week since we didn't have much time, we decided re-read the paper to make very sure to understand everything (and find some questions for our supervisor), after that we handed out work to each member to be done by monday the 08

@@ -314,11 +314,29 @@ impl Parser {
 
         if !str.is_empty() {
             if is_number { // BUILD REDUNDANCY OF TERM
+                if !self.redundancy.is_none() {
+                    return Err(ParserError::new(
+                        self.reader.line,
+                        self.reader.char_,
+                        String::from(
+                            "double redundancy in sigle term, FORBIDEN!",
+                        ),
+                    ));
+                }
                 self.redundancy = Some(
                     self.conv_str_to_integer(str.to_string())
                         .expect("Error while parsing int"),
                 );
             } else {      // BUILD NAME OF TERM
+                if !self.var_name.is_none() {
+                    return Err(ParserError::new(
+                        self.reader.line,
+                        self.reader.char_,
+                        String::from(
+                            "double var_name in sigle term, FORBIDEN!",
+                        ),
+                    ));
+                }
                 if String::from("KV").eq(&str) { // str == KV
                     return Err(ParserError::new(
                         self.reader.line,
@@ -483,7 +501,11 @@ impl Parser {
             let rdd = self.redundancy.unwrap_or(1);
     
             if self.matrix_count[index] == MAX_NB_MATRIX {
-                let name = &self.var_name.unwrap_or(String::from("KV"));
+                let name = match &self.var_name {
+                    Some(n) => n.clone(),
+                    None => String::from("KV"),
+                };
+
                 return Err(ParserError::new(
                     self.reader.line,
                     self.reader.char_,
@@ -668,6 +690,102 @@ mod tests {
     }
 
     #[test]
+    fn simple_00 () {
+        let mut global_infos = GlobalInfos::new(String::from("test/simple_00.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
+
+        assert_eq!(mtr.len(), 2);
+        assert_eq!(mtr[0], [1, 1, 1]);
+        assert_eq!(mtr[1], [1, 1, 1]);
+    }
+
+    #[test]
+    fn simple_01 () {
+        let mut global_infos = GlobalInfos::new(String::from("test/simple_01.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
+
+        assert_eq!(mtr.len(), 2);
+        assert_eq!(mtr[0], [1, 1, 1, 0]);
+        assert_eq!(mtr[1], [0, 1, 1, 1]);
+    }
+
+    #[test]
+    fn simple_02 () {
+        let mut global_infos = GlobalInfos::new(String::from("test/simple_02.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
+
+        assert_eq!(mtr.len(), 2);
+        assert_eq!(mtr[0], [1, 1, 1, 0]);
+        assert_eq!(mtr[1], [0, 1, 1, 1]);
+    }
+
+    #[test]
+    fn simple_03 () {
+        let mut global_infos = GlobalInfos::new(String::from("test/simple_03.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
+
+        assert_eq!(mtr.len(), 2);
+        assert_eq!(mtr[0], [1, 1, 1, 0]);
+        assert_eq!(mtr[1], [0, 1, 1, 1]);
+    }
+
+    #[test]
+    fn simple_04 () {
+        let mut global_infos = GlobalInfos::new(String::from("test/simple_04.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
+
+        assert_eq!(mtr.len(), 2);
+        assert_eq!(mtr[0], [1, 1, 1, 0]);
+        assert_eq!(mtr[1], [0, 1, 1, 1]);
+    }
+
+    #[test]
+    fn simple_05 () {
+        let mut global_infos = GlobalInfos::new(String::from("test/simple_05.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
+
+        assert_eq!(mtr.len(), 2);
+        assert_eq!(mtr[0], [1, 1, 2, 0]);
+        assert_eq!(mtr[1], [0, 1, 3, 1]);
+    }
+
+    #[test]
+    fn simple_06 () {
+        let mut global_infos = GlobalInfos::new(String::from("test/simple_06.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
+
+        assert_eq!(mtr.len(), 2);
+        assert_eq!(mtr[0], [1, 1, 2, 0, 0]);
+        assert_eq!(mtr[1], [0, 1, 3, 1, 20]);
+    }
+
+    #[test]
+    fn simple_07 () {
+        let mut global_infos = GlobalInfos::new(String::from("test/simple_07.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
+
+        assert_eq!(mtr.len(), 2);
+        assert_eq!(mtr[0], [1, 1, 1]);
+        assert_eq!(mtr[1], [1, 1, 1]);
+    }
+
+    #[test]
     fn process_linearity() {
         let mut global_infos = GlobalInfos::new(String::from("test/valid.eqs"));
         let mut parser_mod = Parser::new(&global_infos);
@@ -694,7 +812,7 @@ mod tests {
         eliminate_linear_variables(parser_mod);
     }
 }
-todo!() //BOUGER LES TEST EN BAS
+//todo!() //BOUGER LES TEST EN BAS
 
 /**
  * We obtain a hash map containing variables xi and S(xi)
@@ -722,7 +840,7 @@ fn get_non_linear_variables(vars_map: HashMap<String, usize>) -> HashMap<String,
         }
     }
     non_linear_variables
-    todo!() //MAKE TEST
+    //todo!() //MAKE TEST
 }
 
 fn sort_non_linear_variables(
@@ -778,7 +896,7 @@ fn sort_non_linear_variables(
         }
     }
     (new_matrix, new_vars_map)
-    todo!() //MAKE TEST
+    //todo!() //MAKE TEST
 }
 
 fn eliminate_linear_variables(p: Parser) -> (Vec<Vec<u32>>, HashMap<String, usize>) {
@@ -786,10 +904,10 @@ fn eliminate_linear_variables(p: Parser) -> (Vec<Vec<u32>>, HashMap<String, usiz
     //non linear variables are like x and S(x), the others are linear
     let non_linear_variables = get_non_linear_variables(p.vars_map.clone());
     sort_non_linear_variables(non_linear_variables, p.matrix, p.vars_map)
-    todo!() //MAKE TEST
+    //todo!() //MAKE TEST
 }
 
-todo!() //MAKE TEST
-todo!() //MAKE TEST
-todo!() //MAKE TEST
-todo!() //MAKE TEST
+//todo!() //MAKE TEST
+//todo!() //MAKE TEST
+//todo!() //MAKE TEST
+//todo!() //MAKE TEST

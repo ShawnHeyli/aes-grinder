@@ -1,10 +1,6 @@
 use std::{collections::HashMap, string};
 
-<<<<<<< HEAD
-
-=======
 use num_integer::Integer;
->>>>>>> 74f9b016cec96eb81c9d07a5e54c9703db5f3cf9
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Matrix {

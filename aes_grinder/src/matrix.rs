@@ -193,6 +193,8 @@ impl Matrix {
         for var in linear_variables {
             self.remove_variable(var);
         }
+
+        //Detruire la ligne vide si retirer la variable met une equation a zero
     }
 
     ///Remove variables from string vec, update the matrix self
@@ -415,30 +417,57 @@ mod tests {
         vars_maps.insert("S(X_0[0,0])".to_string(), 3);
         matrix.set_vars_map(vars_maps);
 
-        let mut expected = ["X_0[3,3]", "X_0[1,1]", "X_0[2,2]", "X_0[0,0]"];
+        let mut expected = vec![
+            "S(X_0[0,0])".to_string(),
+            "S(X_0[1,1])".to_string(),
+            "S(X_0[2,2])".to_string(),
+            "S(X_0[3,3])".to_string(),
+            "X_0[3,3]".to_string(),
+            "X_0[1,1]".to_string(),
+            "X_0[2,2]".to_string(),
+            "X_0[0,0]".to_string(),
+        ];
+        expected.sort();
+        let mut non_linear = matrix.get_non_linear_variable();
+        non_linear.sort();
 
-        assert_eq!(matrix.get_non_linear_variable().sort(), expected.sort());
+        assert_eq!(non_linear, expected);
     }
 
     #[test]
-    fn get_all_variables() {
-        let mut matrix = Matrix::new(6, 7);
+    fn test_drop_linear_variable() {
+        let mut matrix = Matrix::new(3, 3);
         matrix[(0, 0)] = 1;
         matrix[(1, 1)] = 1;
         matrix[(2, 2)] = 1;
-        matrix[(3, 3)] = 2;
-        matrix[(3, 0)] = 1;
-        matrix[(3, 4)] = 1;
-        matrix[(4, 5)] = 1;
-        matrix[(5, 6)] = 1;
         let mut vars_maps: HashMap<String, usize> = HashMap::new();
-        vars_maps.insert("S(X_0[3,3])".to_string(), 6);
-        vars_maps.insert("S(X_0[1,1])".to_string(), 4);
+        vars_maps.insert("S(X_0[1,1])".to_string(), 0);
+        vars_maps.insert("X_0[1,1]".to_string(), 1);
+        vars_maps.insert("W_0[0,0]".to_string(), 2);
+        matrix.set_vars_map(vars_maps);
+
+        print!("{}\n", matrix);
+        matrix.drop_linear_variable();
+        print!("{}", matrix);
+
+        //Detruire la ligne vide si retirer la variable met une equation a zero
+    }
+
+    #[test]
+    fn test_drop_linear_variable2() {
+        let mut matrix = Matrix::new(3, 3);
+        matrix[(0, 0)] = 1;
+        matrix[(1, 1)] = 1;
+        matrix[(2, 2)] = 1;
+        let mut vars_maps: HashMap<String, usize> = HashMap::new();
+        vars_maps.insert("S(X_0[1,1])".to_string(), 1);
+        vars_maps.insert("X_0[1,1]".to_string(), 2);
         vars_maps.insert("W_0[0,0]".to_string(), 0);
         matrix.set_vars_map(vars_maps);
 
-        let mut expected = ["S(X_0[3,3])", "S(X_0[1,1])", "W_0[0,0]"];
-
-        assert_eq!(matrix.get_all_variables().sort(), expected.sort());
+        print!("{}\n", matrix);
+        matrix.drop_linear_variable();
+        print!("{}", matrix);
+        //Detruire la ligne vide si retirer la variable met une equation a zero
     }
 }

@@ -170,7 +170,7 @@ impl Matrix {
         self.clone()
     }
 
-    pub fn number_solutions(&self, vars: HashMap<String, u32>, modulus: usize) -> u32 {
+    pub fn number_solutions(&self, _vars: HashMap<String, u32>, _modulus: usize) -> u32 {
         //Sort the columns by vars and non-vars
 
         //Apply gauss elimination on non-vars columns
@@ -180,7 +180,7 @@ impl Matrix {
         todo!();
     }
 
-    pub fn are_valid_values(&self, vars: &HashMap<String, u32>) -> bool {
+    pub fn are_valid_values(&self, _vars: &HashMap<String, u32>) -> bool {
         //Check in the equations where the vars appears if the values are possible
         todo!();
     }
@@ -230,7 +230,7 @@ impl Matrix {
     }
 
     ///display variable names with their associated columns
-    pub fn display_var_map(&self) -> () {
+    pub fn display_var_map(&self) {
         for (str, col) in &self.vars_map {
             println!("{} {}", str, col);
         }
@@ -472,7 +472,7 @@ mod tests {
         vars_maps.insert("W_0[0,0]".to_string(), 2);
         matrix.set_vars_map(vars_maps);
 
-        print!("{}\n", matrix);
+        println!("{}", matrix);
         matrix.drop_linear_variable();
         print!("{}", matrix);
 
@@ -491,7 +491,7 @@ mod tests {
         vars_maps.insert("W_0[0,0]".to_string(), 0);
         matrix.set_vars_map(vars_maps);
 
-        print!("{}\n", matrix);
+        println!("{}", matrix);
         matrix.drop_linear_variable();
         print!("{}", matrix);
         //Detruire la ligne vide si retirer la variable met une equation a zero

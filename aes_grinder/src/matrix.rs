@@ -176,7 +176,7 @@ impl Matrix {
     }
 
     ///Drop linear variable on the matrice, update the matrix self
-    pub fn drop_linear_variable(&self) {
+    pub fn drop_linear_variable(&mut self) {
         let all_variables = self.get_all_variables();
         let non_linear_variables = self.get_non_linear_variable();
         let linear_variables: Vec<String> = all_variables
@@ -184,17 +184,19 @@ impl Matrix {
             .filter(|x| !non_linear_variables.contains(x))
             .collect();
 
-        self.remove_variable(linear_variables);
+        for var in linear_variables {
+            self.remove_variable(var);
+        }
+        
     }
 
     ///Remove variables from string vec, update the matrix self
-    fn remove_variable(&self, variables: Vec<String>) -> Matrix {
-        for (var, col) in &self.vars_map {
-            if !var.contains('(') {
-                if variables.contains(var) {}
-            }
-        }
-        todo!()
+    fn remove_variable(&mut self, variables: String)  {
+        let col = match self.vars_map.get(&variables) {
+            Some(c) => c,
+            None => panic!("La Variable que l'on veut détruire n'existe pas"),
+        };
+        self.delete_column(*col);
     }
 
     ///Get all variable of the matrix

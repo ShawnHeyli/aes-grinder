@@ -378,9 +378,13 @@ impl Parser {
                 '#' => { // START OF COMMENTARY
                     match self.pass_commentary() {
                         EndOfLineParse::File => {
+                            self.prestore_term(&str, is_number)
+                                .expect("Erro while prestore_term");
                             return Ok(EndOfTermParse::File);
                         }
                         EndOfLineParse::Line => {
+                            self.prestore_term(&str, is_number)
+                                .expect("Erro while prestore_term");
                             return Ok(EndOfTermParse::Line);
                         }
                         EndOfLineParse::Comment => {}
@@ -388,17 +392,17 @@ impl Parser {
                 },
                 '+' => { // END OF TERM
                     self.prestore_term(&str, is_number)
-                        .expect("Error while affecting string");
+                        .expect("Error while prestore_term");
                     return Ok(EndOfTermParse::Term);
                 }
                 '\n' => { // END OF LINE
                     self.prestore_term(&str, is_number)
-                        .expect("Error while affecting string");
+                        .expect("Error while prestore_term");
                     return Ok(EndOfTermParse::Line);
                 }
                 '*' => { // MIDDLE OF TERM
                     self.prestore_term(&str, is_number)
-                        .expect("Error while affecting string");
+                        .expect("Error while prestore_term");
                     str.clear(); // clean string for next
                     is_number = true; // reset for next
                 }
@@ -549,6 +553,8 @@ impl Parser {
             }
 
             let r_es: EndOfTermParse = self.get_term().expect("Error while getting term");
+            let var_name = self.var_name.clone().unwrap_or(String::from("KV"));
+            println!("ndx {} - {} with rdd {}", cmpt_iter, var_name, self.redundancy.unwrap_or(1));
             self.store_term().expect("Error while adding term");
             
             match r_es {

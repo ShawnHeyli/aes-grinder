@@ -56,6 +56,24 @@ impl Matrix {
         }
     }
 
+    pub fn delete_row(&mut self, row: usize) {
+        if row >= self.rows {
+            panic!("Row index out of bounds");
+        }
+
+        // Remove the row
+        let new_data = self
+            .data
+            .iter()
+            .enumerate()
+            .filter(|(i, _)| i / self.cols != row)
+            .map(|(_, x)| *x)
+            .collect();
+
+        self.data = new_data;
+        self.rows -= 1;
+    }
+
     pub fn delete_column(&mut self, column: usize) {
         if column >= self.cols {
             panic!("Column index out of bounds");
@@ -363,6 +381,14 @@ mod tests {
         let mut matrix = Matrix::from(vec![vec![1, 2], vec![3, 4]]);
         matrix.swap_columns(0, 1);
         let expected = Matrix::from(vec![vec![2, 1], vec![4, 3]]);
+        assert_eq!(matrix, expected);
+    }
+
+    #[test]
+    fn delete_row() {
+        let mut matrix = Matrix::from(vec![vec![1, 2], vec![3, 4]]);
+        matrix.delete_row(0);
+        let expected = Matrix::from(vec![vec![3, 4]]);
         assert_eq!(matrix, expected);
     }
 

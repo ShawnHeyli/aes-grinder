@@ -113,12 +113,10 @@ enum EndOfTermParse {
     File,
     Line,
     Term,
-    Comment,
 }
 
 pub struct Parser {
     reader: Reader,
-    filename: String,
     pub vars_map: HashMap<String, usize>,
     section_name: Option<String>,
     matrix: Vec<Vec<u32>>,
@@ -132,7 +130,6 @@ impl Parser {
         let reader = Reader::new(&global_infos.filename_eq_sys);
         Parser {
             reader, //: Reader::new (global_infos.filename_eq_sys.clone()),
-            filename: global_infos.filename_eq_sys.clone(),
             vars_map: HashMap::new(),
             section_name: None,
             matrix: vec![],
@@ -584,7 +581,7 @@ impl Parser {
                     }
                     return Ok(EndOfLineParse::Line);
                 }
-                EndOfTermParse::Term | EndOfTermParse::Comment => {}
+                EndOfTermParse::Term => {}
             }
 
             cmpt_iter += 1;

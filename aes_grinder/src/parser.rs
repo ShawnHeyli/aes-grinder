@@ -103,9 +103,16 @@ impl Display for ParserError {
     }
 }
 
-enum EndOfParse {
+enum EndOfLineParse {
     File,
     Line,
+    Comment,
+}
+
+enum EndOfTermParse {
+    File,
+    Line,
+    Term,
     Comment,
 }
 
@@ -135,73 +142,32 @@ impl Parser {
         }
     }
 
-    fn get_section(&mut self) -> Result<bool, ParserError> {
-        debug!("Parser::get_section");
+    fn conv_str_to_integer(&self, str: String) -> Result<u32, ParserError> {
+        debug!("Parser::conv_str_to_integer");
+        let r_conv: Result<u32, ParseIntError> = str.parse::<u32>();
 
-        let mut oc: Option<char> = self.reader.next_char();
-
-        match oc {
-            Some('-') => {
-                oc = self.reader.next_char();
-
-                match oc {
-                    Some('-') => {
-                        let mut section_name: String = String::new();
-                        let mut is_reach_colon: bool = false;
-                        oc = self.reader.next_char();
-
-                        loop {
-                            match oc {
-                                Some('\n') | None => {
-                                    if !is_reach_colon {
-                                        return Err(ParserError::new(
-                                            self.reader.line,
-                                            self.reader.char_,
-                                            String::from("section name need to finish by colon"),
-                                        ));
-                                    }
-                                    return Ok(true);
-                                }
-                                Some(':') => {
-                                    is_reach_colon = true;
-                                    self.section_name = Some(section_name.clone());
-                                }
-                                Some(c) => {
-                                    if !is_reach_colon {
-                                        section_name.push(c);
-                                    }
-                                }
-                            }
-
-                            oc = self.reader.next_char();
-                        }
-                    }
-                    // No double dashes
-                    Some(_) | None => {
-                        let c = self.reader.next_char().unwrap();
-                        println!("final take {}", c);
-                        Err(ParserError::new(
-                            self.reader.line,
-                            self.reader.char_,
-                            String::from("commentary need to have two dashes"),
-                        ))
-                    }
-                }
-            }
-            // Others than dash
-            Some(c) => {
-                self.reader.block_next(c);
-                Ok(false)
-            }
-            // EndOfFile
-            None => Ok(false),
+        match r_conv {
+            Ok(number) => Ok(number),
+            Err(e) => Err(ParserError::new(
+                self.reader.line,
+                self.reader.char_,
+                format!("Error while parsing integer :: {}", e),
+            )),
         }
     }
 
-    // retur true if end of file
-    fn skip_whitespace(&mut self) -> bool {
-        debug!("Parser::skip_whitespace");
+    /* skip_withespace
+        Arguments   ::
 
+        Description :: Skip all withespaces,
+                       stop before encountering an other character
+
+        Return      :: - true if end of file
+                       - false either
+     */
+    fn skip_whitespaces(&mut self) -> bool {
+        debug!("Parser::skip_whitespaces");
+    
         let mut oc: Option<char> = self.reader.next_char();
         loop {
             match oc {
@@ -218,43 +184,39 @@ impl Parser {
                 }
             }
         }
-
         false
     }
 
-    fn conv_str_to_integer(&self, str: String) -> Result<u32, ParserError> {
-        debug!("Parser::conv_str_to_integer");
-        let r_conv: Result<u32, ParseIntError> = str.parse::<u32>();
+    /* pass_commentary
+        Arguments   ::
 
-        match r_conv {
-            Ok(number) => Ok(number),
-            Err(e) => Err(ParserError::new(
-                self.reader.line,
-                self.reader.char_,
-                format!("Error while parsing integer :: {}", e),
-            )),
-        }
-    }
+        Description ::  Pass commentary,
+                        FORM OF COMMENTARY :
+                        __input__ #<MY_COMMENTARY># __input__
+                        __input__ #<MY_COMMENTARY>END_OF_LINE
+                        START_OF_LINE#<MY_COMMENTARY>END_OF_LINE
 
-    /// return true if end of file
-    fn pass_commentary(&mut self) -> EndOfParse {
+        Return      ::  - true if end of file
+                        - false either
+     */
+    fn pass_commentary(&mut self) -> EndOfLineParse {
         debug!("Parser::pass_commentary");
 
         let mut oc: Option<char> = self.reader.next_char();
 
         loop {
             match oc {
-                Some('\n') => {
-                    return EndOfParse::Line;
+                Some('\n') => { // END OF LINE
+                    return EndOfLineParse::Line;
                 }
-                Some('#') => {
-                    return EndOfParse::Comment;
+                Some('#') => { // END OF COMMENT
+                    return EndOfLineParse::Comment;
                 }
                 Some(_) => {
-                    // Pass others char
+                    // Pass char of commentary
                 }
-                None => {
-                    return EndOfParse::File;
+                None => { // END OF FILE
+                    return EndOfLineParse::File;
                 }
             }
 
@@ -262,17 +224,120 @@ impl Parser {
         }
     }
 
-    fn affect_string(&mut self, str_: &str, is_number: bool) -> Result<(), ParserError> {
-        debug!("Parser::affect_string");
+    /* get_section
+        Arguments   ::
 
-        if !str_.is_empty() {
-            if is_number {
+        Description ::  get the name of section and set Parser struct with.
+                        section is declare like that : 
+                            -- my_section:
+
+        Return      :: Ok with
+                        - true if section found
+                        - false either
+                       OR
+                       Err with parsing error
+     */
+    fn get_section(&mut self) -> Result<bool, ParserError> {
+        debug!("Parser::get_section");
+
+        let mut oc: Option<char> = self.reader.next_char();
+
+        match oc {
+            Some('-') => { // first dash CHECK 
+                oc = self.reader.next_char();
+
+                match oc {
+                    Some('-') => { // second dash CHECK
+                        let mut section_name: String = String::new();
+                        let mut reach_colon: bool = false;
+                        oc = self.reader.next_char();
+
+                        loop {
+                            match oc {
+                                Some('\n') | None => { // end of line | or end of file
+                                    if !reach_colon {
+                                        return Err(ParserError::new(
+                                            self.reader.line,
+                                            self.reader.char_,
+                                            String::from("section name need to finish by colon"),
+                                        ));
+                                    }
+                                    return Ok(true);
+                                }
+                                Some(':') => { // reach colon
+                                    reach_colon = true;
+                                    self.section_name = Some(section_name.clone());
+                                }
+                                Some(c) => { // other characteres
+                                    if !reach_colon {
+                                        section_name.push(c);
+                                    }
+                                }
+                            }
+
+                            oc = self.reader.next_char();
+                        }
+                    }
+                    Some(_) | None => { // NO second dash
+                        Err(ParserError::new(
+                            self.reader.line,
+                            self.reader.char_,
+                            String::from("commentary need to have two dashes"),
+                        ))
+                    }
+                }
+            }
+            Some(c) => { // NO first dash
+                self.reader.block_next(c);
+                Ok(false)
+            }
+            None => { // End of file
+                Ok(false)
+            }
+        }
+    }
+
+    /* prestore_term
+        Arguments   ::  - str : &str to 
+
+        Description ::  Store in self structure, redundancy or name of term, depending
+                        of the contain of str
+
+        Return      :: Ok with
+                        - true if store something into self structure
+                        - false either
+                       OR
+                       Err with parsing error
+     */
+    fn prestore_term (&mut self, str: &str, is_number: bool) -> Result<(), ParserError> {
+        debug!("Parser::prestore_term");
+
+        if !str.is_empty() {
+            if is_number { // BUILD REDUNDANCY OF TERM
+                if !self.redundancy.is_none() {
+                    return Err(ParserError::new(
+                        self.reader.line,
+                        self.reader.char_,
+                        String::from(
+                            "double redundancy in sigle term, FORBIDEN!",
+                        ),
+                    ));
+                }
                 self.redundancy = Some(
-                    self.conv_str_to_integer(str_.to_string())
+                    self.conv_str_to_integer(str.to_string())
                         .expect("Error while parsing int"),
                 );
-            } else {
-                if String::from("KV").eq(&str_) {
+            } else {      // BUILD NAME OF TERM
+                if !self.var_name.is_none() {
+                    return Err(ParserError::new(
+                        self.reader.line,
+                        self.reader.char_,
+                        String::from(
+                            "double var_name in sigle term, FORBIDEN!",
+                        ),
+                    ));
+                }
+                if String::from("KV").eq(&str) { // str == KV
                     return Err(ParserError::new(
                         self.reader.line,
                         self.reader.char_,
@@ -281,86 +346,118 @@ impl Parser {
                         ),
                     ));
                 }
-                self.var_name = Some(str_.to_string());
+                self.var_name = Some(str.to_string());
             }
+
         }
 
         Ok(())
     }
 
-    fn get_term(&mut self) -> Result<EndOfParse, ParserError> {
+    /* get_term
+        Arguments   ::
+
+        Description :: browse term and set
+                            self.redundancy and/or self.var_name
+
+                       term :: + <(Redundancy) * (Var)> +
+                       possible to have redundancy or var or both
+
+        Return      :: Ok with possible EndOfTermParse
+                       Err if an IO error
+     */
+    fn get_term(&mut self) -> Result<EndOfTermParse, ParserError> {
         debug!("Parser::get_term");
 
-        let mut oc: Option<char> = self.reader.next_char();
-
         let mut is_number: bool = true;
-        let mut is_blank_appear: bool = false;
-        let mut str_: String = String::new();
+        let mut blank_appear_inside_str: bool = false;
+        let mut str: String = String::new();
 
-        loop {
-            match oc {
-                Some('#') => match self.pass_commentary() {
-                    EndOfParse::File => {
-                        return Ok(EndOfParse::Line);
+        while let Some (char_) = self.reader.next_char() {
+            match char_ {
+                '#' => { // START OF COMMENTARY
+                    match self.pass_commentary() {
+                        EndOfLineParse::File => {
+                            self.prestore_term(&str, is_number)
+                                .expect("Erro while prestore_term");
+                            return Ok(EndOfTermParse::File);
+                        }
+                        EndOfLineParse::Line => {
+                            self.prestore_term(&str, is_number)
+                                .expect("Erro while prestore_term");
+                            return Ok(EndOfTermParse::Line);
+                        }
+                        EndOfLineParse::Comment => {}
                     }
-                    EndOfParse::Line => {
-                        return Ok(EndOfParse::Line);
-                    }
-                    EndOfParse::Comment => {}
                 },
-                Some('+') => {
-                    self.affect_string(&str_, is_number)
-                        .expect("Error while affecting string");
-                    return Ok(EndOfParse::Line);
+                '+' => { // END OF TERM
+                    self.prestore_term(&str, is_number)
+                        .expect("Error while prestore_term");
+                    return Ok(EndOfTermParse::Term);
                 }
-                Some('\n') => {
-                    self.affect_string(&str_, is_number)
-                        .expect("Error while affecting string");
-                    return Ok(EndOfParse::Line);
+                '\n' => { // END OF LINE
+                    self.prestore_term(&str, is_number)
+                        .expect("Error while prestore_term");
+                    return Ok(EndOfTermParse::Line);
                 }
-                None => {
-                    self.affect_string(&str_, is_number)
-                        .expect("Error while affecting string");
-                    return Ok(EndOfParse::Line);
+                '*' => { // MIDDLE OF TERM
+                    self.prestore_term(&str, is_number)
+                        .expect("Error while prestore_term");
+                    str.clear(); // clean string for next
+                    is_number = true; // reset for next
                 }
-                Some('*') => {
-                    self.affect_string(&str_, is_number)
-                        .expect("Error while affecting string");
-                    str_.clear();
-                }
-                Some(c) => {
+                c => { // BUILD TERM PART - REDUNDANCY OR NAME
                     if c.is_whitespace() {
-                        is_blank_appear = true;
+                        blank_appear_inside_str = true;
                     } else {
-                        if is_blank_appear && !str_.is_empty() {
+                        // CHECK THAT REDUNDANCY AND NAME are separate with *
+                        if !str.is_empty() && blank_appear_inside_str {
                             return Err(ParserError::new(
                                 self.reader.line,
                                 self.reader.char_,
                                 String::from(
-                                    "impossible to have following string without '*' or '+'",
+                                    "impossible to have following strings without '*' or '+'",
                                 ),
                             ));
                         }
 
-                        is_blank_appear = false;
+                        if str.is_empty() {
+                            // unset blank_appear at start of new string
+                            blank_appear_inside_str = false;
+                        }
 
                         if is_number && c.is_alphabetic() {
+                            // set for valid prestore_term call
                             is_number = false;
                         }
-                        str_.push(c);
+
+                        str.push(c);
                     }
                 }
             }
-
-            oc = self.reader.next_char();
         }
+
+        // NO MORE CHARACTER
+        self.prestore_term(&str, is_number)
+            .expect("Error while affecting string");
+
+        return Ok(EndOfTermParse::File);
     }
 
-    fn get_vec_index(&mut self) -> Option<usize> {
+    /* get_vec_ndx
+        Arguments   ::
+
+        Description ::  get the index in which column self.var_name
+                        need to be stored
+
+        Return      :: Some with the valid index
+                       None if nobody in self.var_name and self_redudancy
+     */
+    fn get_vec_ndx(&mut self) -> Option<usize> {
         debug!("Parser::get_vec_index");
 
         // See if variable in term
-        let str_: &str = match &self.var_name {
+        let str: &str = match &self.var_name {
             Some(s) => s,
             None => {
                 // Empty term
@@ -371,15 +468,16 @@ impl Parser {
         };
 
         // Search in map if variable exist
-        match self.vars_map.get(str_) {
+        match self.vars_map.get(str) {
             Some(&index) => Some(index),
-            None => {
+            None => { // Create new index
                 let index = self.vars_map.len();
-                debug!("{} at index {}", str_, index);
+                debug!("{} at index {}", str, index);
 
-                self.vars_map.insert(str_.to_string(), index);
+                self.vars_map.insert(str.to_string(), index);
 
                 let line = self.matrix.len() - 1;
+
                 // extend matrix
                 for i in 0..=line {
                     self.matrix[i].push(0);
@@ -392,27 +490,21 @@ impl Parser {
         }
     }
 
-    fn add_redundancy(&mut self, index: usize) {
-        debug!("Parser::add_redundancy");
+    /* store_term
+        Arguments   ::
 
-        let line = self.matrix.len() - 1;
+        Description :: store the term in matrix
 
-        match self.redundancy {
-            Some(rdd) => {
-                self.matrix[line][index] = rdd;
-            }
-            None => {
-                self.matrix[line][index] = 1;
-            }
-        }
-    }
+        Return      :: Ok
+                       Err either
+     */
+    fn store_term(&mut self) -> Result<(), ParserError> {
+        debug!("Parser::store_term");
 
-    fn add_term(&mut self) -> Result<(), ParserError> {
-        debug!("Parser::add_term");
-
-        if let Some(index) = Parser::get_vec_index(self) {
+        if let Some(index) = Parser::get_vec_ndx(self) {
+            let rdd = self.redundancy.unwrap_or(1);
+    
             if self.matrix_count[index] == MAX_NB_MATRIX {
-                let rdd = self.redundancy.unwrap_or(1);
                 let name = match &self.var_name {
                     Some(n) => n.clone(),
                     None => String::from("KV"),
@@ -425,20 +517,34 @@ impl Parser {
                 ));
             }
 
-            self.add_redundancy(index);
+            let line = self.matrix.len() - 1;
+            self.matrix[line][index] = rdd; // SET REDUNDANCY ON MATRIX
             self.matrix_count[index] += 1;
         }
+
+        // Reset term after storing
+        self.redundancy = None;
+        self.var_name = None;
 
         Ok(())
     }
 
-    fn process_line(&mut self) -> Result<EndOfParse, ParserError> {
-        debug!("Parser::process_line");
-        let mut push_matrix: bool = false;
+    /* parse_line
+        Arguments   ::
+
+        Description ::  parse line of the input file 
+
+        Return      ::  Ok with possible EndOfLineParse
+                        Err either
+     */
+    fn parse_line(&mut self) -> Result<EndOfLineParse, ParserError> {
+        debug!("Parser::parse_line");
+
         let mut cmpt_iter: u8 = 0;
+        self.matrix.push(vec![0; self.vars_map.len()]);
 
         loop {
-            if cmpt_iter == MAX_NB_TERM {
+            if cmpt_iter == MAX_NB_TERM { // CHECK THE MAX NUMBER of term in ONE line
                 return Err(ParserError::new(
                     self.reader.line,
                     self.reader.char_,
@@ -446,38 +552,42 @@ impl Parser {
                 ));
             }
 
-            let r_es: EndOfParse = self.get_term().expect("Error while getting term");
-            if (self.redundancy.is_none() || self.var_name.is_none()) && !push_matrix {
-                self.matrix.push(vec![0; self.vars_map.len()]);
-                debug!(
-                    "Size of matrix :: {} -- size of inner matrix :: {}",
-                    self.matrix.len(),
-                    self.vars_map.len()
-                );
-                push_matrix = true;
-            }
-
-            self.add_term().expect("Error while adding term");
-
-            // Reset term after adding
-            self.redundancy = None;
-            self.var_name = None;
-
+            let r_es: EndOfTermParse = self.get_term().expect("Error while getting term");
+            self.store_term().expect("Error while storing term");
+            
             match r_es {
-                EndOfParse::File => {
-                    return Ok(EndOfParse::File);
+                EndOfTermParse::File => {
+                    if self.matrix[self.matrix.len()-1].is_empty() {
+                        self.matrix.pop();
+                    }
+                    return Ok(EndOfLineParse::File);
                 }
-                EndOfParse::Line => {
-                    return Ok(EndOfParse::Line);
+                EndOfTermParse::Line => {
+                    if self.matrix[self.matrix.len()-1].is_empty() {
+                        self.matrix.pop();
+                    }
+                    return Ok(EndOfLineParse::Line);
                 }
-                EndOfParse::Comment => {}
+                EndOfTermParse::Term |
+                EndOfTermParse::Comment => {}
             }
 
             cmpt_iter += 1;
         }
     }
 
-    // true if there is a system to parse
+    /* parse_system
+        Arguments   ::  - global_infos : &mut GlobalInfos
+
+        Description ::  Open the file given in global_infos and parse it
+                        to build the corresponding section
+                        In other call try to build next section
+                        and again to reach the end of file
+
+        Return      :: Ok with the section matrix
+                       OR
+                       Err with parsing error
+     */
     pub fn parse_system(
         &mut self,
         global_infos: &mut GlobalInfos,
@@ -485,7 +595,7 @@ impl Parser {
         info!("Start parsing system");
         debug!("Parser::parse_system");
 
-        if self.skip_whitespace() {
+        if self.skip_whitespaces() { // PARSE ALL WHITESPACES
             return Err(ParserError::new(
                 self.reader.line,
                 self.reader.char_,
@@ -493,63 +603,674 @@ impl Parser {
             ));
         }
 
-        if self.section_name.is_none() && !self.get_section().expect("Error while getting section")
-        {
+        if self.section_name.is_none() // SEARCH FOR SECTION NAME
+            && !self.get_section().expect("Error while getting section") {
             return Err(ParserError::new(
                 self.reader.line,
                 self.reader.char_,
-                String::from("no section defined! need to defined '--my_section:'"),
+                String::from("No section defined! Need to start with <--my_section:>"),
             ));
         }
-
         let section_name = match &self.section_name {
-            Some(str_) => str_,
+            Some(str) => str,
             None => unreachable!(),
         };
 
         global_infos.sys_name = section_name.to_string();
 
+
         loop {
-            if self.skip_whitespace() {
+            if self.skip_whitespaces() {
                 break;
             }
 
-            if !self.get_section().expect("Error while getting section") {
-                // Stop condition
-                match self.process_line().expect("Error while processing line") {
-                    EndOfParse::File => {
+            if self.get_section() // CATCH NEW SECTION => ENDING OF SYSTEM
+            .expect("Error while getting section") {
+                if self.matrix.is_empty() {
+                    return Err(ParserError::new(
+                        self.reader.line,
+                        self.reader.char_,
+                        String::from("no system to parse!"),
+                    ));
+                }
+
+                info!("Parsing ended with success");
+                debug!("Matrix :: {:?}", self.matrix);
+                return Ok(self.matrix.clone());
+                
+
+            } else { // CONTINUE TO BUILD MATRIX
+                match self.parse_line().expect("Error while processing line") {
+                    EndOfLineParse::File => {
                         break;
                     }
-                    EndOfParse::Line => {}
-                    EndOfParse::Comment => {}
+                    EndOfLineParse::Line |
+                    EndOfLineParse::Comment => {}
                 }
-            } else {
-                if !self.matrix.is_empty() {
-                    info!("Parsing ended with success");
-                    debug!("Matrix :: {:?}", self.matrix);
-                    return Ok(self.matrix.clone());
-                }
-                return Err(ParserError::new(
-                    self.reader.line,
-                    self.reader.char_,
-                    String::from("no system to parse!"),
-                ));
             }
         }
 
-        if !self.matrix.is_empty() {
-            info!("Parsing ended with success");
-            debug!("Matrix :: {:?}", self.matrix);
-            return Ok(self.matrix.clone());
+        // END OF FILE
+        if self.matrix.is_empty() {
+            return Err(ParserError::new(
+                self.reader.line,
+                self.reader.char_,
+                String::from("no system to parse!"),
+            ));
         }
 
-        Err(ParserError::new(
-            self.reader.line,
-            self.reader.char_,
-            String::from("no system to parse!"),
-        ))
+        info!("Parsing ended with success");
+        debug!("Matrix :: {:?}", self.matrix);
+        Ok(self.matrix.clone())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn empty_system() {
+        let mut global_infos = GlobalInfos::new(String::from("test/empty.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        assert!(parser_mod.parse_system(&mut global_infos).is_err());
+    }
+
+    #[test]
+    fn only_commentary() {
+        let mut global_infos = GlobalInfos::new(String::from("test/only_comments.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        assert!(parser_mod.parse_system(&mut global_infos).is_err());
+    }
+
+    #[test]
+    fn valid_system() {
+        let mut global_infos = GlobalInfos::new(String::from("test/valid.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        assert!(parser_mod.parse_system(&mut global_infos).is_ok());
+    }
+
+    #[test]
+    fn simple_00 () {
+        let mut global_infos = GlobalInfos::new(String::from("test/simple_00.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
+
+        assert_eq!(mtr.len(), 2);
+        assert_eq!(mtr[0], [1, 1, 1]);
+        assert_eq!(mtr[1], [1, 1, 1]);
+    }
+
+    #[test]
+    fn simple_01 () {
+        let mut global_infos = GlobalInfos::new(String::from("test/simple_01.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
+
+        assert_eq!(mtr.len(), 2);
+        assert_eq!(mtr[0], [1, 1, 1, 0]);
+        assert_eq!(mtr[1], [0, 1, 1, 1]);
+    }
+
+    #[test]
+    fn simple_02 () {
+        let mut global_infos = GlobalInfos::new(String::from("test/simple_02.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
+
+        assert_eq!(mtr.len(), 2);
+        assert_eq!(mtr[0], [1, 1, 1, 0]);
+        assert_eq!(mtr[1], [0, 1, 1, 1]);
+    }
+
+    #[test]
+    fn simple_03 () {
+        let mut global_infos = GlobalInfos::new(String::from("test/simple_03.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
+
+        assert_eq!(mtr.len(), 2);
+        assert_eq!(mtr[0], [1, 1, 1, 0]);
+        assert_eq!(mtr[1], [0, 1, 1, 1]);
+    }
+
+    #[test]
+    fn simple_04 () {
+        let mut global_infos = GlobalInfos::new(String::from("test/simple_04.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
+
+        assert_eq!(mtr.len(), 2);
+        assert_eq!(mtr[0], [1, 1, 1, 0]);
+        assert_eq!(mtr[1], [0, 1, 1, 1]);
+    }
+
+    #[test]
+    fn simple_05 () {
+        let mut global_infos = GlobalInfos::new(String::from("test/simple_05.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
+
+        assert_eq!(mtr.len(), 2);
+        assert_eq!(mtr[0], [1, 1, 2, 0]);
+        assert_eq!(mtr[1], [0, 1, 3, 1]);
+    }
+
+    #[test]
+    fn simple_06 () {
+        let mut global_infos = GlobalInfos::new(String::from("test/simple_06.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
+
+        assert_eq!(mtr.len(), 2);
+        assert_eq!(mtr[0], [1, 1, 2, 0, 0]);
+        assert_eq!(mtr[1], [0, 1, 3, 1, 20]);
+    }
+
+    #[test]
+    fn simple_07 () {
+        let mut global_infos = GlobalInfos::new(String::from("test/simple_07.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
+
+        assert_eq!(mtr.len(), 2);
+        assert_eq!(mtr[0], [1, 1, 1]);
+        assert_eq!(mtr[1], [1, 1, 1]);
+    }
+
+    #[test]
+    fn complex_00 () {
+        let mut global_infos = GlobalInfos::new(String::from("test/complex_00.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
+
+        /*
+            var_01 * 100 + var_02 + var_03 + var_04 + var_05
+            var_06 * 200 + var_07 + var_08 + var_09 + var_10
+            var_11 * 300 + var_12 + var_13 + var_14 + var_15
+         */
+
+        assert_eq!(mtr.len(), 3);
+        assert_eq!(mtr[0], [100, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+        assert_eq!(mtr[1], [0, 0, 0, 0, 0, 200, 1, 1, 1, 1, 0, 0, 0, 0, 0]);
+        assert_eq!(mtr[2], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 300, 1, 1, 1, 1]);
+    }
+
+    #[test]
+    fn complex_01 () {
+        let mut global_infos = GlobalInfos::new(String::from("test/complex_01.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
+
+        /*
+            var_01 * 100 + var_02 + var_03 + var_04 + var_05 * 0
+            var_06 * 200 + var_07 + var_08 + var_09 + var_10 * 0
+            var_11 * 300 + var_12 + var_13 + var_14 + var_15 * 0
+         */
+
+        assert_eq!(mtr.len(), 3);
+        assert_eq!(mtr[0], [100, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+        assert_eq!(mtr[1], [0, 0, 0, 0, 0, 200, 1, 1, 1, 0, 0, 0, 0, 0, 0]);
+        assert_eq!(mtr[2], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 300, 1, 1, 1, 0]);
+    }
+
+    #[test]
+    fn complex_02 () {
+        let mut global_infos = GlobalInfos::new(String::from("test/complex_02.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
+
+        /*
+            var_start * 0 + var_01 * 0 + var_02 * 0 + var_03 * 0 + var_final * 0
+            var_start * 1 + var_04 * 0 + var_05 * 0 + var_06 * 0 + var_final * 1
+            var_start * 2 + var_07 * 0 + var_08 * 0 + var_09 * 0 + var_final * 2
+            var_start * 3 + var_10 * 0 + var_11 * 0 + var_12 * 0 + var_final * 3
+         */
+
+        assert_eq!(mtr.len(), 4);
+        assert_eq!(mtr[0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+        assert_eq!(mtr[1], [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+        assert_eq!(mtr[2], [2, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+        assert_eq!(mtr[3], [3, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn complex_03 () {
+        let mut global_infos = GlobalInfos::new(String::from("test/complex_03.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
+
+        /* 30 characters by line : ndx 0 -> 29 */
+        assert_eq!(mtr.len(), 64);
+        assert_eq!(mtr[0], [ /* line 3 */
+            1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[1], [ /* line 4 */
+            0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[2], [ /* line 5 */
+            0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[3], [ /* line 6 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[4], [ /* line 7 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[5], [ /* line 8 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[6], [ /* line 9 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[7], [ /* line 10 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[8], [ /* line 11 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[9], [ /* line 12 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[10], [ /* line 13 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[11], [ /* line 14 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[12], [ /* line 15 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[13], [ /* line 16 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[14], [ /* line 17 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[15], [ /* line 18 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[16], [ /* line 19 */
+            1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 3, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[17], [ /* line 20 */
+            0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 3, 1, 1, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[18], [ /* line 21 */
+            0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 3, 1, 1,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[19], [ /* line 22 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            2, 3, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[20], [ /* line 23 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[21], [ /* line 24 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 1, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[22], [ /* line 25 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 1,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[23], [ /* line 26 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            1, 2, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[24], [ /* line 27 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[25], [ /* line 28 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 3, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[26], [ /* line 29 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 3,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[27], [ /* line 30 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            1, 1, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[28], [ /* line 31 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[29], [ /* line 32 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 1, 1, 2, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[30], [ /* line 33 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 1, 1, 2,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[31], [ /* line 34 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            3, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[32], [ /* line 35 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[33], [ /* line 36 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[34], [ /* line 37 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[35], [ /* line 38 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[36], [ /* line 39 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0,0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[37], [ /* line 40 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[38], [ /* line 41 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[39], [ /* line 42 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[40], [ /* line 43 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  1, 1,
+            1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[41], [ /* line 44 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[42], [ /* line 45 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[43], [ /* line 46 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[44], [ /* line 47 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[45], [ /* line 48 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[46], [ /* line 49 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[47], [ /* line 50 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[48], [ /* line 51 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[49], [ /* line 52 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[50], [ /* line 53 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[51], [ /* line 54 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[52], [ /* line 55 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[53], [ /* line 56 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,
+            0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[54], [ /* line 57 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[55], [ /* line 58 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0
+        ]);
+        assert_eq!(mtr[56], [ /* line 59 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[57], [ /* line 60 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[58], [ /* line 61 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[59], [ /* line 62 */
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0
+        ]);
+        assert_eq!(mtr[60], [ /* line 63 */
+            0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[61], [ /* line 64 */
+            0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[62], [ /* line 65 */
+            0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]);
+        assert_eq!(mtr[63], [ /* line 66 */
+            0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1
+        ]);
+    }
+
+    #[test]
+    fn process_linearity() {
+        let mut global_infos = GlobalInfos::new(String::from("test/valid.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        parser_mod
+            .parse_system(&mut global_infos)
+            .expect("No error while parsing system");
+
+        print!(
+            "{:?}",
+            get_non_linear_variables(parser_mod.vars_map.clone())
+        );
+    }
+
+    #[test]
+    fn process_linearity2() {
+        let mut global_infos = GlobalInfos::new(String::from("test/valid.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        parser_mod
+            .parse_system(&mut global_infos)
+            .expect("No error while parsing system");
+
+        eliminate_linear_variables(parser_mod);
+    }
+}
+//todo!() //BOUGER LES TEST EN BAS
 
 /**
  * We obtain a hash map containing variables xi and S(xi)
@@ -577,7 +1298,7 @@ fn get_non_linear_variables(vars_map: HashMap<String, usize>) -> HashMap<String,
         }
     }
     non_linear_variables
-     //MAKE TEST
+    //todo!() //MAKE TEST
 }
 
 fn sort_non_linear_variables(
@@ -633,7 +1354,7 @@ fn sort_non_linear_variables(
         }
     }
     (new_matrix, new_vars_map)
-     //MAKE TEST
+    //todo!() //MAKE TEST
 }
 
 fn eliminate_linear_variables(p: Parser) -> (Vec<Vec<u32>>, HashMap<String, usize>) {
@@ -641,67 +1362,10 @@ fn eliminate_linear_variables(p: Parser) -> (Vec<Vec<u32>>, HashMap<String, usiz
     //non linear variables are like x and S(x), the others are linear
     let non_linear_variables = get_non_linear_variables(p.vars_map.clone());
     sort_non_linear_variables(non_linear_variables, p.matrix, p.vars_map)
-     //MAKE TEST
+    //todo!() //MAKE TEST
 }
 
- //MAKE TEST
- //MAKE TEST
- //MAKE TEST
- //MAKE TEST
-
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn empty_system() {
-        let mut global_infos = GlobalInfos::new(String::from("test/empty.eqs"));
-        let mut parser_mod = Parser::new(&global_infos);
-
-        assert!(parser_mod.parse_system(&mut global_infos).is_err());
-    }
-
-    #[test]
-    fn only_commentary() {
-        let mut global_infos = GlobalInfos::new(String::from("test/only_comments.eqs"));
-        let mut parser_mod = Parser::new(&global_infos);
-
-        assert!(parser_mod.parse_system(&mut global_infos).is_err());
-    }
-
-    #[test]
-    fn valid_system() {
-        let mut global_infos = GlobalInfos::new(String::from("test/valid.eqs"));
-        let mut parser_mod = Parser::new(&global_infos);
-
-        assert!(parser_mod.parse_system(&mut global_infos).is_ok());
-    }
-
-    #[test]
-    fn process_linearity() {
-        let mut global_infos = GlobalInfos::new(String::from("test/valid.eqs"));
-        let mut parser_mod = Parser::new(&global_infos);
-
-        parser_mod
-            .parse_system(&mut global_infos)
-            .expect("No error while parsing system");
-
-        print!(
-            "{:?}",
-            get_non_linear_variables(parser_mod.vars_map.clone())
-        );
-    }
-
-    #[test]
-    fn process_linearity2() {
-        let mut global_infos = GlobalInfos::new(String::from("test/valid.eqs"));
-        let mut parser_mod = Parser::new(&global_infos);
-
-        parser_mod
-            .parse_system(&mut global_infos)
-            .expect("No error while parsing system");
-
-        eliminate_linear_variables(parser_mod);
-    }
-}
+//todo!() //MAKE TEST
+//todo!() //MAKE TEST
+//todo!() //MAKE TEST
+//todo!() //MAKE TEST

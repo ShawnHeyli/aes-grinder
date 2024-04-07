@@ -1,0 +1,66 @@
+--system:
+
+var_00 + var_01 + var_02
+var_03 + var_04 + var_05
+var_06 + var_07 + var_08
+var_09 + var_10 + var_11
+var_12 + var_13 + var_14
+var_15 + var_16 + var_17
+var_18 + var_19 + var_20
+var_21 + var_22 + var_23
+var_24 + var_25 + var_26
+var_27 + var_28 + var_29
+var_30 + var_31 + var_32
+var_33 + var_34 + var_35
+var_36 + var_37 + var_38
+var_39 + var_40 + var_41
+var_42 + var_43 + var_44
+var_45 + var_46 + var_47
+var_00 + 02*var_48 + 03*var_49 + var_50 + var_51
+var_03 + 02*var_52 + 03*var_53 + var_54 + var_55
+var_06 + 02*var_56 + 03*var_57 + var_58 + var_59
+var_09 + 02*var_60 + 03*var_61 + var_62 + var_63
+var_12 + var_48 + 02*var_49 + 03*var_50 + var_51
+var_15 + var_52 + 02*var_53 + 03*var_54 + var_55
+var_18 + var_56 + 02*var_57 + 03*var_58 + var_59
+var_21 + var_60 + 02*var_61 + 03*var_62 + var_63
+var_24 + var_48 + var_49 + 02*var_50 + 03*var_51
+var_27 + var_52 + var_53 + 02*var_54 + 03*var_55
+var_30 + var_56 + var_57 + 02*var_58 + 03*var_59
+var_33 + var_60 + var_61 + 02*var_62 + 03*var_63
+var_36 + 03*var_48 + var_49 + var_50 + 02*var_51
+var_39 + 03*var_52 + var_53 + var_54 + 02*var_55
+var_42 + 03*var_56 + var_57 + var_58 + 02*var_59
+var_45 + 03*var_60 + var_61 + var_62 + 02*var_63
+var_64 + var_65 + var_66
+var_67 + var_68 + var_69
+var_70 + var_71 + var_72
+var_73 + var_74 + var_75
+var_76 + var_77 + var_78
+var_79 + var_80 + var_81
+var_82 + var_83 + var_84
+var_85 + var_86 + var_87
+var_88 + var_89 + var_90
+var_91 + var_92 + var_93
+var_94 + var_95 + var_96
+var_97 + var_98 + var_99
+var_100 + var_101 + var_102
+var_103 + var_104 + var_105
+var_106 + var_107 + var_108
+var_109 + var_110 + var_111
+var_110 + var_43 + var_46
+var_107 + var_40 + var_43
+var_104 + var_37 + var_40
+var_112 + var_101 + var_37
+var_98 + var_31 + var_34
+var_95 + var_28 + var_31
+var_92 + var_25 + var_28
+var_89 + var_113 + var_25
+var_86 + var_19 + var_22
+var_83 + var_16 + var_19
+var_80 + var_13 + var_16
+var_77 + var_114 + var_13
+var_74 + var_07 + var_10
+var_71 + var_04 + var_07
+var_68 + var_01 + var_04
+01 + var_65 + var_115 + var_01

@@ -1,0 +1,5 @@
+-- section:
+
+var_01 * 100 + var_02 + var_03 + var_04 + var_05
+var_06 * 200 + var_07 + var_08 + var_09 + var_10
+var_11 * 300 + var_12 + var_13 + var_14 + var_15

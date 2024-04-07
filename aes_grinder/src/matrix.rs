@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
-use::num_integer::Integer;
+use num_integer::Integer;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Matrix {
-    vars_map: HashMap<String, usize>,
+    vars_map: HashMap<String, usize>, // Map the variable name to the column index
     rows: usize,
     cols: usize,
     data: Vec<usize>,
@@ -20,16 +20,61 @@ impl Matrix {
         }
     }
 
-    pub fn columns(&self) -> Vec<Vec<usize>> {
-        let mut columns = vec![vec![0; self.rows]; self.cols];
-
-        for i in 0..self.rows {
-            for j in 0..self.cols {
-                columns[j][i] = self.data[i * self.cols + j];
-            }
+    // Give a Vec of the row
+    pub fn get_row(&self, row: usize) -> Vec<usize> {
+        if row >= self.rows {
+            panic!("Row index out of bounds");
         }
 
-        columns
+        let mut r = Vec::new();
+        for i in 0..self.cols {
+            r.push(self.data[row * self.cols + i]);
+        }
+        r
+    }
+
+    // Give a Vec of the column
+    pub fn get_column(&self, column: usize) -> Vec<usize> {
+        if column >= self.cols {
+            panic!("Column index out of bounds");
+        }
+
+        let mut col = Vec::new();
+        for i in 0..self.rows {
+            col.push(self.data[i * self.cols + column]);
+        }
+        col
+    }
+
+    pub fn swap_columns(&mut self, col1: usize, col2: usize) {
+        if col1 >= self.cols || col2 >= self.cols {
+            panic!("Column index out of bounds");
+        }
+
+        for i in 0..self.rows {
+            self.data.swap(i * self.cols + col1, i * self.cols + col2);
+        }
+    }
+
+    pub fn delete_column(&mut self, column: usize) {
+        if column >= self.cols {
+            panic!("Column index out of bounds");
+        }
+
+        // update the vars_map
+        self.vars_map.retain(|_, v| *v != column);
+
+        // Remove the column
+        let new_data = self
+            .data
+            .iter()
+            .enumerate()
+            .filter(|(i, _)| i % self.cols != column)
+            .map(|(_, x)| *x)
+            .collect();
+
+        self.data = new_data;
+        self.cols -= 1;
     }
 
     pub fn gaussian_elimination_inv(&mut self, modulus: usize) -> Matrix {
@@ -44,7 +89,8 @@ impl Matrix {
                 }
             }
             for i in 0..self.cols {
-                if self[(max_row, i)] != 0 && i == max_row { //This is the pivot
+                if self[(max_row, i)] != 0 && i == max_row {
+                    //This is the pivot
                     //Set the pivot to one by multiplying the inverse of it in the field
                     //Use bigInt extended gcd to find the inverse
                     let pivot = self[(max_row, j)];
@@ -80,7 +126,6 @@ impl Matrix {
                     break;
                 }
             }
-
         }
         //Backward substitution
         for j in (0..self.cols).rev() {
@@ -103,11 +148,11 @@ impl Matrix {
 
     pub fn number_solutions(&self, vars: HashMap<String, u32>, modulus: usize) -> u32 {
         //Sort the columns by vars and non-vars
-        
+
         //Apply gauss elimination on non-vars columns
 
         //Count the number of equations below
-        
+
         todo!();
     }
 
@@ -119,11 +164,17 @@ impl Matrix {
 
 impl std::fmt::Display for Matrix {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        // Print the vars_map
+        for (k, v) in &self.vars_map {
+            writeln!(f, "{}: {}", k, v)?;
+        }
+
+        // Print the matrix
         for i in 0..self.rows {
             for j in 0..self.cols {
                 write!(f, "{} ", self.data[i * self.cols + j])?;
             }
-            write!(f, "\n")?;
+            writeln!(f)?;
         }
         Ok(())
     }
@@ -229,6 +280,47 @@ mod tests {
         true_matrix[(1, 1)] = 4;
 
         assert_eq!(true_matrix[(1, 1)], false_matrix[1][1]);
+    }
+
+    #[test]
+    fn get_row() {
+        let matrix = Matrix::from(vec![vec![1, 2], vec![3, 4]]);
+        let row = matrix.get_row(0);
+        assert_eq!(row, vec![1, 2]);
+    }
+
+    #[test]
+    fn get_column() {
+        let matrix = Matrix::from(vec![vec![1, 2], vec![3, 4]]);
+        let column = matrix.get_column(0);
+        assert_eq!(column, vec![1, 3]);
+    }
+
+    #[test]
+    fn swap_columns() {
+        let mut matrix = Matrix::from(vec![vec![1, 2], vec![3, 4]]);
+        matrix.swap_columns(0, 1);
+        let expected = Matrix::from(vec![vec![2, 1], vec![4, 3]]);
+        assert_eq!(matrix, expected);
+    }
+
+    #[test]
+    fn delete_column_simple() {
+        let mut matrix = Matrix::from(vec![vec![1, 2], vec![3, 4]]);
+        matrix.delete_column(0);
+        let expected = Matrix::from(vec![vec![2], vec![4]]);
+        assert_eq!(matrix, expected);
+    }
+
+    #[test]
+    fn delete_column_vars_map() {
+        let mut matrix = Matrix::from(vec![vec![0, 1], vec![1, 0]]);
+        matrix.vars_map.insert("a".to_string(), 0);
+        matrix.vars_map.insert("b".to_string(), 1);
+        matrix.delete_column(0);
+        let mut expected_vars_map = HashMap::new();
+        expected_vars_map.insert("b".to_string(), 1);
+        assert_eq!(matrix.vars_map, expected_vars_map);
     }
 
     #[test]

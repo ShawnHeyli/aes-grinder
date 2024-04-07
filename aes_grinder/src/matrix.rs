@@ -193,11 +193,10 @@ impl Matrix {
         for var in linear_variables {
             self.remove_variable(var);
         }
-        
     }
 
     ///Remove variables from string vec, update the matrix self
-    fn remove_variable(&mut self, variables: String)  {
+    fn remove_variable(&mut self, variables: String) {
         let col = match self.vars_map.get(&variables) {
             Some(c) => c,
             None => panic!("La Variable que l'on veut détruire n'existe pas"),
@@ -393,5 +392,53 @@ mod tests {
         let result = matrix.gaussian_elimination_inv(5);
         let expected = Matrix::from(vec![vec![1, 0], vec![0, 1]]);
         assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_non_get_linear_variable() {
+        let mut matrix = Matrix::new(6, 7);
+        matrix[(0, 0)] = 1;
+        matrix[(1, 1)] = 1;
+        matrix[(2, 2)] = 1;
+        matrix[(3, 3)] = 2;
+        matrix[(3, 0)] = 1;
+        matrix[(3, 4)] = 1;
+        matrix[(4, 5)] = 1;
+        matrix[(5, 6)] = 1;
+        let mut vars_maps: HashMap<String, usize> = HashMap::new();
+        vars_maps.insert("S(X_0[3,3])".to_string(), 6);
+        vars_maps.insert("S(X_0[1,1])".to_string(), 4);
+        vars_maps.insert("W_0[0,0]".to_string(), 0);
+        vars_maps.insert("S(X_0[2,2])".to_string(), 5);
+        vars_maps.insert("K_1[0,0]".to_string(), 1);
+        vars_maps.insert("C[0,0]".to_string(), 2);
+        vars_maps.insert("S(X_0[0,0])".to_string(), 3);
+        matrix.set_vars_map(vars_maps);
+
+        let mut expected = ["X_0[3,3]", "X_0[1,1]", "X_0[2,2]", "X_0[0,0]"];
+
+        assert_eq!(matrix.get_non_linear_variable().sort(), expected.sort());
+    }
+
+    #[test]
+    fn get_all_variables() {
+        let mut matrix = Matrix::new(6, 7);
+        matrix[(0, 0)] = 1;
+        matrix[(1, 1)] = 1;
+        matrix[(2, 2)] = 1;
+        matrix[(3, 3)] = 2;
+        matrix[(3, 0)] = 1;
+        matrix[(3, 4)] = 1;
+        matrix[(4, 5)] = 1;
+        matrix[(5, 6)] = 1;
+        let mut vars_maps: HashMap<String, usize> = HashMap::new();
+        vars_maps.insert("S(X_0[3,3])".to_string(), 6);
+        vars_maps.insert("S(X_0[1,1])".to_string(), 4);
+        vars_maps.insert("W_0[0,0]".to_string(), 0);
+        matrix.set_vars_map(vars_maps);
+
+        let mut expected = ["S(X_0[3,3])", "S(X_0[1,1])", "W_0[0,0]"];
+
+        assert_eq!(matrix.get_all_variables().sort(), expected.sort());
     }
 }

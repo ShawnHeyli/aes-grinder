@@ -1,6 +1,6 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, string};
 
-use::num_integer::Integer;
+use ::num_integer::Integer;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Matrix {
@@ -44,7 +44,8 @@ impl Matrix {
                 }
             }
             for i in 0..self.cols {
-                if self[(max_row, i)] != 0 && i == max_row { //This is the pivot
+                if self[(max_row, i)] != 0 && i == max_row {
+                    //This is the pivot
                     //Set the pivot to one by multiplying the inverse of it in the field
                     //Use bigInt extended gcd to find the inverse
                     let pivot = self[(max_row, j)];
@@ -80,7 +81,6 @@ impl Matrix {
                     break;
                 }
             }
-
         }
         //Backward substitution
         for j in (0..self.cols).rev() {
@@ -103,17 +103,70 @@ impl Matrix {
 
     pub fn number_solutions(&self, vars: HashMap<String, u32>, modulus: usize) -> u32 {
         //Sort the columns by vars and non-vars
-        
+
         //Apply gauss elimination on non-vars columns
 
         //Count the number of equations below
-        
+
         todo!();
     }
 
     pub fn are_valid_values(&self, vars: &HashMap<String, u32>) -> bool {
         //Check in the equations where the vars appears if the values are possible
         todo!();
+    }
+
+    ///Get non linear variable, return variables as a string vector
+    pub fn get_non_linear_variable(&self) -> Vec<String> {
+        let mut non_linear_variables: Vec<String> = vec![];
+        for (var, _) in &self.vars_map {
+            if var.contains('(') {
+                let true_var = var.clone();
+                let var: Vec<_> = var.split(['(', ')']).collect();
+                non_linear_variables.push(true_var);
+                non_linear_variables.push(var[1].to_string());
+            }
+        }
+        non_linear_variables
+    }
+
+    ///Drop linear variable on the matrice, update the matrix self
+    pub fn drop_linear_variable(&self) {
+        let all_variables = self.get_all_variables();
+        let non_linear_variables = self.get_non_linear_variable();
+        let linear_variables: Vec<String> = all_variables
+            .into_iter()
+            .filter(|x| !non_linear_variables.contains(x))
+            .collect();
+
+        self.remove_variable(linear_variables);
+    }
+
+    ///Remove variables from string vec, update the matrix self
+    fn remove_variable(&self, variables: Vec<String>) -> Matrix {
+        for (var, col) in &self.vars_map {
+            if !var.contains('(') {
+                if variables.contains(var) {}
+            }
+        }
+        todo!()
+    }
+
+    ///Get all variable of the matrix
+    fn get_all_variables(&self) -> Vec<String> {
+        self.vars_map.keys().cloned().collect()
+    }
+
+    ///display variable names with their associated columns
+    pub fn display_var_map(&self) -> () {
+        for (str, col) in &self.vars_map {
+            println!("{} {}", str, col);
+        }
+    }
+
+    ///Set vars map (we need to use a fonction because parser issue)
+    pub fn set_vars_map(&mut self, vars_maps: HashMap<String, usize>) {
+        self.vars_map = vars_maps;
     }
 }
 
@@ -237,5 +290,54 @@ mod tests {
         let result = matrix.gaussian_elimination_inv(5);
         let expected = Matrix::from(vec![vec![1, 0], vec![0, 1]]);
         assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_non_get_linear_variable() {
+        let mut matrix = Matrix::new(6, 7);
+        matrix[(0, 0)] = 1;
+        matrix[(1, 1)] = 1;
+        matrix[(2, 2)] = 1;
+        matrix[(3, 3)] = 2;
+        matrix[(3, 0)] = 1;
+        matrix[(3, 4)] = 1;
+        matrix[(4, 5)] = 1;
+        matrix[(5, 6)] = 1;
+        let mut vars_maps: HashMap<String, usize> = HashMap::new();
+        vars_maps.insert("S(X_0[3,3])".to_string(), 6);
+        vars_maps.insert("S(X_0[1,1])".to_string(), 4);
+        vars_maps.insert("W_0[0,0]".to_string(), 0);
+        vars_maps.insert("S(X_0[2,2])".to_string(), 5);
+        vars_maps.insert("K_1[0,0]".to_string(), 1);
+        vars_maps.insert("C[0,0]".to_string(), 2);
+        vars_maps.insert("S(X_0[0,0])".to_string(), 3);
+        matrix.set_vars_map(vars_maps);
+
+        let mut expected = vec!["X_0[3,3]", "X_0[1,1]", "X_0[2,2]", "X_0[0,0]"];
+
+        assert_eq!(matrix.get_non_linear_variable().sort(), expected.sort());
+    }
+
+
+    #[test]
+    fn get_all_variables() {
+        let mut matrix = Matrix::new(6, 7);
+        matrix[(0, 0)] = 1;
+        matrix[(1, 1)] = 1;
+        matrix[(2, 2)] = 1;
+        matrix[(3, 3)] = 2;
+        matrix[(3, 0)] = 1;
+        matrix[(3, 4)] = 1;
+        matrix[(4, 5)] = 1;
+        matrix[(5, 6)] = 1;
+        let mut vars_maps: HashMap<String, usize> = HashMap::new();
+        vars_maps.insert("S(X_0[3,3])".to_string(), 6);
+        vars_maps.insert("S(X_0[1,1])".to_string(), 4);
+        vars_maps.insert("W_0[0,0]".to_string(), 0);
+        matrix.set_vars_map(vars_maps);
+
+        let mut expected = vec!["S(X_0[3,3])", "S(X_0[1,1])", "W_0[0,0]"];
+
+        assert_eq!(matrix.get_all_variables().sort(), expected.sort());
     }
 }

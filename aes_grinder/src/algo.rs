@@ -19,7 +19,7 @@ pub struct Algo {
 
 ///Implemtation de l'ordre partiel pour comparer deux algo entre eux
 impl PartialOrd for Algo {
-    todo!()//Verifier la comparaison inferieur + equal
+    //TODO Verifier la comparaison inferieur + equal
     // faire des test sur des égalité
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         if other.vars_val.keys().collect::<HashSet<_>>().is_subset(&self.vars_val.keys().collect::<HashSet<_>>()) {

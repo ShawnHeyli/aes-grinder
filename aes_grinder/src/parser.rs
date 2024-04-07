@@ -112,7 +112,7 @@ enum EndOfParse {
 pub struct Parser {
     reader: Reader,
     filename: String,
-    vars_map: HashMap<String, usize>,
+    pub vars_map: HashMap<String, usize>,
     section_name: Option<String>,
     matrix: Vec<Vec<u32>>,
     matrix_count: Vec<u32>,
@@ -551,63 +551,6 @@ impl Parser {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn empty_system() {
-        let mut global_infos = GlobalInfos::new(String::from("test/empty.eqs"));
-        let mut parser_mod = Parser::new(&global_infos);
-
-        assert!(parser_mod.parse_system(&mut global_infos).is_err());
-    }
-
-    #[test]
-    fn only_commentary() {
-        let mut global_infos = GlobalInfos::new(String::from("test/only_comments.eqs"));
-        let mut parser_mod = Parser::new(&global_infos);
-
-        assert!(parser_mod.parse_system(&mut global_infos).is_err());
-    }
-
-    #[test]
-    fn valid_system() {
-        let mut global_infos = GlobalInfos::new(String::from("test/valid.eqs"));
-        let mut parser_mod = Parser::new(&global_infos);
-
-        assert!(parser_mod.parse_system(&mut global_infos).is_ok());
-    }
-
-    #[test]
-    fn process_linearity() {
-        let mut global_infos = GlobalInfos::new(String::from("test/valid.eqs"));
-        let mut parser_mod = Parser::new(&global_infos);
-
-        parser_mod
-            .parse_system(&mut global_infos)
-            .expect("No error while parsing system");
-
-        print!(
-            "{:?}",
-            get_non_linear_variables(parser_mod.vars_map.clone())
-        );
-    }
-
-    #[test]
-    fn process_linearity2() {
-        let mut global_infos = GlobalInfos::new(String::from("test/valid.eqs"));
-        let mut parser_mod = Parser::new(&global_infos);
-
-        parser_mod
-            .parse_system(&mut global_infos)
-            .expect("No error while parsing system");
-
-        eliminate_linear_variables(parser_mod);
-    }
-}
-todo!() //BOUGER LES TEST EN BAS
-
 /**
  * We obtain a hash map containing variables xi and S(xi)
  */
@@ -634,7 +577,7 @@ fn get_non_linear_variables(vars_map: HashMap<String, usize>) -> HashMap<String,
         }
     }
     non_linear_variables
-    todo!() //MAKE TEST
+     //MAKE TEST
 }
 
 fn sort_non_linear_variables(
@@ -690,7 +633,7 @@ fn sort_non_linear_variables(
         }
     }
     (new_matrix, new_vars_map)
-    todo!() //MAKE TEST
+     //MAKE TEST
 }
 
 fn eliminate_linear_variables(p: Parser) -> (Vec<Vec<u32>>, HashMap<String, usize>) {
@@ -698,10 +641,67 @@ fn eliminate_linear_variables(p: Parser) -> (Vec<Vec<u32>>, HashMap<String, usiz
     //non linear variables are like x and S(x), the others are linear
     let non_linear_variables = get_non_linear_variables(p.vars_map.clone());
     sort_non_linear_variables(non_linear_variables, p.matrix, p.vars_map)
-    todo!() //MAKE TEST
+     //MAKE TEST
 }
 
-todo!() //MAKE TEST
-todo!() //MAKE TEST
-todo!() //MAKE TEST
-todo!() //MAKE TEST
+ //MAKE TEST
+ //MAKE TEST
+ //MAKE TEST
+ //MAKE TEST
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn empty_system() {
+        let mut global_infos = GlobalInfos::new(String::from("test/empty.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        assert!(parser_mod.parse_system(&mut global_infos).is_err());
+    }
+
+    #[test]
+    fn only_commentary() {
+        let mut global_infos = GlobalInfos::new(String::from("test/only_comments.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        assert!(parser_mod.parse_system(&mut global_infos).is_err());
+    }
+
+    #[test]
+    fn valid_system() {
+        let mut global_infos = GlobalInfos::new(String::from("test/valid.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        assert!(parser_mod.parse_system(&mut global_infos).is_ok());
+    }
+
+    #[test]
+    fn process_linearity() {
+        let mut global_infos = GlobalInfos::new(String::from("test/valid.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        parser_mod
+            .parse_system(&mut global_infos)
+            .expect("No error while parsing system");
+
+        print!(
+            "{:?}",
+            get_non_linear_variables(parser_mod.vars_map.clone())
+        );
+    }
+
+    #[test]
+    fn process_linearity2() {
+        let mut global_infos = GlobalInfos::new(String::from("test/valid.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        parser_mod
+            .parse_system(&mut global_infos)
+            .expect("No error while parsing system");
+
+        eliminate_linear_variables(parser_mod);
+    }
+}

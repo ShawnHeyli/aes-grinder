@@ -688,7 +688,9 @@ mod tests {
 
     #[test]
     fn empty_system() {
-        let mut global_infos = GlobalInfos::new(String::from("test/empty.eqs"));
+        let mut global_infos = GlobalInfos::new(
+            String::from("test/empty.eqs")
+        );
         let mut parser_mod = Parser::new(&global_infos);
 
         assert!(parser_mod.parse_system(&mut global_infos).is_err());
@@ -696,7 +698,9 @@ mod tests {
 
     #[test]
     fn only_commentary() {
-        let mut global_infos = GlobalInfos::new(String::from("test/only_comments.eqs"));
+        let mut global_infos = GlobalInfos::new(
+            String::from("test/only_comments.eqs")
+        );
         let mut parser_mod = Parser::new(&global_infos);
 
         assert!(parser_mod.parse_system(&mut global_infos).is_err());
@@ -704,7 +708,9 @@ mod tests {
 
     #[test]
     fn valid_system() {
-        let mut global_infos = GlobalInfos::new(String::from("test/valid.eqs"));
+        let mut global_infos = GlobalInfos::new(
+            String::from("test/valid.eqs")
+        );
         let mut parser_mod = Parser::new(&global_infos);
 
         assert!(parser_mod.parse_system(&mut global_infos).is_ok());
@@ -712,95 +718,121 @@ mod tests {
 
     #[test]
     fn simple_00() {
-        let mut global_infos = GlobalInfos::new(String::from("test/simple_00.eqs"));
+        let mut global_infos = GlobalInfos::new(
+            String::from("test/simple_00.eqs")
+        );
         let mut parser_mod = Parser::new(&global_infos);
 
         let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
 
+        assert_eq!(mtr.get_row_number(), 2);
         assert_eq!(mtr.get_row(0), [1.into(), 1.into(), 1.into()]);
         assert_eq!(mtr.get_row(1), [1.into(), 1.into(), 1.into()]);
     }
 
     #[test]
     fn simple_01() {
-        let mut global_infos = GlobalInfos::new(String::from("test/simple_01.eqs"));
+        let mut global_infos = GlobalInfos::new(
+            String::from("test/simple_01.eqs")
+        );
         let mut parser_mod = Parser::new(&global_infos);
 
         let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
 
+        assert_eq!(mtr.get_row_number(), 2);
         assert_eq!(mtr.get_row(0), [1.into(), 1.into(), 1.into(), 0.into()]);
         assert_eq!(mtr.get_row(1), [0.into(), 1.into(), 1.into(), 1.into()]);
     }
 
     #[test]
     fn simple_02() {
-        let mut global_infos = GlobalInfos::new(String::from("test/simple_02.eqs"));
+        let mut global_infos = GlobalInfos::new(
+            String::from("test/simple_02.eqs")
+        );
         let mut parser_mod = Parser::new(&global_infos);
 
         let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
 
+        assert_eq!(mtr.get_row_number(), 2);
         assert_eq!(mtr.get_row(0), [1.into(), 1.into(), 1.into(), 0.into()]);
         assert_eq!(mtr.get_row(1), [0.into(), 1.into(), 1.into(), 1.into()]);
     }
-/* 
+ 
     #[test]
     fn simple_03() {
-        let mut global_infos = GlobalInfos::new(String::from("test/simple_03.eqs"));
+        let mut global_infos = GlobalInfos::new(
+            String::from("test/simple_03.eqs")
+        );
         let mut parser_mod = Parser::new(&global_infos);
 
         let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
 
-        assert_eq!(mtr[0], [1, 1, 1, 0]);
-        assert_eq!(mtr[1], [0, 1, 1, 1]);
+        assert_eq!(mtr.get_row_number(), 2);
+        assert_eq!(mtr.get_row(0), [1.into(), 1.into(), 1.into(), 0.into()]);
+        assert_eq!(mtr.get_row(1), [0.into(), 1.into(), 1.into(), 1.into()]);
     }
 
     #[test]
     fn simple_04() {
-        let mut global_infos = GlobalInfos::new(String::from("test/simple_04.eqs"));
+        let mut global_infos = GlobalInfos::new(
+            String::from("test/simple_04.eqs")
+        );
         let mut parser_mod = Parser::new(&global_infos);
 
         let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
 
-        assert_eq!(mtr[0], [1, 1, 1, 0]);
-        assert_eq!(mtr[1], [0, 1, 1, 1]);
+        assert_eq!(mtr.get_row_number(), 2);
+        assert_eq!(mtr.get_row(0), [1.into(), 1.into(), 1.into(), 0.into()]);
+        assert_eq!(mtr.get_row(1), [0.into(), 1.into(), 1.into(), 1.into()]);
     }
 
     #[test]
     fn simple_05() {
-        let mut global_infos = GlobalInfos::new(String::from("test/simple_05.eqs"));
+        let mut global_infos = GlobalInfos::new(
+            String::from("test/simple_05.eqs")
+        );
         let mut parser_mod = Parser::new(&global_infos);
 
         let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
 
-        assert_eq!(mtr[0], [1, 1, 2, 0]);
-        assert_eq!(mtr[1], [0, 1, 3, 1]);
+        assert_eq!(mtr.get_row_number(), 2);
+        assert_eq!(mtr.get_row(0), [1.into(), 1.into(), 2.into(), 0.into()]);
+        assert_eq!(mtr.get_row(1), [0.into(), 1.into(), 3.into(), 1.into()]);
     }
 
     #[test]
     fn simple_06() {
-        let mut global_infos = GlobalInfos::new(String::from("test/simple_06.eqs"));
+        let mut global_infos = GlobalInfos::new(
+            String::from("test/simple_06.eqs")
+        );
         let mut parser_mod = Parser::new(&global_infos);
 
         let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
 
-        assert_eq!(mtr[0], [1, 1, 2, 0, 0]);
-        assert_eq!(mtr[1], [0, 1, 3, 1, 20]);
+        assert_eq!(mtr.get_row_number(), 2);
+        assert_eq!(mtr.get_row(0), [1.into(), 1.into(), 2.into(), 0.into(), 0.into()]);
+        assert_eq!(mtr.get_row(1), [0.into(), 1.into(), 3.into(), 1.into(), 20.into()]);
     }
 
     #[test]
     fn simple_07() {
-        let mut global_infos = GlobalInfos::new(String::from("test/simple_07.eqs"));
+        let mut global_infos = GlobalInfos::new(
+            String::from("test/simple_07.eqs")
+        );
         let mut parser_mod = Parser::new(&global_infos);
 
         let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
 
-        assert_eq!(mtr[0], [1, 1, 1]);
-        assert_eq!(mtr[1], [1, 1, 1]);
+        assert_eq!(mtr.get_row_number(), 2);
+        assert_eq!(mtr.get_row(0), [1.into(), 1.into(), 1.into()]);
+        assert_eq!(mtr.get_row(1), [1.into(), 1.into(), 1.into()]);
     }
 
     #[test]
     fn complex_00() {
-        let mut global_infos = GlobalInfos::new(String::from("test/complex_00.eqs"));
+        let mut global_infos = GlobalInfos::new(
+            String::from("test/complex_00.eqs")
+        );
         let mut parser_mod = Parser::new(&global_infos);
 
         let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
@@ -811,15 +843,20 @@ mod tests {
            var_11 * 300 + var_12 + var_13 + var_14 + var_15
         */
 
-        assert_eq!(mtr.len(), 3);
-        assert_eq!(mtr[0], [100, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
-        assert_eq!(mtr[1], [0, 0, 0, 0, 0, 200, 1, 1, 1, 1, 0, 0, 0, 0, 0]);
-        assert_eq!(mtr[2], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 300, 1, 1, 1, 1]);
+        assert_eq!(mtr.get_row_number(), 3);
+        assert_eq!(mtr.get_row(0), [100.into(), 1.into(), 1.into(), 1.into(), 1.into(), 0.into(),
+            0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into()]);
+        assert_eq!(mtr.get_row(1), [0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 200.into(),
+            1.into(), 1.into(), 1.into(), 1.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into()]);
+        assert_eq!(mtr.get_row(2), [0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(),
+            0.into(), 0.into(), 0.into(), 0.into(), 255.into(), 1.into(), 1.into(), 1.into(), 1.into()]);
     }
 
     #[test]
     fn complex_01() {
-        let mut global_infos = GlobalInfos::new(String::from("test/complex_01.eqs"));
+        let mut global_infos = GlobalInfos::new(
+            String::from("test/complex_01.eqs")
+        );
         let mut parser_mod = Parser::new(&global_infos);
 
         let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
@@ -830,15 +867,20 @@ mod tests {
            var_11 * 300 + var_12 + var_13 + var_14 + var_15 * 0
         */
 
-        assert_eq!(mtr.len(), 3);
-        assert_eq!(mtr[0], [100, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
-        assert_eq!(mtr[1], [0, 0, 0, 0, 0, 200, 1, 1, 1, 0, 0, 0, 0, 0, 0]);
-        assert_eq!(mtr[2], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 300, 1, 1, 1, 0]);
+        assert_eq!(mtr.get_row_number(), 3);
+        assert_eq!(mtr.get_row(0), [100.into(), 1.into(), 1.into(), 1.into(), 0.into(), 0.into(),
+            0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into()]);
+        assert_eq!(mtr.get_row(1), [0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 200.into(),
+            1.into(), 1.into(), 1.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into()]);
+        assert_eq!(mtr.get_row(2), [0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(),
+             0.into(), 0.into(), 0.into(), 255.into(), 1.into(), 1.into(), 1.into(), 0.into()]);
     }
 
     #[test]
     fn complex_02() {
-        let mut global_infos = GlobalInfos::new(String::from("test/complex_02.eqs"));
+        let mut global_infos = GlobalInfos::new(
+            String::from("test/complex_02.eqs"
+        ));
         let mut parser_mod = Parser::new(&global_infos);
 
         let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
@@ -850,10 +892,675 @@ mod tests {
            var_start * 3 + var_10 * 0 + var_11 * 0 + var_12 * 0 + var_final * 3
         */
 
-        assert_eq!(mtr.len(), 4);
-        assert_eq!(mtr[0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
-        assert_eq!(mtr[1], [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
-        assert_eq!(mtr[2], [2, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
-        assert_eq!(mtr[3], [3, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
-    } */
+        assert_eq!(mtr.get_row_number(), 4);
+        assert_eq!(mtr.get_row(0), [0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(),
+            0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into()]);
+        assert_eq!(mtr.get_row(1), [1.into(), 0.into(), 0.into(), 0.into(), 1.into(), 0.into(),
+            0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into()]);
+        assert_eq!(mtr.get_row(2), [2.into(), 0.into(), 0.into(), 0.into(), 2.into(), 0.into(),
+            0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into()]);
+        assert_eq!(mtr.get_row(3), [3.into(), 0.into(), 0.into(), 0.into(), 3.into(), 0.into(), 
+            0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into()]);
+    }
+
+    #[test]
+    fn complex_03() {
+        let mut global_infos = GlobalInfos::new(String::from("test/complex_03.eqs"));
+        let mut parser_mod = Parser::new(&global_infos);
+
+        let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
+
+        assert_eq!(mtr.get_row_number(), 64);
+
+        assert_eq!( /* line 3 */
+            mtr.get_row(0),
+            [
+                vec![1.into(); 3],
+                vec![0.into(); 114]
+            ].concat()
+        );
+
+        assert_eq!( /* line 4 */
+            mtr.get_row(1),
+            [
+                vec![0.into(); 3],
+                vec![1.into(); 3],
+                vec![0.into(); 111]
+            ].concat()
+        );
+        
+        assert_eq!( /* line 5 */
+            mtr.get_row(2),
+            [
+                vec![0.into(); 6],
+                vec![1.into(); 3],
+                vec![0.into(); 108]
+            ].concat()
+        );
+        
+        assert_eq!( /* line 6 */
+            mtr.get_row(3),
+            [
+                vec![0.into(); 9],
+                vec![1.into(); 3],
+                vec![0.into(); 105]
+            ].concat()
+        );
+        assert_eq!( /* line 7 */
+            mtr.get_row(4),
+            [
+                vec![0.into(); 12],
+                vec![1.into(); 3],
+                vec![0.into(); 102]
+            ].concat()
+        );
+        assert_eq!( /* line 8 */
+            mtr.get_row(5),
+            [
+                vec![0.into(); 15],
+                vec![1.into(); 3],
+                vec![0.into(); 99]
+            ].concat()
+        );
+        assert_eq!( /* line 9 */
+            mtr.get_row(6),
+            [
+                vec![0.into(); 18],
+                vec![1.into(); 3],
+                vec![0.into(); 96]
+            ].concat()
+        );
+        assert_eq!( /* line 10 */
+            mtr.get_row(7),
+            [
+                vec![0.into(); 21],
+                vec![1.into(); 3],
+                vec![0.into(); 93]
+            ].concat()
+        );
+        assert_eq!( /* line 11 */
+            mtr.get_row(8),
+            [
+                vec![0.into(); 24],
+                vec![1.into(); 3],
+                vec![0.into(); 90]
+            ].concat()
+        );
+        assert_eq!( /* line 12 */
+            mtr.get_row(9),
+            [
+                vec![0.into(); 27],
+                vec![1.into(); 3],
+                vec![0.into(); 87]
+            ].concat()
+        );
+        assert_eq!( /* line 13 */
+            mtr.get_row(10),
+            [
+                vec![0.into(); 30],
+                vec![1.into(); 3],
+                vec![0.into(); 84]
+            ].concat()
+        );
+        assert_eq!( /* line 14 */
+            mtr.get_row(11),
+            [
+                vec![0.into(); 33],
+                vec![1.into(); 3],
+                vec![0.into(); 81]
+            ].concat()
+        );
+        assert_eq!( /* line 15 */
+            mtr.get_row(12),
+            [
+                vec![0.into(); 36],
+                vec![1.into(); 3],
+                vec![0.into(); 78]
+            ].concat()
+        );
+        assert_eq!( /* line 16 */
+            mtr.get_row(13),
+            [
+                vec![0.into(); 39],
+                vec![1.into(); 3],
+                vec![0.into(); 75]
+            ].concat()
+        );
+        assert_eq!( /* line 17 */
+            mtr.get_row(14),
+            [
+                vec![0.into(); 42],
+                vec![1.into(); 3],
+                vec![0.into(); 72]
+            ].concat()
+        );
+        assert_eq!( /* line 18 */
+            mtr.get_row(15),
+            [
+                vec![0.into(); 45],
+                vec![1.into(); 3],
+                vec![0.into(); 69]
+            ].concat()
+        );
+        assert_eq!( /* line 19 */
+            mtr.get_row(16),
+            [
+                vec![1.into()],
+                vec![0.into(); 47],
+                vec![2.into(), 3.into(), 1.into(), 1.into()],
+                vec![0.into(); 65]
+            ].concat()
+        );
+        assert_eq!( /* line 20 */
+            mtr.get_row(17),
+            [
+                vec![0.into(); 3],
+                vec![1.into()],
+                vec![0.into(); 48],
+                vec![2.into(), 3.into(), 1.into(), 1.into()],
+                vec![0.into(); 61]
+            ].concat()
+        );
+        assert_eq!( /* line 21 */
+            mtr.get_row(18),
+            [
+                vec![0.into(); 6],
+                vec![1.into()],
+                vec![0.into(); 49],
+                vec![2.into(), 3.into(), 1.into(), 1.into()],
+                vec![0.into(); 57]
+            ].concat()
+        );
+        assert_eq!( /* line 22 */
+            mtr.get_row(19),
+            [
+                vec![0.into(); 9],
+                vec![1.into()],
+                vec![0.into(); 50],
+                vec![2.into(), 3.into(), 1.into(), 1.into()],
+                vec![0.into(); 53]
+            ].concat()
+        );
+        assert_eq!( /* line 23 */
+            mtr.get_row(20),
+            [
+                vec![0.into(); 12],
+                vec![1.into()],
+                vec![0.into(); 35],
+                vec![1.into(), 2.into(), 3.into(), 1.into()],
+                vec![0.into(); 65]
+            ].concat()
+        );
+        assert_eq!( /* line 24 */
+            mtr.get_row(21),
+            [
+                vec![0.into(); 15],
+                vec![1.into()],
+                vec![0.into(); 36],
+                vec![1.into(), 2.into(), 3.into(), 1.into()],
+                vec![0.into(); 61]
+            ].concat()
+        );
+        assert_eq!( /* line 25 */
+            mtr.get_row(22),
+            [
+                vec![0.into(); 18],
+                vec![1.into()],
+                vec![0.into(); 37],
+                vec![1.into(), 2.into(), 3.into(), 1.into()],
+                vec![0.into(); 57]
+            ].concat()
+        );
+        assert_eq!( /* line 26 */
+            mtr.get_row(23),
+            [
+                vec![0.into(); 21],
+                vec![1.into()],
+                vec![0.into(); 38],
+                vec![1.into(), 2.into(), 3.into(), 1.into()],
+                vec![0.into(); 53]
+            ].concat()
+        );
+        assert_eq!( /* line 27 */
+            mtr.get_row(24),
+            [
+                vec![0.into(); 24],
+                vec![1.into()],
+                vec![0.into(); 23],
+                vec![1.into(), 1.into(), 2.into(), 3.into()],
+                vec![0.into(); 65]
+            ].concat()
+        );
+        assert_eq!( /* line 28 */
+            mtr.get_row(25),
+            [
+                vec![0.into(); 24],
+                vec![1.into()],
+                vec![0.into(); 23],
+                vec![1.into(), 1.into(), 2.into(), 3.into()],
+                vec![0.into(); 65]
+            ].concat()
+        );
+        /*
+        assert_eq!(
+            mtr.get_row(26),
+            [
+                /* line 29 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                1, 1, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(27),
+            [
+                /* line 30 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 1, 1, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(28),
+            [
+                /* line 31 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 1, 1, 2, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(29),
+            [
+                /* line 32 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 1, 1, 2,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(30),
+            [
+                /* line 33 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                3, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(31),
+            [
+                /* line 34 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 3, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(32),
+            [
+                /* line 35 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(33),
+            [
+                /* line 36 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(34),
+            [
+                /* line 37 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(35),
+            [
+                /* line 38 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(36),
+            [
+                /* line 39 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(37),
+            [
+                /* line 40 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(38),
+            [
+                /* line 41 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,
+                1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(39),
+            [
+                /* line 42 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(40),
+            [
+                /* line 43 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(41),
+            [
+                /* line 44 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(42),
+            [
+                /* line 45 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(43),
+            [
+                /* line 46 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(44),
+            [
+                /* line 47 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(45),
+            [
+                /* line 48 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(46),
+            [
+                /* line 49 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(47),
+            [
+                /* line 50 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(48),
+            [
+                /* line 51 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(49),
+            [
+                /* line 52 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(50),
+            [
+                /* line 53 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(51),
+            [
+                /* line 54 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                1, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(52),
+            [
+                /* line 55 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(53),
+            [
+                /* line 56 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(54),
+            [
+                /* line 57 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
+                1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(55),
+            [
+                /* line 58 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 1, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(56),
+            [
+                /* line 59 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(57),
+            [
+                /* line 60 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(58),
+            [
+                /* line 61 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(59),
+            [
+                /* line 62 */
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 1, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(60),
+            [
+                /* line 63 */
+                0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(61),
+            [
+                /* line 64 */
+                0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(62),
+            [
+                /* line 65 */
+                0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(63),
+            [
+                /* line 66 */
+                0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 1, 1
+            ]
+        );
+        */
+    }
+
 }

@@ -1,13 +1,12 @@
 use std::collections::HashMap;
-
-use num_integer::Integer;
+use crate::utils::{Invertible, Number};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Matrix {
     vars_map: HashMap<String, usize>, // Map the variable name to the column index
     rows: usize,
     cols: usize,
-    data: Vec<usize>,
+    data: Vec<Number>,
 }
 
 impl Matrix {
@@ -16,12 +15,30 @@ impl Matrix {
             vars_map: HashMap::new(),
             rows,
             cols,
-            data: vec![0; rows * cols],
+            data: vec![0.into(); rows * cols],
         }
     }
 
+    pub fn new_from_vec(data: Vec<Vec<u32>>, vars_map: HashMap<String, usize>, polynomial: u16) -> Self {
+        let rows = data.len();
+        let cols = data[0].len();
+        let mut matrix = Matrix::new(rows, cols);
+        matrix.data.clear();
+
+        for i in 0..rows {
+            for j in 0..cols {
+                if data[i][j] >= 2u32.pow((16 - polynomial.leading_zeros()) as u32) {
+                    panic!("Invalid number for the given polynomial");
+                }
+                matrix.data.push(Number::new(data[i][j].try_into().unwrap(), polynomial));
+            }
+        }
+
+        matrix
+    }
+
     // Give a Vec of the row
-    pub fn get_row(&self, row: usize) -> Vec<usize> {
+    pub fn get_row(&self, row: usize) -> Vec<Number> {
         if row >= self.rows {
             panic!("Row index out of bounds");
         }
@@ -34,7 +51,7 @@ impl Matrix {
     }
 
     // Give a Vec of the column
-    pub fn get_column(&self, column: usize) -> Vec<usize> {
+    pub fn get_column(&self, column: usize) -> Vec<Number> {
         if column >= self.cols {
             panic!("Column index out of bounds");
         }
@@ -101,10 +118,10 @@ impl Matrix {
         self.cols -= 1;
     }
 
-    pub fn gaussian_elimination_inv(&mut self, modulus: usize) -> Matrix {
+    pub fn gaussian_elimination_inv(&mut self) -> Matrix {
         for j in 0..self.cols {
             //Find the max
-            let mut max = 0;
+            let mut max: Number = 0.into();
             let mut max_row = 0;
             for i in j..self.rows {
                 if self[(i, j)] > max {
@@ -113,19 +130,15 @@ impl Matrix {
                 }
             }
             for i in 0..self.cols {
-                if self[(max_row, i)] != 0 && i == max_row {
+                if self[(max_row, i)] != 0.into() && i == max_row {
                     //This is the pivot
                     //Set the pivot to one by multiplying the inverse of it in the field
                     //Use bigInt extended gcd to find the inverse
                     let pivot = self[(max_row, j)];
-                    let mut inverse = (pivot as isize).extended_gcd(&(modulus as isize)).x;
-                    while inverse < 0 {
-                        inverse += modulus as isize;
-                    }
-                    let inverse = inverse as usize;
+                    let mut inverse = pivot.invert();
                     //Normalize the pivot line
                     for k in 0..self.cols {
-                        self[(max_row, k)] = self[(max_row, k)] * inverse % modulus;
+                        self[(max_row, k)] = self[(max_row, k)] * inverse;
                     }
                     //Swap the line
                     for k in 0..self.rows {
@@ -137,14 +150,10 @@ impl Matrix {
                     for k in j + 1..self.rows {
                         let factor = self[(k, j)];
                         for l in 0..self.cols {
-                            let a = self[(k, l)] as isize;
-                            let b = factor as isize * self[(j, l)] as isize;
-                            let mut ab = a - b;
-                            while ab < 0 {
-                                ab += modulus as isize;
-                            }
-                            let ab = ab as usize;
-                            self[(k, l)] = ab % modulus;
+                            let a = self[(k, l)];
+                            let b = factor * self[(j, l)];
+                            let ab = a + b;
+                            self[(k, l)] = ab;
                         }
                     }
                     break;
@@ -156,14 +165,10 @@ impl Matrix {
             for i in (0..j).rev() {
                 let factor = self[(i, j)];
                 for k in 0..self.cols {
-                    let a = self[(i, k)] as isize;
-                    let b = factor as isize * self[(j, k)] as isize;
-                    let mut ab = a - b;
-                    while ab < 0 {
-                        ab += modulus as isize;
-                    }
-                    let ab = ab as usize;
-                    self[(i, k)] = ab % modulus;
+                    let a = self[(i, k)];
+                    let b = factor * self[(j, k)];
+                    let ab = a + b;
+                    self[(i, k)] = ab;
                 }
             }
         }
@@ -262,7 +267,7 @@ impl std::fmt::Display for Matrix {
 
 /// Overload of []
 impl std::ops::Index<(usize, usize)> for Matrix {
-    type Output = usize;
+    type Output = Number;
 
     fn index(&self, index: (usize, usize)) -> &Self::Output {
         if index.0 >= self.rows || index.1 >= self.cols {
@@ -283,8 +288,8 @@ impl std::ops::IndexMut<(usize, usize)> for Matrix {
     }
 }
 
-impl From<Vec<Vec<usize>>> for Matrix {
-    fn from(data: Vec<Vec<usize>>) -> Self {
+impl From<Vec<Vec<u8>>> for Matrix {
+    fn from(data: Vec<Vec<u8>>) -> Self {
         let rows = data.len();
         let cols = data[0].len();
         let mut matrix = Matrix::new(rows, cols);
@@ -292,43 +297,10 @@ impl From<Vec<Vec<usize>>> for Matrix {
 
         for i in 0..rows {
             for j in 0..cols {
-                matrix.data.push(data[i][j]);
+                matrix.data.push(data[i][j].into());
             }
         }
 
-        matrix
-    }
-}
-
-impl From<Vec<Vec<u32>>> for Matrix {
-    fn from(data: Vec<Vec<u32>>) -> Self {
-        let rows = data.len();
-        let cols = data[0].len();
-        let mut matrix = Matrix::new(rows, cols);
-        matrix.data.clear();
-
-        for i in 0..rows {
-            for j in 0..cols {
-                matrix.data.push(data[i][j] as usize);
-            }
-        }
-
-        matrix
-    }
-}
-
-impl From<Vec<Vec<i32>>> for Matrix {
-    fn from(data: Vec<Vec<i32>>) -> Self {
-        let rows = data.len();
-        let cols = data[0].len();
-        let mut matrix = Matrix::new(rows, cols);
-        matrix.data.clear();
-
-        for i in 0..rows {
-            for j in 0..cols {
-                matrix.data.push(data[i][j] as usize);
-            }
-        }
         matrix
     }
 }
@@ -340,8 +312,8 @@ mod tests {
     #[test]
     fn test_index() {
         let mut matrix = Matrix::new(2, 2);
-        matrix[(0, 0)] = 1;
-        assert_eq!(matrix[(0, 0)], 1);
+        matrix[(0, 0)] = 1.into();
+        assert_eq!(matrix[(0, 0)], 1.into());
     }
 
     #[test]
@@ -349,7 +321,7 @@ mod tests {
         let false_matrix = vec![vec![0; 2]; 2];
         let true_matrix = Matrix::new(2, 2);
 
-        assert_eq!(true_matrix[(0, 0)], false_matrix[0][0]);
+        assert_eq!(true_matrix[(0, 0)], false_matrix[0][0].into());
     }
     #[test]
     fn test_index3() {
@@ -357,23 +329,23 @@ mod tests {
         let mut true_matrix = Matrix::new(2, 2);
 
         false_matrix[1][1] = 4;
-        true_matrix[(1, 1)] = 4;
+        true_matrix[(1, 1)] = 4.into();
 
-        assert_eq!(true_matrix[(1, 1)], false_matrix[1][1]);
+        assert_eq!(true_matrix[(1, 1)], false_matrix[1][1].into());
     }
 
     #[test]
     fn get_row() {
         let matrix = Matrix::from(vec![vec![1, 2], vec![3, 4]]);
         let row = matrix.get_row(0);
-        assert_eq!(row, vec![1, 2]);
+        assert_eq!(row, vec![1.into(), 2.into()]);
     }
 
     #[test]
     fn get_column() {
         let matrix = Matrix::from(vec![vec![1, 2], vec![3, 4]]);
         let column = matrix.get_column(0);
-        assert_eq!(column, vec![1, 3]);
+        assert_eq!(column, vec![1.into(), 3.into()]);
     }
 
     #[test]
@@ -417,7 +389,7 @@ mod tests {
     #[test]
     fn test_gaussian_elimination_inv() {
         let mut matrix = Matrix::from(vec![vec![1, 2], vec![3, 4]]);
-        let result = matrix.gaussian_elimination_inv(5);
+        let result = matrix.gaussian_elimination_inv();
         let expected = Matrix::from(vec![vec![1, 0], vec![0, 1]]);
         assert_eq!(result, expected);
     }
@@ -425,14 +397,14 @@ mod tests {
     #[test]
     fn test_non_get_linear_variable() {
         let mut matrix = Matrix::new(6, 7);
-        matrix[(0, 0)] = 1;
-        matrix[(1, 1)] = 1;
-        matrix[(2, 2)] = 1;
-        matrix[(3, 3)] = 2;
-        matrix[(3, 0)] = 1;
-        matrix[(3, 4)] = 1;
-        matrix[(4, 5)] = 1;
-        matrix[(5, 6)] = 1;
+        matrix[(0, 0)] = 1.into();
+        matrix[(1, 1)] = 1.into();
+        matrix[(2, 2)] = 1.into();
+        matrix[(3, 3)] = 2.into();
+        matrix[(3, 0)] = 1.into();
+        matrix[(3, 4)] = 1.into();
+        matrix[(4, 5)] = 1.into();
+        matrix[(5, 6)] = 1.into();
         let mut vars_maps: HashMap<String, usize> = HashMap::new();
         vars_maps.insert("S(X_0[3,3])".to_string(), 6);
         vars_maps.insert("S(X_0[1,1])".to_string(), 4);
@@ -463,9 +435,9 @@ mod tests {
     #[test]
     fn test_drop_linear_variable() {
         let mut matrix = Matrix::new(3, 3);
-        matrix[(0, 0)] = 1;
-        matrix[(1, 1)] = 1;
-        matrix[(2, 2)] = 1;
+        matrix[(0, 0)] = 1.into();
+        matrix[(1, 1)] = 1.into();
+        matrix[(2, 2)] = 1.into();
         let mut vars_maps: HashMap<String, usize> = HashMap::new();
         vars_maps.insert("S(X_0[1,1])".to_string(), 0);
         vars_maps.insert("X_0[1,1]".to_string(), 1);
@@ -482,9 +454,9 @@ mod tests {
     #[test]
     fn test_drop_linear_variable2() {
         let mut matrix = Matrix::new(3, 3);
-        matrix[(0, 0)] = 1;
-        matrix[(1, 1)] = 1;
-        matrix[(2, 2)] = 1;
+        matrix[(0, 0)] = 1.into();
+        matrix[(1, 1)] = 1.into();
+        matrix[(2, 2)] = 1.into();
         let mut vars_maps: HashMap<String, usize> = HashMap::new();
         vars_maps.insert("S(X_0[1,1])".to_string(), 1);
         vars_maps.insert("X_0[1,1]".to_string(), 2);

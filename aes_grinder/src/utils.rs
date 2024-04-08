@@ -1,9 +1,41 @@
-struct Number {
+use core::ops::Add;
+use std::{fmt::Display, ops::Mul};
+
+#[derive(Debug, Clone, Copy)]
+pub struct Number {
     value: u8,
-    poly: &u16,
+    poly: u16,
 }
 
-trait Invertible {
+impl Number {
+    pub fn new(value: u8, poly: u16) -> Self {
+        Number { value, poly }
+    }
+}
+
+impl Display for Number {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.value)
+    }
+}
+
+impl PartialOrd for Number {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.value.partial_cmp(&other.value)
+    }
+}
+
+impl PartialEq for Number {
+    fn eq(&self, other: &Self) -> bool {
+        self.value == other.value
+    }
+    
+    fn ne(&self, other: &Self) -> bool {
+        !self.eq(other)
+    }
+}
+
+pub trait Invertible {
     /// multiplicative inverse of b(x), denoted b-1(x)
     fn invert(&self) -> Self;
 }
@@ -11,15 +43,15 @@ trait Invertible {
 impl Add for Number {
     type Output = Self;
 
-    fn add(&self, &other: Self) -> Self {
-        Self {value: (a ^ b), poly}
+    fn add(self, other: Self) -> Self {
+        Self {value: (self.value ^ other.value), poly: self.poly}
     }
 }
 
 impl Mul for Number {
     type Output = Self;
 
-    fn mul(&self, other: Self) -> u8 {
+    fn mul(self, other: Self) -> Number {
         let mut result = 0;
         let mut a = self.value;
         let mut b = other.value;
@@ -31,13 +63,13 @@ impl Mul for Number {
             }
             tmp = b & 0x80;
             b = b << 1;
-            if(tmp != 0){
-                b = b ^ poly;
+            if tmp != 0 {
+                b = b ^ (self.poly as u8);
             }
             a = a >> 1;
         }
 
-        Self {value: result, poly}
+        Self {value: result, poly: self.poly}
     }
 }
 
@@ -54,7 +86,7 @@ impl Invertible for Number {
         };
         let mut r = self.clone();
         let mut newr = Number {
-            value: self.poly,
+            value: (self.poly as u8),
             poly: self.poly,
         };
 
@@ -79,10 +111,19 @@ impl Invertible for Number {
         }
 
         if t.value < 0 {
-            t.value += self.poly;
+            t.value += self.poly as u8;
         }
 
         t
+    }
+}
+
+impl From<u8> for Number {
+    fn from(value: u8) -> Self {
+        Number {
+            value,
+            poly: 0x11b,
+        }
     }
 }
 

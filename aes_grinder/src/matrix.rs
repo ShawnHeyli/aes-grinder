@@ -179,7 +179,7 @@ impl Matrix {
         self.clone()
     }
 
-    pub fn number_solutions(&self, _vars: HashMap<String, u32>, _modulus: usize) -> u32 {
+    pub fn number_solutions(&self, _vars: HashMap<String, u32>) -> u32 {
         //Sort the columns by vars and non-vars
 
         //Apply gauss elimination on non-vars columns
@@ -234,7 +234,7 @@ impl Matrix {
     }
 
     ///Get all variable of the matrix
-    fn get_all_variables(&self) -> Vec<String> {
+    pub fn get_all_variables(&self) -> Vec<String> {
         self.vars_map.keys().cloned().collect()
     }
 

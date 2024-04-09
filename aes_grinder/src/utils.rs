@@ -1,6 +1,8 @@
 use core::ops::Add;
 use std::{fmt::Display, ops::Mul};
 
+use num_integer::Integer;
+
 #[derive(Debug, Clone, Copy)]
 pub struct Number {
     value: u8,
@@ -75,46 +77,9 @@ impl Mul for Number {
 
 impl Invertible for Number {
     fn invert(&self) -> Self {
-        // Extended Euclidean Algorithm
-        let mut t = Number {
-            value: 0,
-            poly: self.poly,
-        };
-        let mut newt = Number {
-            value: 1,
-            poly: self.poly,
-        };
-        let mut r = self.clone();
-        let mut newr = Number {
-            value: (self.poly as u8),
-            poly: self.poly,
-        };
-
-        while newr.value != 0 {
-            let quotient = r.value / newr.value;
-            let temp = newr.clone();
-            newr = Number {
-                value: r.value - quotient * newr.value,
-                poly: self.poly,
-            };
-            r = temp;
-            let temp = newt.clone();
-            newt = Number {
-                value: t.value - quotient * newt.value,
-                poly: self.poly,
-            };
-            t = temp;
-        }
-
-        if r.value > 1 {
-            panic!("{} is not invertible", self.value);
-        }
-
-        if t.value < 0 {
-            t.value += self.poly as u8;
-        }
-
-        t
+        // Extended Euclidean Algorithm between self.value and 256
+       let inv = (self.value as isize).extended_gcd(&(self.poly as isize)).x.rem_euclid(256);
+         Number {value: inv as u8, poly: self.poly}
     }
 }
 
@@ -124,6 +89,18 @@ impl From<u8> for Number {
             value,
             poly: 0x11b,
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_invert() {
+        let a = Number::new(3, 0x11b);
+        let b = a.invert();
+        assert_eq!(b.value, 171);
     }
 }
 

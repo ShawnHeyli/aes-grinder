@@ -1,5 +1,5 @@
 //! Struc Algo permettant de représenter des Algo
-
+use std::hash::Hash;
 use core::cmp::Ordering;
 use std::{
     cmp::{max, min},
@@ -7,9 +7,9 @@ use std::{
 };
 
 use crate::matrix::Matrix;
+use std::hash::{Hasher};
 
-//La struct algo
-#[derive(PartialEq)]
+#[derive(Eq, Clone, Debug)]
 pub struct Algo {
     vars_val: HashMap<String, u32>,
     time: u32,
@@ -17,6 +17,32 @@ pub struct Algo {
     nb_solutions: u32,
     son1: Option<Box<Algo>>,
     son2: Option<Box<Algo>>,
+}
+
+impl Hash for Algo {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.vars_val.hasher();
+        self.time.hash(state);
+        self.memory.hash(state);
+        self.nb_solutions.hash(state);
+        self.son1.hash(state);
+        self.son2.hash(state);
+    }
+}
+
+impl PartialEq for Algo {
+    fn eq(&self, other: &Self) -> bool {
+        self.vars_val == other.vars_val
+            && self.time == other.time
+            && self.memory == other.memory
+            && self.nb_solutions == other.nb_solutions
+            && self.son1 == other.son1
+            && self.son2 == other.son2
+    }
+    
+    fn ne(&self, other: &Self) -> bool {
+        !self.eq(other)
+    }
 }
 
 ///Implemtation de l'ordre partiel pour comparer deux algo entre eux
@@ -50,7 +76,7 @@ impl PartialOrd for Algo {
 ///Implementation de la struc algo
 impl Algo {
     ///Constructeur d'un base solver
-    pub fn base_solver(matrix: &Matrix, var: String, modulus: usize) -> Algo {
+    pub fn base_solver(matrix: &Matrix, var: String) -> Algo {
         //Choose value for var that is a valid value in the matrix
         let mut vars = HashMap::new();
         for x in 0..256 {
@@ -63,7 +89,7 @@ impl Algo {
             vars_val: vars.clone(),
             time: 8,
             memory: 8,
-            nb_solutions: Matrix::number_solutions(matrix, vars.clone(), modulus),
+            nb_solutions: Matrix::number_solutions(matrix, vars.clone()),
             son1: None,
             son2: None,
         }
@@ -93,6 +119,25 @@ impl Algo {
             son1: Some(a1),
             son2: Some(a2),
         }
+    }
+
+    pub fn compare1(&self, other: &Self) -> Option<Ordering> {
+        if self.get_all_variables() == other.get_all_variables() {
+            if(self.time <= other.time) {
+                return Some(Ordering::Greater);
+            }else {
+                return Some(Ordering::Less);
+            }
+        }
+        None
+    }
+
+    pub fn get_all_variables(&self) -> HashSet<String> {
+        self.vars_val.keys().cloned().collect()
+    }
+
+    pub fn get_time_complexity(&self) -> u32 {
+        self.time
     }
 }
 

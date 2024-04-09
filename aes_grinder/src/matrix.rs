@@ -37,6 +37,10 @@ impl Matrix {
         matrix
     }
 
+    pub fn get_row_number (&self) -> usize {
+        self.rows
+    }
+
     // Give a Vec of the row
     pub fn get_row(&self, row: usize) -> Vec<Number> {
         if row >= self.rows {

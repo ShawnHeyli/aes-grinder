@@ -179,13 +179,13 @@ impl Matrix {
         self.clone()
     }
 
-    pub fn number_solutions(&self, _vars: HashMap<String, u32>) -> u32 {
+    pub fn number_solutions(&mut self, _vars: Vec<String>) -> u32 {
         //Sort the columns by vars and non-vars
 
         //Apply gauss elimination on non-vars columns
-
+        self.gaussian_elimination_inv();
         //Count the number of equations below
-
+        
         todo!();
     }
 

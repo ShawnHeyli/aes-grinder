@@ -1,17 +1,17 @@
 //! Struc Algo permettant de représenter des Algo
-use std::hash::Hash;
+use std::{hash::Hash, vec};
 use core::cmp::Ordering;
 use std::{
     cmp::{max, min},
-    collections::{HashMap, HashSet},
+    collections::HashSet,
 };
 
 use crate::matrix::Matrix;
-use std::hash::{Hasher};
+use std::hash::Hasher;
 
 #[derive(Eq, Clone, Debug)]
 pub struct Algo {
-    vars_val: HashMap<String, u32>,
+    vars_val: Vec<String>,
     time: u32,
     memory: u32,
     nb_solutions: u32,
@@ -21,7 +21,7 @@ pub struct Algo {
 
 impl Hash for Algo {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.vars_val.hasher();
+        self.vars_val.hash(state);
         self.time.hash(state);
         self.memory.hash(state);
         self.nb_solutions.hash(state);
@@ -48,11 +48,11 @@ impl PartialEq for Algo {
 ///Implemtation de l'ordre partiel pour comparer deux algo entre eux
 impl PartialOrd for Algo {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        if other
-            .vars_val
-            .keys()
+        if <Vec<std::string::String> as Clone>::clone(&other
+            .vars_val)
+            .into_iter()
             .collect::<HashSet<_>>()
-            .is_subset(&self.vars_val.keys().collect::<HashSet<_>>())
+            .is_subset(&<Vec<std::string::String> as Clone>::clone(&self.vars_val).into_iter().collect::<HashSet<_>>())
         {
             match self.time.cmp(&other.time) {
                 Ordering::Equal => match self.memory.cmp(&other.memory) {
@@ -76,20 +76,12 @@ impl PartialOrd for Algo {
 ///Implementation de la struc algo
 impl Algo {
     ///Constructeur d'un base solver
-    pub fn base_solver(matrix: &Matrix, var: String) -> Algo {
-        //Choose value for var that is a valid value in the matrix
-        let mut vars = HashMap::new();
-        for x in 0..256 {
-            vars.insert(var.clone(), x);
-            if matrix.are_valid_values(&vars) {
-                break;
-            }
-        }
+    pub fn base_solver(mut matrix: &mut Matrix, var: String) -> Algo {
         Algo {
-            vars_val: vars.clone(),
+            vars_val: vec![var.clone()],
             time: 8,
             memory: 8,
-            nb_solutions: Matrix::number_solutions(matrix, vars.clone()),
+            nb_solutions: Matrix::number_solutions(&mut matrix, vec![var]),
             son1: None,
             son2: None,
         }
@@ -121,6 +113,9 @@ impl Algo {
         }
     }
 
+    /**
+     * Definition of the comparision 1 (define in the paper)
+     */
     pub fn compare1(&self, other: &Self) -> Option<Ordering> {
         if self.get_all_variables() == other.get_all_variables() {
             if(self.time <= other.time) {
@@ -133,7 +128,7 @@ impl Algo {
     }
 
     pub fn get_all_variables(&self) -> HashSet<String> {
-        self.vars_val.keys().cloned().collect()
+        <Vec<std::string::String> as Clone>::clone(&self.vars_val).into_iter().collect()
     }
 
     pub fn get_time_complexity(&self) -> u32 {
@@ -149,7 +144,7 @@ mod tests {
     #[test]
     fn compare_algo() {
         let algo_sad = Algo {
-            vars_val: HashMap::from([(String::from("x"), 1)]),
+            vars_val: vec!["x".to_string()],
             time: 100,
             memory: 100,
             nb_solutions: 20,
@@ -157,7 +152,7 @@ mod tests {
             son2: None,
         };
         let algo_good = Algo {
-            vars_val: HashMap::from([(String::from("x"), 1)]),
+            vars_val: vec!["x".to_string()],
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -170,7 +165,7 @@ mod tests {
     #[test]
     fn compare_algo_time() {
         let algo_sad = Algo {
-            vars_val: HashMap::from([(String::from("x"), 1)]),
+            vars_val: vec!["x".to_string()],
             time: 2,
             memory: 1,
             nb_solutions: 1,
@@ -178,7 +173,7 @@ mod tests {
             son2: None,
         };
         let algo_good = Algo {
-            vars_val: HashMap::from([(String::from("x"), 1)]),
+            vars_val: vec!["x".to_string()],
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -192,7 +187,7 @@ mod tests {
     #[test]
     fn compare_algo_memory_for_same_time() {
         let algo_sad = Algo {
-            vars_val: HashMap::from([(String::from("x"), 1)]),
+            vars_val: vec!["x".to_string()],
             time: 1,
             memory: 2,
             nb_solutions: 1,
@@ -200,7 +195,7 @@ mod tests {
             son2: None,
         };
         let algo_good = Algo {
-            vars_val: HashMap::from([(String::from("x"), 1)]),
+            vars_val: vec!["x".to_string()],
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -213,7 +208,7 @@ mod tests {
     #[test]
     fn compare_algo_time_and_memory() {
         let algo_sad = Algo {
-            vars_val: HashMap::from([(String::from("x"), 1)]),
+            vars_val: vec!["x".to_string()],
             time: 2,
             memory: 2,
             nb_solutions: 1,
@@ -221,7 +216,7 @@ mod tests {
             son2: None,
         };
         let algo_good = Algo {
-            vars_val: HashMap::from([(String::from("x"), 1)]),
+            vars_val: vec!["x".to_string()],
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -235,7 +230,7 @@ mod tests {
     #[test]
     fn compare_algo_nb_solution() {
         let algo_sad = Algo {
-            vars_val: HashMap::from([(String::from("x"), 1)]),
+            vars_val: vec!["x".to_string()],
             time: 1,
             memory: 1,
             nb_solutions: 2,
@@ -243,7 +238,7 @@ mod tests {
             son2: None,
         };
         let algo_good = Algo {
-            vars_val: HashMap::from([(String::from("x"), 1)]),
+            vars_val: vec!["x".to_string()],
             time: 1,
             memory: 1,
             nb_solutions: 1,

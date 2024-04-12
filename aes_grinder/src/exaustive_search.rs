@@ -1,7 +1,7 @@
 use crate::{algo::Algo, matrix::Matrix};
 use std::{cmp::Ordering, collections::HashSet};
 
-fn exhaustive_search<E>(x: Matrix, time_complexity: u32) -> HashSet<Box<Algo>> {
+fn exhaustive_search<E>(mut x: Matrix, time_complexity: u32) -> HashSet<Box<Algo>> {
     //Set of base solvers
     let mut g:HashSet<Box<Algo>> = HashSet::new();
     for xVar in x.get_all_variables() {
@@ -9,7 +9,7 @@ fn exhaustive_search<E>(x: Matrix, time_complexity: u32) -> HashSet<Box<Algo>> {
         if xVar.contains('(') {
             continue;
         }
-        g.insert(Box::new(Algo::base_solver(&x, xVar)));
+        g.insert(Box::new(Algo::base_solver(&mut x, xVar)));
     }
     //Set of pair of algo
     let mut p:HashSet<(Box<Algo>, Box<Algo>)> = HashSet::new();

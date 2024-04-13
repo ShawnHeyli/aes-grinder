@@ -13,6 +13,10 @@ impl Number {
     pub fn new(value: u8, poly: u16) -> Self {
         Number { value, poly }
     }
+
+    pub fn get_value(&self) -> u8 {
+        self.value
+    }
 }
 
 impl Display for Number {

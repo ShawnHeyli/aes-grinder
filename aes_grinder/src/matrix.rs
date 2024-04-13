@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use crate::utils::{Invertible, Number};
+use std::collections::HashMap;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Matrix {

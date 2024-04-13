@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::utils::{Invertible, Number};
 use std::collections::HashMap;
 
@@ -19,11 +20,7 @@ impl Matrix {
         }
     }
 
-    pub fn new_from_vec(
-        data: Vec<Vec<u32>>,
-        vars_map: HashMap<String, usize>,
-        polynomial: u16,
-    ) -> Self {
+    pub fn new_from_vec(data: Vec<Vec<u32>>, vars_map: HashMap<String, usize>, polynomial: u16) -> Self {
         let rows = data.len();
         let cols = data[0].len();
         let mut matrix = Matrix::new(rows, cols);
@@ -34,9 +31,7 @@ impl Matrix {
                 if data[i][j] >= 2u32.pow((16 - polynomial.leading_zeros()) as u32) {
                     panic!("Invalid number for the given polynomial");
                 }
-                matrix
-                    .data
-                    .push(Number::new(data[i][j].try_into().unwrap(), polynomial));
+                matrix.data.push(Number::new(data[i][j].try_into().unwrap(), polynomial));
             }
         }
 
@@ -200,35 +195,28 @@ impl Matrix {
         todo!();
     }
 
-    ///Donne les indices des colonnes dans lequel le coef max est r
-    fn get_col_of_max_rank(&self, r: usize) -> Vec<usize> {
-        //trouve les colonnes de rang max r
-        let mut col_rank: Vec<usize> = Vec::new();
-        for i in 0..self.cols {
-            let c = self.get_column(i);
-            if c.iter().map(|number| number.get_value()).max().unwrap_or(0) <= r as u8 {
-                col_rank.push(i);
+    ///Get non linear variable, return variables as a string vector
+    pub fn get_non_linear_variable(&self) -> Vec<String> {
+        let mut non_linear_variables: Vec<String> = vec![];
+        for (var, _) in &self.vars_map {
+            if var.contains('(') {
+                let true_var = var.clone();
+                let var: Vec<_> = var.split(['(', ')']).collect();
+                non_linear_variables.push(true_var);
+                non_linear_variables.push(var[1].to_string());
             }
         }
-        col_rank
-    }
-
-    ///Récupère les variables d'une colonne de rank max r
-    fn get_variable_of_max_rank(&self, r: usize) -> Vec<String> {
-        let my_col = self.get_col_of_max_rank(r);
-        let mut variables: Vec<String> = Vec::new();
-        for (str, col) in &self.vars_map {
-            if my_col.contains(&col) {
-                variables.push(str.to_string());
-            }
-        }
-        variables
+        non_linear_variables
     }
 
     ///Drop linear variable on the matrice, update the matrix self
     pub fn drop_linear_variable(&mut self) {
-        //recupère les colonnes de rang 1
-        let v = self.get_variable_of_max_rank(1);
+        let all_variables = self.get_all_variables();
+        let non_linear_variables = self.get_non_linear_variable();
+        let linear_variables: Vec<String> = all_variables
+            .into_iter()
+            .filter(|x| !non_linear_variables.contains(x))
+            .collect();
 
         for var in linear_variables {
             self.remove_variable(var);
@@ -324,11 +312,6 @@ impl From<Vec<Vec<u8>>> for Matrix {
 
 #[cfg(test)]
 mod tests {
-
-    use clap::builder::Str;
-
-    use crate::{parser::Parser, GlobalInfos};
-
     use super::*;
 
     #[test]
@@ -417,6 +400,44 @@ mod tests {
     }
 
     #[test]
+    fn test_non_get_linear_variable() {
+        let mut matrix = Matrix::new(6, 7);
+        matrix[(0, 0)] = 1.into();
+        matrix[(1, 1)] = 1.into();
+        matrix[(2, 2)] = 1.into();
+        matrix[(3, 3)] = 2.into();
+        matrix[(3, 0)] = 1.into();
+        matrix[(3, 4)] = 1.into();
+        matrix[(4, 5)] = 1.into();
+        matrix[(5, 6)] = 1.into();
+        let mut vars_maps: HashMap<String, usize> = HashMap::new();
+        vars_maps.insert("S(X_0[3,3])".to_string(), 6);
+        vars_maps.insert("S(X_0[1,1])".to_string(), 4);
+        vars_maps.insert("W_0[0,0]".to_string(), 0);
+        vars_maps.insert("S(X_0[2,2])".to_string(), 5);
+        vars_maps.insert("K_1[0,0]".to_string(), 1);
+        vars_maps.insert("C[0,0]".to_string(), 2);
+        vars_maps.insert("S(X_0[0,0])".to_string(), 3);
+        matrix.set_vars_map(vars_maps);
+
+        let mut expected = vec![
+            "S(X_0[0,0])".to_string(),
+            "S(X_0[1,1])".to_string(),
+            "S(X_0[2,2])".to_string(),
+            "S(X_0[3,3])".to_string(),
+            "X_0[3,3]".to_string(),
+            "X_0[1,1]".to_string(),
+            "X_0[2,2]".to_string(),
+            "X_0[0,0]".to_string(),
+        ];
+        expected.sort();
+        let mut non_linear = matrix.get_non_linear_variable();
+        non_linear.sort();
+
+        assert_eq!(non_linear, expected);
+    }
+
+    #[test]
     fn test_drop_linear_variable() {
         let mut matrix = Matrix::new(3, 3);
         matrix[(0, 0)] = 1.into();
@@ -451,73 +472,5 @@ mod tests {
         matrix.drop_linear_variable();
         print!("{}", matrix);
         //Detruire la ligne vide si retirer la variable met une equation a zero
-    }
-
-    #[test]
-    fn test_lineaire() {
-        let mut global_infos = GlobalInfos::new(String::from("test/little.eqs"));
-        let mut parser_mod = Parser::new(&global_infos);
-
-        let mut mtr = parser_mod.parse_system(&mut global_infos).unwrap();
-        print!("{}", mtr);
-        mtr.gaussian_elimination_inv();
-        print!("{}", mtr);
-    }
-
-    #[test]
-    fn test_get_col_of_max_rank() {
-        let mut matrix = Matrix::new(3, 3);
-        matrix[(0, 0)] = 1.into();
-        matrix[(1, 1)] = 1.into();
-        matrix[(2, 2)] = 1.into();
-        let test = matrix.get_col_of_max_rank(0);
-        assert_eq!(test, vec![]);
-        let test = matrix.get_col_of_max_rank(1);
-        assert_eq!(test, vec![0, 1, 2]);
-        let test = matrix.get_col_of_max_rank(2);
-        assert_eq!(test, vec![0, 1, 2]);
-        let test = matrix.get_col_of_max_rank(3);
-        assert_eq!(test, vec![0, 1, 2]);
-    }
-    #[test]
-    fn test_get_var_of_max_rank() {
-        let mut matrix = Matrix::new(3, 3);
-        matrix[(0, 0)] = 1.into();
-        matrix[(1, 1)] = 1.into();
-        matrix[(2, 2)] = 2.into();
-        let mut vars_maps: HashMap<String, usize> = HashMap::new();
-        vars_maps.insert("W_0[0,0]".to_string(), 0);
-        vars_maps.insert("S(X_0[1,1])".to_string(), 1);
-        vars_maps.insert("X_0[1,1]".to_string(), 2);
-        matrix.set_vars_map(vars_maps);
-
-        let mut test = matrix.get_variable_of_max_rank(0);
-        test.sort();
-        let mut vec: Vec<String> = vec![];
-        vec.sort();
-        assert_eq!(test, vec);
-        let mut test = matrix.get_variable_of_max_rank(1);
-        test.sort();
-        let mut vec: Vec<String> = vec!["W_0[0,0]".to_string(), "S(X_0[1,1])".to_string()];
-        vec.sort();
-        assert_eq!(test, vec);
-        let mut test = matrix.get_variable_of_max_rank(2);
-        test.sort();
-        let mut vec: Vec<String> = vec![
-            "W_0[0,0]".to_string(),
-            "S(X_0[1,1])".to_string(),
-            "X_0[1,1]".to_string(),
-        ];
-        vec.sort();
-        assert_eq!(test, vec);
-        let mut test = matrix.get_variable_of_max_rank(3);
-        test.sort();
-        let mut vec: Vec<String> = vec![
-            "W_0[0,0]".to_string(),
-            "S(X_0[1,1])".to_string(),
-            "X_0[1,1]".to_string(),
-        ];
-        vec.sort();
-        assert_eq!(test, vec);
     }
 }

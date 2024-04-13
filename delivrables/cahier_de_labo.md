@@ -37,3 +37,7 @@ implementing the elimination of gauss and some comparison fonctions of Algo
 
 ### 05/04/2024
 This week since we didn't have much time, we decided re-read the paper to make very sure to understand everything (and find some questions for our supervisor), after that we handed out work to each member to be done by monday the 08
+
+
+### 12/04/2024
+Fix errors spotted with supervisor and write code to complete first attack.

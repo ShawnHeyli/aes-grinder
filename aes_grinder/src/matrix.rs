@@ -43,6 +43,10 @@ impl Matrix {
         matrix
     }
 
+    pub fn get_row_number (&self) -> usize {
+        self.rows
+    }
+
     // Give a Vec of the row
     pub fn get_row(&self, row: usize) -> Vec<Number> {
         if row >= self.rows {
@@ -181,13 +185,13 @@ impl Matrix {
         self.clone()
     }
 
-    pub fn number_solutions(&self, _vars: HashMap<String, u32>, _modulus: usize) -> u32 {
+    pub fn number_solutions(&mut self, _vars: Vec<String>) -> u32 {
         //Sort the columns by vars and non-vars
 
         //Apply gauss elimination on non-vars columns
-
+        self.gaussian_elimination_inv();
         //Count the number of equations below
-
+        
         todo!();
     }
 
@@ -226,7 +230,25 @@ impl Matrix {
         //recupère les colonnes de rang 1
         let v = self.get_variable_of_max_rank(1);
 
-        todo!()
+        for var in linear_variables {
+            self.remove_variable(var);
+        }
+
+        //Detruire la ligne vide si retirer la variable met une equation a zero
+    }
+
+    ///Remove variables from string vec, update the matrix self
+    fn remove_variable(&mut self, variables: String) {
+        let col = match self.vars_map.get(&variables) {
+            Some(c) => c,
+            None => panic!("La Variable que l'on veut détruire n'existe pas"),
+        };
+        self.delete_column(*col);
+    }
+
+    ///Get all variable of the matrix
+    pub fn get_all_variables(&self) -> Vec<String> {
+        self.vars_map.keys().cloned().collect()
     }
 
     ///display variable names with their associated columns

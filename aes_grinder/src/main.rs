@@ -3,6 +3,7 @@ mod cli;
 mod matrix;
 mod parser;
 mod utils;
+mod exaustive_search;
 
 use clap::Parser as ClapParser;
 

@@ -145,7 +145,7 @@ impl Matrix {
                     //Set the pivot to one by multiplying the inverse of it in the field
                     //Use bigInt extended gcd to find the inverse
                     let pivot = self[(max_row, j)];
-                    let mut inverse = pivot.invert();
+                    let inverse = pivot.invert();
                     //Normalize the pivot line
                     for k in 0..self.cols {
                         self[(max_row, k)] = self[(max_row, k)] * inverse;
@@ -185,6 +185,10 @@ impl Matrix {
         self.clone()
     }
 
+    /**
+     * Calculate the number of solution of the system of equations for the given variables
+     * Compute |vars| - dim()
+     */
     pub fn number_solutions(&mut self, _vars: Vec<String>) -> u32 {
         //Sort the columns by vars and non-vars
 

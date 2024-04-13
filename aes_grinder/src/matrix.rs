@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use crate::utils::{Invertible, Number};
 use std::collections::HashMap;
 
@@ -20,7 +19,11 @@ impl Matrix {
         }
     }
 
-    pub fn new_from_vec(data: Vec<Vec<u32>>, vars_map: HashMap<String, usize>, polynomial: u16) -> Self {
+    pub fn new_from_vec(
+        data: Vec<Vec<u32>>,
+        vars_map: HashMap<String, usize>,
+        polynomial: u16,
+    ) -> Self {
         let rows = data.len();
         let cols = data[0].len();
         let mut matrix = Matrix::new(rows, cols);
@@ -31,14 +34,16 @@ impl Matrix {
                 if data[i][j] >= 2u32.pow((16 - polynomial.leading_zeros()) as u32) {
                     panic!("Invalid number for the given polynomial");
                 }
-                matrix.data.push(Number::new(data[i][j].try_into().unwrap(), polynomial));
+                matrix
+                    .data
+                    .push(Number::new(data[i][j].try_into().unwrap(), polynomial));
             }
         }
 
         matrix
     }
 
-    pub fn get_row_number (&self) -> usize {
+    pub fn get_row_number(&self) -> usize {
         self.rows
     }
 
@@ -186,7 +191,7 @@ impl Matrix {
         //Apply gauss elimination on non-vars columns
         self.gaussian_elimination_inv();
         //Count the number of equations below
-        
+
         todo!();
     }
 
@@ -195,34 +200,24 @@ impl Matrix {
         todo!();
     }
 
-    ///Get non linear variable, return variables as a string vector
-    pub fn get_non_linear_variable(&self) -> Vec<String> {
-        let mut non_linear_variables: Vec<String> = vec![];
-        for (var, _) in &self.vars_map {
-            if var.contains('(') {
-                let true_var = var.clone();
-                let var: Vec<_> = var.split(['(', ')']).collect();
-                non_linear_variables.push(true_var);
-                non_linear_variables.push(var[1].to_string());
-            }
-        }
-        non_linear_variables
-    }
-
     ///Drop linear variable on the matrice, update the matrix self
     pub fn drop_linear_variable(&mut self) {
-        let all_variables = self.get_all_variables();
-        let non_linear_variables = self.get_non_linear_variable();
-        let linear_variables: Vec<String> = all_variables
-            .into_iter()
-            .filter(|x| !non_linear_variables.contains(x))
-            .collect();
-
-        for var in linear_variables {
-            self.remove_variable(var);
+        let has_been_update:bool = true;
+        //tant que la matrice a ete mise a jour on continue d'eliminer les variable lineraire
+        while has_been_update {
+            let mut matrix = self.gaussian_elimination_inv();
+            matrix = self.delete_empty_rows();
+            matrix = self.delete_empty_colums();
         }
 
-        //Detruire la ligne vide si retirer la variable met une equation a zero
+    }
+
+    fn delete_empty_rows(&mut self) -> Matrix {
+        todo!()
+    }
+
+    fn delete_empty_colums(&mut self) -> Matrix {
+        todo!()
     }
 
     ///Remove variables from string vec, update the matrix self
@@ -262,7 +257,13 @@ impl std::fmt::Display for Matrix {
         // Print the matrix
         for i in 0..self.rows {
             for j in 0..self.cols {
-                write!(f, "{} ", self.data[i * self.cols + j])?;
+                if self.data[i * self.cols + j] < 10.into() {
+                    write!(f, "{}   ", self.data[i * self.cols + j])?;
+                } else if self.data[i * self.cols + j] < 100.into() {
+                    write!(f, "{}  ", self.data[i * self.cols + j])?;
+                } else {
+                    write!(f, "{} ", self.data[i * self.cols + j])?;
+                }
             }
             writeln!(f)?;
         }
@@ -394,83 +395,41 @@ mod tests {
     #[test]
     fn test_gaussian_elimination_inv() {
         let mut matrix = Matrix::from(vec![vec![1, 2], vec![3, 4]]);
+        println!("{}", matrix);
         let result = matrix.gaussian_elimination_inv();
         let expected = Matrix::from(vec![vec![1, 0], vec![0, 1]]);
+        println!("{}", result);
         assert_eq!(result, expected);
     }
 
     #[test]
-    fn test_non_get_linear_variable() {
-        let mut matrix = Matrix::new(6, 7);
-        matrix[(0, 0)] = 1.into();
-        matrix[(1, 1)] = 1.into();
-        matrix[(2, 2)] = 1.into();
-        matrix[(3, 3)] = 2.into();
-        matrix[(3, 0)] = 1.into();
-        matrix[(3, 4)] = 1.into();
-        matrix[(4, 5)] = 1.into();
-        matrix[(5, 6)] = 1.into();
-        let mut vars_maps: HashMap<String, usize> = HashMap::new();
-        vars_maps.insert("S(X_0[3,3])".to_string(), 6);
-        vars_maps.insert("S(X_0[1,1])".to_string(), 4);
-        vars_maps.insert("W_0[0,0]".to_string(), 0);
-        vars_maps.insert("S(X_0[2,2])".to_string(), 5);
-        vars_maps.insert("K_1[0,0]".to_string(), 1);
-        vars_maps.insert("C[0,0]".to_string(), 2);
-        vars_maps.insert("S(X_0[0,0])".to_string(), 3);
-        matrix.set_vars_map(vars_maps);
-
-        let mut expected = vec![
-            "S(X_0[0,0])".to_string(),
-            "S(X_0[1,1])".to_string(),
-            "S(X_0[2,2])".to_string(),
-            "S(X_0[3,3])".to_string(),
-            "X_0[3,3]".to_string(),
-            "X_0[1,1]".to_string(),
-            "X_0[2,2]".to_string(),
-            "X_0[0,0]".to_string(),
-        ];
-        expected.sort();
-        let mut non_linear = matrix.get_non_linear_variable();
-        non_linear.sort();
-
-        assert_eq!(non_linear, expected);
-    }
-
-    #[test]
     fn test_drop_linear_variable() {
-        let mut matrix = Matrix::new(3, 3);
+        let mut matrix = Matrix::new(2, 2);
         matrix[(0, 0)] = 1.into();
-        matrix[(1, 1)] = 1.into();
-        matrix[(2, 2)] = 1.into();
+        matrix[(0, 1)] = 1.into();
         let mut vars_maps: HashMap<String, usize> = HashMap::new();
-        vars_maps.insert("S(X_0[1,1])".to_string(), 0);
-        vars_maps.insert("X_0[1,1]".to_string(), 1);
-        vars_maps.insert("W_0[0,0]".to_string(), 2);
+        vars_maps.insert("X_0[0,0]".to_string(), 0);
+        vars_maps.insert("S(X_0[0,0])".to_string(), 1);
         matrix.set_vars_map(vars_maps);
 
+        let mut expected = vec!["X_0[0,0]".to_string(), "S(X_0[0,0])".to_string()];
         println!("{}", matrix);
-        matrix.drop_linear_variable();
-        print!("{}", matrix);
-
-        //Detruire la ligne vide si retirer la variable met une equation a zero
     }
-
     #[test]
     fn test_drop_linear_variable2() {
-        let mut matrix = Matrix::new(3, 3);
+        let mut matrix = Matrix::new(4, 4);
         matrix[(0, 0)] = 1.into();
-        matrix[(1, 1)] = 1.into();
-        matrix[(2, 2)] = 1.into();
+        matrix[(0, 1)] = 1.into();
+        matrix[(2, 2)] = 4.into();
+        matrix[(3, 3)] = 3.into();
+        println!("{}", matrix);
+        let result = matrix.gaussian_elimination_inv();
+        println!("{}", result);
         let mut vars_maps: HashMap<String, usize> = HashMap::new();
-        vars_maps.insert("S(X_0[1,1])".to_string(), 1);
-        vars_maps.insert("X_0[1,1]".to_string(), 2);
-        vars_maps.insert("W_0[0,0]".to_string(), 0);
+        vars_maps.insert("X_0[0,0]".to_string(), 0);
+        vars_maps.insert("S(X_0[0,0])".to_string(), 1);
         matrix.set_vars_map(vars_maps);
 
         println!("{}", matrix);
-        matrix.drop_linear_variable();
-        print!("{}", matrix);
-        //Detruire la ligne vide si retirer la variable met une equation a zero
     }
 }

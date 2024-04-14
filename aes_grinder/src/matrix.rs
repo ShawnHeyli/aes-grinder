@@ -186,17 +186,76 @@ impl Matrix {
     }
 
     /**
-     * Calculate the number of solution of the system of equations for the given variables
-     * Compute |vars| - dim()
+     * Compute the number of solution of the system of equations for the given variables
+     * Compute |vars| - dim(M(vars))
      */
-    pub fn number_solutions(&mut self, _vars: Vec<String>) -> u32 {
-        //Sort the columns by vars and non-vars
+    pub fn number_solutions(&mut self, vars: Vec<String>) -> u32 {
+        vars.len() as u32 - self.get_matrix_generated_by(vars).dimension_solution_space()
+    }
 
-        //Apply gauss elimination on non-vars columns
-        self.gaussian_elimination_inv();
-        //Count the number of equations below
+    fn get_matrix_generated_by(&self, vars: Vec<String>) -> Matrix {
+        let mut matrix = Matrix::new(self.rows, vars.len());
+        for i in 0..self.rows {
+            for j in 0..vars.len() {
+                matrix[(i, j)] = self[(i, self.vars_map[&vars[j]])];
+            }
+        }
+        matrix
+    }
 
-        todo!();
+    /**
+     * Compute the dimension of the solution space of the system of equations
+     */
+    fn dimension_solution_space(&mut self) -> u32 {
+        self.row_reduce();
+        let r = self.count_no_zero_rows();
+        self.cols as u32 - r
+    }
+
+    /**
+     * Perform row reduction to get row echelon form
+     */
+    fn row_reduce(&mut self) {
+        for i in 0..self.rows {
+            let row = self.get_row(i);
+            let mut pivot = 0;
+            for j in 0..self.cols {
+                if row[j] != 0.into() {
+                    pivot = j;
+                    break;
+                }
+            }
+            if pivot == 0 {
+                continue;
+            }
+            for j in 0..self.rows {
+                if j == i {
+                    continue;
+                }
+                let inv = self[(j, pivot)].invert();
+                for k in 0..self.cols {
+                    self[(j, k)] = self[(j, k)] + inv * self[(i, k)];
+                }
+            }
+        }
+    }
+
+    fn count_no_zero_rows(&self) -> u32 {
+        let mut count = 0;
+        for i in 0..self.rows {
+            let row = self.get_row(i);
+            let mut is_zero = true;
+            for num in row {
+                if num != 0.into() {
+                    is_zero = false;
+                    break;
+                }
+            }
+            if !is_zero {
+                count += 1;
+            }
+        }
+        count
     }
 
     pub fn are_valid_values(&self, _vars: &HashMap<String, u32>) -> bool {

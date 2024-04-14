@@ -185,39 +185,96 @@ impl Matrix {
         self.clone()
     }
 
-    /**
-     * Compute the number of solution of the system of equations for the given variables
-     * Compute |vars| - dim(M(vars))
-     */
-    pub fn number_solutions(&mut self, vars: Vec<String>) -> u32 {
-        vars.len() as u32
+    ///Elimination de gauss borné
+    pub fn gaussian_elimination_inv_bounded(&mut self, bound:usize) -> Matrix {
+        for j in 0..bound {
+            //Find the max
+            let mut max: Number = 0.into();
+            let mut max_row = 0;
+            for i in j..self.rows {
+                if self[(i, j)] > max {
+                    max = self[(i, j)];
+                    max_row = i;
+                }
+            }
+            for i in 0..self.cols {
+                if self[(max_row, i)] != 0.into() && i == max_row {
+                    //This is the pivot
+                    //Set the pivot to one by multiplying the inverse of it in the field
+                    //Use bigInt extended gcd to find the inverse
+                    let pivot = self[(max_row, j)];
+                    let inverse = pivot.invert();
+                    //Normalize the pivot line
+                    for k in 0..self.cols {
+                        self[(max_row, k)] = self[(max_row, k)] * inverse;
+                    }
+                    //Swap the line
+                    for k in 0..self.rows {
+                        let temp = self[(j, k)];
+                        self[(j, k)] = self[(max_row, k)];
+                        self[(max_row, k)] = temp;
+                    }
+                    //Set 0 under the pivot
+                    for k in j + 1..self.rows {
+                        let factor = self[(k, j)];
+                        for l in 0..self.cols {
+                            let a = self[(k, l)];
+                            let b = factor * self[(j, l)];
+                            let ab = a + b;
+                            self[(k, l)] = ab;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+        //Backward substitution
+        for j in (0..self.cols).rev() {
+            for i in (0..j).rev() {
+                let factor = self[(i, j)];
+                for k in 0..self.cols {
+                    let a = self[(i, k)];
+                    let b = factor * self[(j, k)];
+                    let ab = a + b;
+                    self[(i, k)] = ab;
+                }
+            }
+        }
+        self.clone()
+    }
+
+    /// Compute the number of solution of the system of equations for the given variables
+    // Compute |vars| - dim(M(vars))
+    pub fn number_solutions(&mut self, vars: Vec<String>) -> usize {
+        print!("NB SOLUTION \n{}", self);
+        vars.len()
             - self
                 .get_matrix_generated_by(vars)
                 .dimension_solution_space()
     }
 
     fn get_matrix_generated_by(&self, vars: Vec<String>) -> Matrix {
+        print!("get_matrix_generated_by in \n{}", self);
         let mut matrix = Matrix::new(self.rows, vars.len());
         for i in 0..self.rows {
             for j in 0..vars.len() {
                 matrix[(i, j)] = self[(i, self.vars_map[&vars[j]])];
             }
         }
+        print!("get_matrix_generated_by out \n{}", matrix);
         matrix
     }
 
-    /**
-     * Compute the dimension of the solution space of the system of equations
-     */
-    fn dimension_solution_space(&mut self) -> u32 {
-        self.row_reduce();
-        let r = self.count_no_zero_rows();
-        self.cols as u32 - r
+    /// Compute the dimension of the solution space of the system of equations
+    fn dimension_solution_space(&mut self) -> usize {
+        let matrice =self.gaussian_elimination_inv_bounded();
+        let r = matrice.count_no_zero_rows();
+        println!("ECHEC :  non_zero:{r} col : {:?}, row:{}",matrice.cols, matrice.rows);
+        println!("MATRICE : \n{}",matrice);
+        matrice.cols  - r as usize
     }
 
-    /**
-     * Perform row reduction to get row echelon form
-     */
+    /// Perform row reduction to get row echelon form
     fn row_reduce(&mut self) {
         for i in 0..self.rows {
             let row = self.get_row(i);
@@ -668,5 +725,30 @@ mod tests {
         print!("{:?}", s);
         print!("{:?}", expect);
         assert_eq!(sboxed, expect);
+    }
+    #[test]
+    fn test_count_no_zero_rows() {
+        let mut matrix = Matrix::new(3, 3);
+        matrix[(0, 0)] = 1.into();
+        matrix[(1, 1)] = 1.into();
+        matrix[(2, 2)] = 2.into();
+        let z = matrix.count_no_zero_rows();
+        assert_eq!(z, 3);
+    }
+    #[test]
+    fn test_row_reduce() {
+        let mut matrix = Matrix::new(3, 3);
+        matrix[(0, 0)] = 1.into();
+        matrix[(1, 1)] = 1.into();
+        matrix[(2, 2)] = 2.into();
+
+        let matrix2 = Matrix::new(3, 3);
+        matrix[(0, 0)] = 1.into();
+        matrix[(1, 1)] = 1.into();
+        matrix[(2, 2)] = 2.into();
+        matrix.row_reduce();
+        println!("{}", matrix);
+        println!("{}", matrix2);
+        assert_eq!(matrix, matrix2);
     }
 }

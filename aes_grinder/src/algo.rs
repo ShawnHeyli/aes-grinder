@@ -16,9 +16,9 @@ use std::process::Command;
 #[derive(Eq, Clone, Debug)]
 pub struct Algo {
     vars_val: Vec<String>,
-    time: u32,
-    memory: u32,
-    nb_solutions: u32,
+    time: usize,
+    memory: usize,
+    nb_solutions: usize,
     son1: Option<Box<Algo>>,
     son2: Option<Box<Algo>>,
 }
@@ -161,6 +161,7 @@ impl Algo {
 
     ///Constructeur d'un base solver
     pub fn base_solver(mut matrix: &mut Matrix, var: String) -> Algo {
+        print!("{}", matrix);
         Algo {
             vars_val: vec![var.clone()],
             time: 8,
@@ -215,7 +216,7 @@ impl Algo {
         <Vec<std::string::String> as Clone>::clone(&self.vars_val).into_iter().collect()
     }
 
-    pub fn get_time_complexity(&self) -> u32 {
+    pub fn get_time_complexity(&self) -> usize {
         self.time
     }
 }

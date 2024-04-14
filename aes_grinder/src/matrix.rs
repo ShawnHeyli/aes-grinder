@@ -269,20 +269,35 @@ impl Matrix {
     ///Drop linear variable on the matrice, update the matrix self
     pub fn drop_linear_variable(&mut self) {
         let has_been_update: bool = true;
-        //tant que la matrice a ete mise a jour on continue d'eliminer les variable lineraire
+        //tant que la matrice a ete mise a jour on continue d'eliminer les variables lineraires
         while has_been_update {
-            let mut variable_non_traiter: Vec<String> = self.get_all_variables();
+            let variable_of_max_rank: Vec<String> = self.get_variable_of_max_rank(1);
+            let mut variable_sboxed_max_rank_1 = get_variable_if_sboxed(&variable_of_max_rank);
             let mut matrix = self.gaussian_elimination_inv();
             matrix = self.delete_empty_rows();
             matrix = self.delete_empty_colums();
 
-            //selctionner une varibale dans les variable non traité et de rang 1
-
-            //trouve sa variable en sbox
+            //selctionner une varibale dans les variables non traitées et de rang 1,
+            //et qui a une varible en sbox aussi de rang1
+            for (x, sx) in variable_sboxed_max_rank_1 {
+                let x_index = self.vars_map.get(&x);
+                let sx_index = self.vars_map.get(&sx);
+                match (x_index, sx_index) {
+                    (Some(some_x), Some(some_y)) => {
+                        let colum_x = matrix.get_column(*some_x);
+                        let colum_sx = matrix.get_column(*some_y);
+                        if colum_x == colum_sx {
+                            todo!()
+                        }
+                    }
+                    (_, _) => panic!(),
+                }
+            }
+            todo!()
 
             //compare les deux colonnes
 
-            //si elle sont egale on suprimme la ligne a 1 1 et les deux colonnes
+            //si elle sont egales on suprimme la ligne a 1 1 et les deux colonnes
         }
     }
 
@@ -408,6 +423,19 @@ impl From<Vec<Vec<u8>>> for Matrix {
 
         matrix
     }
+}
+
+///retourne tout les variable S(x), x
+pub fn get_variable_if_sboxed(variables: &Vec<String>) -> Vec<(String, String)> {
+    let mut sboxed_variable: Vec<(String, String)> = vec![];
+    for var in variables {
+        for s in variables {
+            if s.contains(var) && !s.eq(var) {
+                sboxed_variable.push((var.to_string(), s.to_string()));
+            }
+        }
+    }
+    sboxed_variable
 }
 
 #[cfg(test)]
@@ -587,5 +615,15 @@ mod tests {
         ];
         vec.sort();
         assert_eq!(test, vec);
+    }
+
+    #[test]
+    fn test_get_variable_if_sboxed() {
+        let s: Vec<String> = vec!["X".to_string(), "S(X)".to_string(), "Y".to_string()];
+        let sboxed = get_variable_if_sboxed(&s);
+        let expect = vec![("X".to_string(), "S(X)".to_string())];
+        print!("{:?}", s);
+        print!("{:?}", expect);
+        assert_eq!(sboxed, expect);
     }
 }

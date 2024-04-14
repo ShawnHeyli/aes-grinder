@@ -10,12 +10,6 @@ pub struct Cli {
     #[arg(short, long, value_name = "FILE")]
     pub equation_system: String,
 
-    /*
-    characteristic polynomial
-    #[arg(short, long, value_name = "Unsigned Integer")]
-    pub characteristic_polynomial: u64,
-    */
-    // Quiet or verbose mode
     #[command(flatten)]
     verbose: clap_verbosity_flag::Verbosity,
 

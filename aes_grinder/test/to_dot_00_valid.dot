@@ -1,0 +1,3 @@
+graph my_graph {
+	N0[label="ROOT"];
+}

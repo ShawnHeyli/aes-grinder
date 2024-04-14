@@ -1,0 +1,7 @@
+graph my_graph {
+	N0[label="ROOT"];
+	N1[label=""];
+	N2[label=""];
+	N0 -- N1;
+	N0 -- N2;
+}

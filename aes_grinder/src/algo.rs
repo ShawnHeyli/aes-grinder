@@ -9,6 +9,10 @@ use std::{
 use crate::matrix::Matrix;
 use std::hash::Hasher;
 
+use std::fs::File;
+use std::io::Write;
+use std::process::Command;
+
 #[derive(Eq, Clone, Debug)]
 pub struct Algo {
     vars_val: Vec<String>,
@@ -75,6 +79,85 @@ impl PartialOrd for Algo {
 
 ///Implementation de la struc algo
 impl Algo {
+    fn browse_algo_for_write (self, dot_file: &mut File, 
+    cmpt: &mut u64) -> std::io::Result<()> {
+        let mark_father = *cmpt;
+        let mut mark_son_left = None;
+        let mut mark_son_right = None;
+
+
+        if mark_father == 0 {
+            dot_file.write_all(
+                format!("\tN{}[label=\"ROOT\"];\n", *cmpt).as_bytes()
+            )?;
+        } else {
+            dot_file.write_all(
+                format!("\tN{}[label=\"\"];\n", *cmpt).as_bytes()
+            )?;
+        }
+
+
+        if let Some(son_left) = self.son1 {
+            *cmpt += 1;
+            mark_son_left = Some(*cmpt);
+            son_left.browse_algo_for_write(dot_file, cmpt)?;
+        }
+        if let Some(son_right) = self.son2 {
+            *cmpt += 1;
+            mark_son_right = Some(*cmpt);
+            son_right.browse_algo_for_write(dot_file, cmpt)?;
+        }
+        
+
+        if !mark_son_left.is_none() {
+            dot_file.write_all(
+                format!("\tN{}", mark_father).as_bytes()
+            )?;
+
+            dot_file.write_all(
+                format!(" -- N{}", mark_son_left.unwrap()).as_bytes()
+            )?;
+
+            dot_file.write_all(
+                format!(";\n").as_bytes()
+            )?;
+        }
+
+        if !mark_son_right.is_none() {
+            dot_file.write_all(
+                format!("\tN{}", mark_father).as_bytes()
+            )?;
+
+            dot_file.write_all(
+                format!(" -- N{}", mark_son_right.unwrap()).as_bytes()
+            )?;
+
+            dot_file.write_all(
+                format!(";\n").as_bytes()
+            )?;
+        }
+
+        Ok(())
+    }
+
+    pub fn to_dot(self, filename: &str) -> std::io::Result<()>  {
+        let mut file = File::create(filename)?;
+
+        // Write data to the file
+        file.write_all(
+            format!("graph my_graph {{\n").as_bytes()
+        )?;
+
+        self.browse_algo_for_write (&mut file, & mut 0)?;
+
+        file.write_all(
+            format!("}}\n").as_bytes()
+        )?;
+
+        Ok(())
+    }
+
+
     ///Constructeur d'un base solver
     pub fn base_solver(mut matrix: &mut Matrix, var: String) -> Algo {
         Algo {
@@ -135,6 +218,7 @@ impl Algo {
         self.time
     }
 }
+
 
 ///Test de l'implementation de la struct algo
 #[cfg(test)]
@@ -247,5 +331,125 @@ mod tests {
         };
 
         assert!(algo_sad < algo_good);
+    }
+
+    #[test]
+    fn to_dot_00() -> std::io::Result<()> {
+        let algo_good = Algo {
+            vars_val: vec!["x".to_string()],
+            time: 1,
+            memory: 1,
+            nb_solutions: 1,
+            son1: None,
+            son2: None,
+        };
+
+        algo_good.to_dot("test/to_dot_00.dot")?;
+
+        let status = Command::new("diff")
+        .args(&["-q", "test/to_dot_00.dot", "test/to_dot_00_valid.dot"])
+        .status()
+        .expect("failed to execute diff");
+
+        // Check the return code
+        assert_eq!(Some(0), status.code());
+
+        Ok(())
+    }
+
+    #[test]
+    fn to_dot_01() -> std::io::Result<()> {
+        let left = Algo {
+            vars_val: vec!["x".to_string()],
+            time: 1,
+            memory: 1,
+            nb_solutions: 1,
+            son1: None,
+            son2: None,
+        };
+        let right = Algo {
+            vars_val: vec!["x".to_string()],
+            time: 1,
+            memory: 1,
+            nb_solutions: 1,
+            son1: None,
+            son2: None,
+        };
+        let root = Algo {
+            vars_val: vec!["x".to_string()],
+            time: 1,
+            memory: 1,
+            nb_solutions: 1,
+            son1: Some(Box::new(left)),
+            son2: Some(Box::new(right)),
+        };
+
+        root.to_dot("test/to_dot_01.dot")?;
+
+        let status = Command::new("diff")
+        .args(&["-q", "test/to_dot_01.dot", "test/to_dot_01_valid.dot"])
+        .status()
+        .expect("failed to execute diff");
+
+        // Check the return code
+        assert_eq!(Some(0), status.code());
+
+        Ok(())
+    }
+
+    #[test]
+    fn to_dot_02() -> std::io::Result<()> {
+        let c1_left = Algo {
+            vars_val: vec!["x".to_string()],
+            time: 1,
+            memory: 1,
+            nb_solutions: 1,
+            son1: None,
+            son2: None,
+        };
+        let c1_right = Algo {
+            vars_val: vec!["x".to_string()],
+            time: 1,
+            memory: 1,
+            nb_solutions: 1,
+            son1: None,
+            son2: None,
+        };
+        let c0_left = Algo {
+            vars_val: vec!["x".to_string()],
+            time: 1,
+            memory: 1,
+            nb_solutions: 1,
+            son1: Some(Box::new(c1_left)),
+            son2: Some(Box::new(c1_right)),
+        };
+        let c0_right = Algo {
+            vars_val: vec!["x".to_string()],
+            time: 1,
+            memory: 1,
+            nb_solutions: 1,
+            son1: None,
+            son2: None,
+        };
+        let root = Algo {
+            vars_val: vec!["x".to_string()],
+            time: 1,
+            memory: 1,
+            nb_solutions: 1,
+            son1: Some(Box::new(c0_left)),
+            son2: Some(Box::new(c0_right)),
+        };
+
+        root.to_dot("test/to_dot_02.dot")?;
+
+        let status = Command::new("diff")
+        .args(&["-q", "test/to_dot_02.dot", "test/to_dot_02_valid.dot"])
+        .status()
+        .expect("failed to execute diff");
+
+        // Check the return code
+        assert_eq!(Some(0), status.code());
+
+        Ok(())
     }
 }

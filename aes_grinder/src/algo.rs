@@ -140,6 +140,7 @@ impl Algo {
         Ok(())
     }
 
+    /// Print into filename the dot corresponding to self Algo
     pub fn to_dot(self, filename: &str) -> std::io::Result<()>  {
         let mut file = File::create(filename)?;
 

@@ -268,14 +268,15 @@ impl Matrix {
 
     ///Drop linear variable on the matrice, update the matrix self
     pub fn drop_linear_variable(&mut self) {
+        todo!();
         let has_been_update: bool = true;
         //tant que la matrice a ete mise a jour on continue d'eliminer les variables lineraires
         while has_been_update {
             let variable_of_max_rank: Vec<String> = self.get_variable_of_max_rank(1);
             let mut variable_sboxed_max_rank_1 = get_variable_if_sboxed(&variable_of_max_rank);
             let mut matrix = self.gaussian_elimination_inv();
-            matrix = self.delete_empty_rows();
-            matrix = self.delete_empty_colums();
+            self.delete_empty_rows();
+            self.delete_empty_colums();
 
             //selctionner une varibale dans les variables non traitées et de rang 1,
             //et qui a une varible en sbox aussi de rang1
@@ -326,12 +327,38 @@ impl Matrix {
         variables
     }
 
-    fn delete_empty_rows(&mut self) -> Matrix {
-        todo!()
+    /// Deletes all rows that are only made of 0 in place
+    fn delete_empty_rows(&mut self) {
+        for i in 0..self.rows - 1 {
+            let row = self.get_row(i);
+            let mut is_zero = true;
+            for num in row {
+                if num.get_value() != 0.into() {
+                    is_zero = false;
+                    break;
+                }
+            }
+            if is_zero {
+                self.delete_row(i);
+            }
+        }
     }
 
-    fn delete_empty_colums(&mut self) -> Matrix {
-        todo!()
+    /// Deletes all columns that are only made of 0 in place
+    fn delete_empty_colums(&mut self) {
+        for i in 0..self.cols - 1 {
+            let column = self.get_column(i);
+            let mut is_zero = true;
+            for num in column {
+                if num.get_value() != 0 {
+                    is_zero = false;
+                    break;
+                }
+            }
+            if is_zero {
+                self.delete_column(i);
+            }
+        }
     }
 
     ///Remove variables from string vec, update the matrix self
@@ -527,6 +554,22 @@ mod tests {
         let expected = Matrix::from(vec![vec![1, 0], vec![0, 1]]);
         println!("{}", result);
         assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn delete_empty_rows() {
+        let mut matrix = Matrix::from(vec![vec![1, 2], vec![0, 0], vec![3, 4]]);
+        matrix.delete_empty_rows();
+        let expected = Matrix::from(vec![vec![1, 2], vec![3, 4]]);
+        assert_eq!(matrix, expected);
+    }
+
+    #[test]
+    fn delete_empty_colums() {
+        let mut matrix = Matrix::from(vec![vec![0, 2], vec![0, 4]]);
+        matrix.delete_empty_colums();
+        let expected = Matrix::from(vec![vec![2], vec![4]]);
+        assert_eq!(matrix, expected);
     }
 
     #[test]

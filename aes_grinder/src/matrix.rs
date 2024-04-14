@@ -145,7 +145,7 @@ impl Matrix {
                     //Set the pivot to one by multiplying the inverse of it in the field
                     //Use bigInt extended gcd to find the inverse
                     let pivot = self[(max_row, j)];
-                    let mut inverse = pivot.invert();
+                    let inverse = pivot.invert();
                     //Normalize the pivot line
                     for k in 0..self.cols {
                         self[(max_row, k)] = self[(max_row, k)] * inverse;
@@ -185,14 +185,80 @@ impl Matrix {
         self.clone()
     }
 
-    pub fn number_solutions(&mut self, _vars: Vec<String>) -> u32 {
-        //Sort the columns by vars and non-vars
+    /**
+     * Compute the number of solution of the system of equations for the given variables
+     * Compute |vars| - dim(M(vars))
+     */
+    pub fn number_solutions(&mut self, vars: Vec<String>) -> u32 {
+        vars.len() as u32
+            - self
+                .get_matrix_generated_by(vars)
+                .dimension_solution_space()
+    }
 
-        //Apply gauss elimination on non-vars columns
-        self.gaussian_elimination_inv();
-        //Count the number of equations below
+    fn get_matrix_generated_by(&self, vars: Vec<String>) -> Matrix {
+        let mut matrix = Matrix::new(self.rows, vars.len());
+        for i in 0..self.rows {
+            for j in 0..vars.len() {
+                matrix[(i, j)] = self[(i, self.vars_map[&vars[j]])];
+            }
+        }
+        matrix
+    }
 
-        todo!();
+    /**
+     * Compute the dimension of the solution space of the system of equations
+     */
+    fn dimension_solution_space(&mut self) -> u32 {
+        self.row_reduce();
+        let r = self.count_no_zero_rows();
+        self.cols as u32 - r
+    }
+
+    /**
+     * Perform row reduction to get row echelon form
+     */
+    fn row_reduce(&mut self) {
+        for i in 0..self.rows {
+            let row = self.get_row(i);
+            let mut pivot = 0;
+            for j in 0..self.cols {
+                if row[j] != 0.into() {
+                    pivot = j;
+                    break;
+                }
+            }
+            if pivot == 0 {
+                continue;
+            }
+            for j in 0..self.rows {
+                if j == i {
+                    continue;
+                }
+                let inv = self[(j, pivot)].invert();
+                for k in 0..self.cols {
+                    self[(j, k)] = self[(j, k)] + inv * self[(i, k)];
+                }
+            }
+        }
+    }
+
+    fn count_no_zero_rows(&self) -> u32 {
+        let mut count = 0;
+        for i in 0..self.rows {
+            let row = self.get_row(i);
+            let mut is_zero = true;
+            for num in row {
+                if num != 0.into() {
+                    is_zero = false;
+                    break;
+                }
+            }
+            if !is_zero {
+                count += 1;
+            }
+        }
+        count
     }
 
     pub fn are_valid_values(&self, _vars: &HashMap<String, u32>) -> bool {
@@ -202,14 +268,47 @@ impl Matrix {
 
     ///Drop linear variable on the matrice, update the matrix self
     pub fn drop_linear_variable(&mut self) {
-        let has_been_update:bool = true;
+        let has_been_update: bool = true;
         //tant que la matrice a ete mise a jour on continue d'eliminer les variable lineraire
         while has_been_update {
+            let mut variable_non_traiter: Vec<String> = self.get_all_variables();
             let mut matrix = self.gaussian_elimination_inv();
             matrix = self.delete_empty_rows();
             matrix = self.delete_empty_colums();
-        }
 
+            //selctionner une varibale dans les variable non traité et de rang 1
+
+            //trouve sa variable en sbox
+
+            //compare les deux colonnes
+
+            //si elle sont egale on suprimme la ligne a 1 1 et les deux colonnes
+        }
+    }
+
+    ///Donne les indices des colonnes dans lequel le coef max est r
+    fn get_col_of_max_rank(&self, r: usize) -> Vec<usize> {
+        //trouve les colonnes de rang max r
+        let mut col_rank: Vec<usize> = Vec::new();
+        for i in 0..self.cols {
+            let c = self.get_column(i);
+            if c.iter().map(|number| number.get_value()).max().unwrap_or(0) <= r as u8 {
+                col_rank.push(i);
+            }
+        }
+        col_rank
+    }
+
+    ///Récupère les variables d'une colonne de rank max r
+    fn get_variable_of_max_rank(&self, r: usize) -> Vec<String> {
+        let my_col = self.get_col_of_max_rank(r);
+        let mut variables: Vec<String> = Vec::new();
+        for (str, col) in &self.vars_map {
+            if my_col.contains(&col) {
+                variables.push(str.to_string());
+            }
+        }
+        variables
     }
 
     fn delete_empty_rows(&mut self) -> Matrix {
@@ -431,5 +530,62 @@ mod tests {
         matrix.set_vars_map(vars_maps);
 
         println!("{}", matrix);
+    }
+
+    #[test]
+    fn test_get_col_of_max_rank() {
+        let mut matrix = Matrix::new(3, 3);
+        matrix[(0, 0)] = 1.into();
+        matrix[(1, 1)] = 1.into();
+        matrix[(2, 2)] = 1.into();
+        let test = matrix.get_col_of_max_rank(0);
+        assert_eq!(test, vec![]);
+        let test = matrix.get_col_of_max_rank(1);
+        assert_eq!(test, vec![0, 1, 2]);
+        let test = matrix.get_col_of_max_rank(2);
+        assert_eq!(test, vec![0, 1, 2]);
+        let test = matrix.get_col_of_max_rank(3);
+        assert_eq!(test, vec![0, 1, 2]);
+    }
+    #[test]
+    fn test_get_var_of_max_rank() {
+        let mut matrix = Matrix::new(3, 3);
+        matrix[(0, 0)] = 1.into();
+        matrix[(1, 1)] = 1.into();
+        matrix[(2, 2)] = 2.into();
+        let mut vars_maps: HashMap<String, usize> = HashMap::new();
+        vars_maps.insert("W_0[0,0]".to_string(), 0);
+        vars_maps.insert("S(X_0[1,1])".to_string(), 1);
+        vars_maps.insert("X_0[1,1]".to_string(), 2);
+        matrix.set_vars_map(vars_maps);
+
+        let mut test = matrix.get_variable_of_max_rank(0);
+        test.sort();
+        let mut vec: Vec<String> = vec![];
+        vec.sort();
+        assert_eq!(test, vec);
+        let mut test = matrix.get_variable_of_max_rank(1);
+        test.sort();
+        let mut vec: Vec<String> = vec!["W_0[0,0]".to_string(), "S(X_0[1,1])".to_string()];
+        vec.sort();
+        assert_eq!(test, vec);
+        let mut test = matrix.get_variable_of_max_rank(2);
+        test.sort();
+        let mut vec: Vec<String> = vec![
+            "W_0[0,0]".to_string(),
+            "S(X_0[1,1])".to_string(),
+            "X_0[1,1]".to_string(),
+        ];
+        vec.sort();
+        assert_eq!(test, vec);
+        let mut test = matrix.get_variable_of_max_rank(3);
+        test.sort();
+        let mut vec: Vec<String> = vec![
+            "W_0[0,0]".to_string(),
+            "S(X_0[1,1])".to_string(),
+            "X_0[1,1]".to_string(),
+        ];
+        vec.sort();
+        assert_eq!(test, vec);
     }
 }

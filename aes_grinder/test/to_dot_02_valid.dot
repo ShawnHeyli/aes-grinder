@@ -1,11 +1,9 @@
-graph {
-	N0[label="PAPA"];
-	N1[label=""];
-	N2[label=""];
-	N3[label=""];
-	N1 -- N2;
-	N1 -- N3;
-	N4[label=""];
-	N0 -- N1;
-	N0 -- N4;
+digraph {
+	0[label="PAPA"];
+	1[label=""];
+	2[label="x" color="chartreuse"];
+	3[label="x" color="chartreuse"];
+	1 -> { 2 3}
+	4[label="x" color="chartreuse"];
+	0 -> { 1 4}
 }

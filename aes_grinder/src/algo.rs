@@ -85,12 +85,19 @@ impl Algo {
 
         if mark_father == 0 {
             dot_file.write_all(
-                format!("\tN{}[label=\"PAPA\"];\n", *cmpt).as_bytes()
+                format!("\t{}[label=\"PAPA\"];\n", *cmpt).as_bytes()
             )?;
         } else {
-            dot_file.write_all(
-                format!("\tN{}[label=\"\"];\n", *cmpt).as_bytes()
-            )?;
+            if self.vars.len() == 1 {
+                dot_file.write_all(
+                    format!("\t{}[label=\"{}\" color=\"chartreuse\"];\n",
+                    *cmpt, self.vars[0]).as_bytes()
+                )?;
+            } else {
+                dot_file.write_all(
+                    format!("\t{}[label=\"\"];\n", *cmpt).as_bytes()
+                )?;
+            }
         }
 
         if let Some(son_left) = &self.son1 {
@@ -107,22 +114,22 @@ impl Algo {
 
         if !mark_son_left.is_none() || !mark_son_right.is_none() {
             dot_file.write_all(
-                format!("\t{} -- {{", mark_father).as_bytes()
+                format!("\t{} -> {{", mark_father).as_bytes()
             )?;
 
             if !mark_son_left.is_none() {
                 dot_file.write_all(
-                    format!("{}", mark_son_left.unwrap()).as_bytes()
+                    format!(" {}", mark_son_left.unwrap()).as_bytes()
                 )?;
             }
-            if !mark_son_left.is_none() {
+            if !mark_son_right.is_none() {
                 dot_file.write_all(
-                    format!("{}", mark_son_left.unwrap()).as_bytes()
+                    format!(" {}", mark_son_right.unwrap()).as_bytes()
                 )?;
             }
 
             dot_file.write_all(
-                format!("}}").as_bytes()
+                format!("}}\n").as_bytes()
             )?;
         }
 
@@ -135,7 +142,7 @@ impl Algo {
 
         // Write data to the file
         file.write_all(
-            format!("graph {{\n").as_bytes()
+            format!("digraph {{\n").as_bytes()
         )?;
 
         self.browse_algo_for_write (&mut file, & mut 0)?;
@@ -354,7 +361,7 @@ mod tests {
             son2: None,
         };
         let right = Algo {
-            vars: vec!["x".to_string()],
+            vars: vec!["x".to_string(), "y".to_string()],
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -362,7 +369,7 @@ mod tests {
             son2: None,
         };
         let root = Algo {
-            vars: vec!["x".to_string()],
+            vars: vec!["x".to_string(), "y".to_string()],
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -402,7 +409,7 @@ mod tests {
             son2: None,
         };
         let c0_left = Algo {
-            vars: vec!["x".to_string()],
+            vars: vec!["x".to_string(), "y".to_string()],
             time: 1,
             memory: 1,
             nb_solutions: 1,

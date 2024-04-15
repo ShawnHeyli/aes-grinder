@@ -76,7 +76,7 @@ impl PartialOrd for Algo {
 
 ///Implementation de la struc algo
 impl Algo {
-    fn browse_algo_for_write (self, dot_file: &mut File, 
+    fn browse_algo_for_write (&self, dot_file: &mut File, 
     cmpt: &mut u64) -> std::io::Result<()> {
         let mark_father = *cmpt;
         let mut mark_son_left = None;
@@ -85,52 +85,51 @@ impl Algo {
 
         if mark_father == 0 {
             dot_file.write_all(
-                format!("\tN{}[label=\"ROOT\"];\n", *cmpt).as_bytes()
+                format!("\t{}[label=\"PAPA\"];\n", *cmpt).as_bytes()
             )?;
         } else {
-            dot_file.write_all(
-                format!("\tN{}[label=\"\"];\n", *cmpt).as_bytes()
-            )?;
+            if self.vars.len() == 1 {
+                dot_file.write_all(
+                    format!("\t{}[label=\"{}\" color=\"chartreuse\"];\n",
+                    *cmpt, self.vars[0]).as_bytes()
+                )?;
+            } else {
+                dot_file.write_all(
+                    format!("\t{}[label=\"\"];\n", *cmpt).as_bytes()
+                )?;
+            }
         }
 
-
-        if let Some(son_left) = self.son1 {
+        if let Some(son_left) = &self.son1 {
             *cmpt += 1;
             mark_son_left = Some(*cmpt);
             son_left.browse_algo_for_write(dot_file, cmpt)?;
         }
-        if let Some(son_right) = self.son2 {
+        if let Some(son_right) = &self.son2 {
             *cmpt += 1;
             mark_son_right = Some(*cmpt);
             son_right.browse_algo_for_write(dot_file, cmpt)?;
         }
         
 
-        if !mark_son_left.is_none() {
+        if !mark_son_left.is_none() || !mark_son_right.is_none() {
             dot_file.write_all(
-                format!("\tN{}", mark_father).as_bytes()
+                format!("\t{} -> {{", mark_father).as_bytes()
             )?;
 
-            dot_file.write_all(
-                format!(" <-- N{}", mark_son_left.unwrap()).as_bytes()
-            )?;
+            if !mark_son_left.is_none() {
+                dot_file.write_all(
+                    format!(" {}", mark_son_left.unwrap()).as_bytes()
+                )?;
+            }
+            if !mark_son_right.is_none() {
+                dot_file.write_all(
+                    format!(" {}", mark_son_right.unwrap()).as_bytes()
+                )?;
+            }
 
             dot_file.write_all(
-                format!(";\n").as_bytes()
-            )?;
-        }
-
-        if !mark_son_right.is_none() {
-            dot_file.write_all(
-                format!("\tN{}", mark_father).as_bytes()
-            )?;
-
-            dot_file.write_all(
-                format!(" <-- N{}", mark_son_right.unwrap()).as_bytes()
-            )?;
-
-            dot_file.write_all(
-                format!(";\n").as_bytes()
+                format!("}}\n").as_bytes()
             )?;
         }
 
@@ -138,12 +137,12 @@ impl Algo {
     }
 
     /// Print into filename the dot corresponding to self Algo
-    pub fn to_dot(self, filename: &str) -> std::io::Result<()>  {
+    pub fn to_dot(&self, filename: &str) -> std::io::Result<()>  {
         let mut file = File::create(filename)?;
 
         // Write data to the file
         file.write_all(
-            format!("graph my_graph {{\n").as_bytes()
+            format!("digraph {{\n").as_bytes()
         )?;
 
         self.browse_algo_for_write (&mut file, & mut 0)?;
@@ -196,7 +195,7 @@ impl Algo {
         if self.get_all_variables() == other.get_all_variables() {
             if self.time <= other.time {
                 return Some(Ordering::Greater);
-            }else {
+            } else {
                 return Some(Ordering::Less);
             }
         }
@@ -211,7 +210,6 @@ impl Algo {
         self.time
     }
 }
-
 
 ///Test de l'implementation de la struct algo
 #[cfg(test)]
@@ -363,7 +361,7 @@ mod tests {
             son2: None,
         };
         let right = Algo {
-            vars: vec!["x".to_string()],
+            vars: vec!["x".to_string(), "y".to_string()],
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -371,7 +369,7 @@ mod tests {
             son2: None,
         };
         let root = Algo {
-            vars: vec!["x".to_string()],
+            vars: vec!["x".to_string(), "y".to_string()],
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -411,7 +409,7 @@ mod tests {
             son2: None,
         };
         let c0_left = Algo {
-            vars: vec!["x".to_string()],
+            vars: vec!["x".to_string(), "y".to_string()],
             time: 1,
             memory: 1,
             nb_solutions: 1,

@@ -1,7 +1,6 @@
-graph my_graph {
-	N0[label="ROOT"];
-	N1[label=""];
-	N2[label=""];
-	N0 -- N1;
-	N0 -- N2;
+digraph {
+	0[label="PAPA"];
+	1[label="x" color="chartreuse"];
+	2[label=""];
+	0 -> { 1 2}
 }

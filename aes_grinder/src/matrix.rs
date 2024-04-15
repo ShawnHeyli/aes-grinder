@@ -824,6 +824,7 @@ mod tests {
         let z = matrix.count_no_zero_rows();
         assert_eq!(z, 3);
     }
+    
     #[test]
     fn test_row_reduce() {
         let mut matrix = Matrix::new(3, 3);
@@ -1001,6 +1002,71 @@ mod test_fn_sort_left {
         assert_eq!(matrix[(0, 1)], 2.into());
         assert_eq!(matrix[(1, 1)], 2.into());
         assert_eq!(matrix[(2, 1)], 2.into());
+        assert_eq!(matrix[(0, 2)], 0.into());
+        assert_eq!(matrix[(1, 2)], 0.into());
+        assert_eq!(matrix[(2, 2)], 0.into());
+    }
+}
+
+#[cfg(test)]
+mod test_fn_sort_right {
+    use super::*;
+
+    #[test]
+    fn sort_right_00() {
+        let mut matrix = Matrix::new(1, 3);
+        matrix[(0, 0)] = 0.into();
+        matrix[(0, 1)] = 1.into();
+        matrix[(0, 2)] = 2.into();
+
+        let mut vars_maps: HashMap<String, usize> = HashMap::new();
+        vars_maps.insert("x".to_string(), 0);
+        vars_maps.insert("y".to_string(), 1);
+        vars_maps.insert("z".to_string(), 2);
+        matrix.set_vars_map(vars_maps);
+
+        let string_lst = vec![String::from("x"), String::from("y")];
+        matrix.sort_right(string_lst);
+
+        assert_eq!(matrix.vars_map.get("z").unwrap(), &0);
+        assert_eq!(matrix.vars_map.get("y").unwrap(), &1);
+        assert_eq!(matrix.vars_map.get("x").unwrap(), &2);
+        assert_eq!(matrix[(0, 0)], 2.into());
+        assert_eq!(matrix[(0, 1)], 1.into());
+        assert_eq!(matrix[(0, 2)], 0.into());
+    }
+
+    #[test]
+    fn sort_right_01() {
+        let mut matrix = Matrix::new(3, 3);
+        matrix[(0, 0)] = 0.into();
+        matrix[(0, 1)] = 1.into();
+        matrix[(0, 2)] = 2.into();
+        matrix[(1, 0)] = 0.into();
+        matrix[(1, 1)] = 1.into();
+        matrix[(1, 2)] = 2.into();
+        matrix[(2, 0)] = 0.into();
+        matrix[(2, 1)] = 1.into();
+        matrix[(2, 2)] = 2.into();
+
+        let mut vars_maps: HashMap<String, usize> = HashMap::new();
+        vars_maps.insert("x".to_string(), 0);
+        vars_maps.insert("y".to_string(), 1);
+        vars_maps.insert("z".to_string(), 2);
+        matrix.set_vars_map(vars_maps);
+
+        let string_lst = vec![String::from("x"), String::from("y")];
+        matrix.sort_right(string_lst);
+
+        assert_eq!(matrix.vars_map.get("z").unwrap(), &0);
+        assert_eq!(matrix.vars_map.get("y").unwrap(), &1);
+        assert_eq!(matrix.vars_map.get("x").unwrap(), &2);
+        assert_eq!(matrix[(0, 0)], 2.into());
+        assert_eq!(matrix[(1, 0)], 2.into());
+        assert_eq!(matrix[(2, 0)], 2.into());
+        assert_eq!(matrix[(0, 1)], 1.into());
+        assert_eq!(matrix[(1, 1)], 1.into());
+        assert_eq!(matrix[(2, 1)], 1.into());
         assert_eq!(matrix[(0, 2)], 0.into());
         assert_eq!(matrix[(1, 2)], 0.into());
         assert_eq!(matrix[(2, 2)], 0.into());

@@ -112,7 +112,7 @@ impl Algo {
             )?;
 
             dot_file.write_all(
-                format!(" -- N{}", mark_son_left.unwrap()).as_bytes()
+                format!(" <-- N{}", mark_son_left.unwrap()).as_bytes()
             )?;
 
             dot_file.write_all(
@@ -126,7 +126,7 @@ impl Algo {
             )?;
 
             dot_file.write_all(
-                format!(" -- N{}", mark_son_right.unwrap()).as_bytes()
+                format!(" <-- N{}", mark_son_right.unwrap()).as_bytes()
             )?;
 
             dot_file.write_all(

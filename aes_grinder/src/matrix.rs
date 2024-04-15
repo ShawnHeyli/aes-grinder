@@ -212,10 +212,19 @@ impl Matrix {
         }
     }
 
+    fn swap_lines(&mut self, i: usize, j: usize) {
+        println!("Swap lines {} and {}", i, j);
+        for k in 0..self.cols {
+            let temp = self[(i, k)];
+            self[(i, k)] = self[(j, k)];
+            self[(j, k)] = temp;
+        }
+    }
+    /// Row reduce the matrix on the given variables
     pub fn row_reduce_on(&mut self, vars: Vec<String>) -> () {
-        assert!(self.rows >= self.cols - vars.len());
+        assert!(self.rows >= vars.len());
         self.sort_left(vars.clone());
-        for j in 0..vars.len() {
+        for j in 0..vars.len() {//Cols
             //Find the max
             let mut max: Number = 0.into();
             let mut max_row = 0;
@@ -225,34 +234,26 @@ impl Matrix {
                     max_row = i;
                 }
             }
-            for i in 0..self.cols {
-                if self[(max_row, i)] != 0.into() && i == max_row {
-                    //This is the pivot
-                    //Set the pivot to one by multiplying the inverse of it in the field
-                    //Use bigInt extended gcd to find the inverse
-                    let pivot = self[(max_row, j)];
-                    let inverse = pivot.invert();
-                    //Normalize the pivot line
-                    for k in 0..self.cols {
-                        self[(max_row, k)] = self[(max_row, k)] * inverse;
-                    }
-                    //Swap the line
-                    for k in 0..self.rows {
-                        let temp = self[(j, k)];
-                        self[(j, k)] = self[(max_row, k)];
-                        self[(max_row, k)] = temp;
-                    }
-                    //Set 0 under the pivot
-                    for k in j + 1..self.rows {
-                        let factor = self[(k, j)];
-                        for l in 0..self.cols {
-                            let a = self[(k, l)];
-                            let b = factor * self[(j, l)];
-                            let ab = a + b;
-                            self[(k, l)] = ab;
-                        }
-                    }
-                    break;
+            if max == 0.into() {
+                continue;
+            }
+            //Swap the line
+            self.swap_lines(max_row, j);
+            //Normalize
+            //Set the pivot to one by multiplying the inverse of it in the field
+            let pivot = self[(j, j)];
+            let inverse = pivot.invert();
+            for k in 0..self.cols {
+                self[(j, k)] = self[(j, k)] * inverse;
+            }
+            //Set 0 under the pivot
+            for k in j + 1..self.rows {
+                let factor = self[(k, j)];
+                for l in 0..self.cols {
+                    let a = self[(k, l)];
+                    let b = factor * self[(j, l)];
+                    let ab = a + b;
+                    self[(k, l)] = ab;
                 }
             }
         }
@@ -392,10 +393,12 @@ impl Matrix {
                 Some((x, sx)) => {
                     println!("VARIABLE ECHELONNE {x} et {sx}\n");
                     self.row_reduce_on(vec![x, sx]);
+                    //Here treat the case where the variable is linear
                 }
                 None => has_been_update = false,
             }
             println!("Apres gauss\n{}", self);
+            panic!();
             // panic!();
 
             //     //selctionner une varibale dans les variables non traitées et de rang 1,
@@ -533,9 +536,12 @@ impl Matrix {
 
 impl std::fmt::Display for Matrix {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        // Print the vars_map
-        for (k, v) in &self.vars_map {
-            writeln!(f, "{}: {}", k, v)?;
+        // Print the vars_map in sorted order by values
+        let vars_map = self.vars_map.clone();
+        let mut vars_to_display: Vec<(String, usize)> = vars_map.into_iter().collect();
+        vars_to_display.sort_by(|a, b| a.1.cmp(&b.1));
+        for (str, col) in vars_to_display {
+            write!(f, "{} {}\n", str, col)?;
         }
 
         // Print the matrix

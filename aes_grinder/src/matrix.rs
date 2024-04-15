@@ -263,10 +263,32 @@ impl Matrix {
      * Compute |vars| - dim(M(vars))
      */
     pub fn number_solutions(&mut self, vars: Vec<String>) -> usize {
-        vars.len()
-            - self
-                .get_matrix_generated_by(vars)
-                .dimension_solution_space()
+        //Echelonner matrice sur les non vars
+        //Compter nombre d'equation en bas (0 sous non vars, en dessous matrice echellonée)
+        //C'est cette partie à gérer
+        //Retourner |vars| - nombre d'equation en bas
+        self.sort_right(vars);
+        self.row_reduce();
+
+        let card_vars = vars.len();
+        let nb_ligne_zero_borded_from_bottom = self.get_nb_ligne_zero_borded_from_bottom(card_vars);
+
+        // 👇👇👇 vieux code de samu
+        // vars.len()
+        //     - self
+        //         .get_matrix_generated_by(vars)
+        //         .dimension_solution_space()
+    }
+
+    fn get_nb_ligne_zero_borded_from_bottom(&self, nb_vars:usize) -> usize{
+        let max = self.cols - nb_vars;
+        let nb_ligne = 0;
+        for i in self.rows-1..0{
+            for j in 0..nb_vars{
+
+            }
+        }
+        todo!()
     }
 
     fn get_matrix_generated_by(&self, vars: Vec<String>) -> Matrix {

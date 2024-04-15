@@ -790,6 +790,21 @@ mod tests {
     }
 
     #[test]
+    fn test_swap_columns() {
+        let mut matrix = Matrix::new(3, 3);
+        matrix[(0, 0)] = 1.into();
+        matrix[(1, 1)] = 1.into();
+        matrix[(2, 2)] = 2.into();
+        let mut vars_maps: HashMap<String, usize> = HashMap::new();
+        vars_maps.insert("x".to_string(), 0);
+        vars_maps.insert("y".to_string(), 1);
+        vars_maps.insert("z".to_string(), 2);
+        matrix.set_vars_map(vars_maps);
+
+
+    }
+
+    #[test]
     fn test_get_variable_if_sboxed() {
         let s: Vec<String> = vec!["X".to_string(), "S(X)".to_string(), "Y".to_string()];
         let sboxed = get_variable_if_sboxed(&s);

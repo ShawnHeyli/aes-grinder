@@ -108,8 +108,8 @@ impl Matrix {
             self.data.swap(i * self.cols + col1, i * self.cols + col2);
         }
         //Swap in vars_map
-        let col1 = self.vars_map.into_iter().find(|(_, v)| *v == col1).unwrap();
-        let col2 = self.vars_map.into_iter().find(|(_, v)| *v == col2).unwrap();
+        let col1 = <HashMap<String, usize> as Clone>::clone(&self.vars_map).into_iter().find(|(_, v)| *v == col1).unwrap();
+        let col2 = <HashMap<String, usize> as Clone>::clone(&self.vars_map).into_iter().find(|(_, v)| *v == col2).unwrap();
         self.vars_map.insert(col1.0, col2.1);
         self.vars_map.insert(col2.0, col1.1);
     }
@@ -218,7 +218,7 @@ impl Matrix {
 
     pub fn row_reduce_on(&mut self, vars: Vec<String>) -> () {
         assert!(self.rows >= self.cols - vars.len());
-        self.sort_vars(vars.clone());
+        self.sort_left(vars.clone());
         for j in 0..vars.len() {
             //Find the max
             let mut max: Number = 0.into();

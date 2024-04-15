@@ -170,11 +170,13 @@ impl Algo {
 
     ///Fonction de fusion de deux algo
     pub fn fusion_two_algo(a1: Box<Algo>, a2: Box<Algo>, mut matrix: &mut Matrix) -> Algo {
-        todo!();
-        let union_vars:Vec<String> = a1.vars.into_iter().chain(a2.vars.into_iter()).collect();
+        let mut union_vars:Vec<String> = a1.vars.clone();
+        let union_vars2:Vec<String> = a2.vars.clone();
+        union_vars.extend(union_vars2);
+        union_vars.dedup();
 
         let nb_sol = Matrix::number_solutions(matrix, union_vars.clone());
-        Algo {
+        let alg = Algo {
             vars: union_vars,
             //Compute the number of solutions
             nb_solutions: nb_sol,
@@ -185,7 +187,13 @@ impl Algo {
             ),
             son1: Some(a1),
             son2: Some(a2),
-        }
+        };
+        let mut h = std::hash::DefaultHasher::new();
+        alg.hash(&mut h);
+        
+        let name = format!("/tmp/algo{}",h.finish());
+        println!("fusion {:?} ",alg.to_dot(&name));
+        alg
     }
 
     /**

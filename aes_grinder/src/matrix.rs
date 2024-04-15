@@ -276,7 +276,7 @@ impl Matrix {
     }
 
     fn swap_lines(&mut self, i: usize, j: usize) {
-        println!("Swap lines {} and {}", i, j);
+        // println!("Swap lines {} and {}", i, j);
         for k in 0..self.cols {
             let temp = self[(i, k)];
             self[(i, k)] = self[(j, k)];
@@ -452,7 +452,6 @@ impl Matrix {
                 None => has_been_update = false,
             }
             println!("Apres gauss\n{}", self);
-            panic!();
             // panic!();
 
             //     //selctionner une varibale dans les variables non traitées et de rang 1,

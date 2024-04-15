@@ -212,14 +212,19 @@ impl Matrix {
         }
     }
 
+    fn swap_lines(&mut self, i: usize, j: usize) {
+        println!("Swap lines {} and {}", i, j);
+        for k in 0..self.cols {
+            let temp = self[(i, k)];
+            self[(i, k)] = self[(j, k)];
+            self[(j, k)] = temp;
+        }
+    }
     /// Row reduce the matrix on the given variables
     pub fn row_reduce_on(&mut self, vars: Vec<String>) -> () {
-        assert!(self.rows >= self.cols - vars.len());
-        println!("Before sorting\n{}", self);
+        assert!(self.rows >= vars.len());
         self.sort_left(vars.clone());
-        println!("After sorting\n{}", self);
-
-        for j in 0..vars.len() {
+        for j in 0..vars.len() {//Cols
             //Find the max
             let mut max: Number = 0.into();
             let mut max_row = 0;
@@ -229,38 +234,29 @@ impl Matrix {
                     max_row = i;
                 }
             }
-            for i in 0..self.cols {
-                if self[(max_row, i)] != 0.into() && i == max_row {
-                    //This is the pivot
-                    //Set the pivot to one by multiplying the inverse of it in the field
-                    //Use bigInt extended gcd to find the inverse
-                    let pivot = self[(max_row, j)];
-                    let inverse = pivot.invert();
-                    //Normalize the pivot line
-                    for k in 0..self.cols {
-                        self[(max_row, k)] = self[(max_row, k)] * inverse;
-                    }
-                    //Swap the line
-                    for k in 0..self.rows {
-                        let temp = self[(j, k)];
-                        self[(j, k)] = self[(max_row, k)];
-                        self[(max_row, k)] = temp;
-                    }
-                    //Set 0 under the pivot
-                    for k in j + 1..self.rows {
-                        let factor = self[(k, j)];
-                        for l in 0..self.cols {
-                            let a = self[(k, l)];
-                            let b = factor * self[(j, l)];
-                            let ab = a + b;
-                            self[(k, l)] = ab;
-                        }
-                    }
-                    break;
+            if max == 0.into() {
+                continue;
+            }
+            //Swap the line
+            self.swap_lines(max_row, j);
+            //Normalize
+            //Set the pivot to one by multiplying the inverse of it in the field
+            let pivot = self[(j, j)];
+            let inverse = pivot.invert();
+            for k in 0..self.cols {
+                self[(j, k)] = self[(j, k)] * inverse;
+            }
+            //Set 0 under the pivot
+            for k in j + 1..self.rows {
+                let factor = self[(k, j)];
+                for l in 0..self.cols {
+                    let a = self[(k, l)];
+                    let b = factor * self[(j, l)];
+                    let ab = a + b;
+                    self[(k, l)] = ab;
                 }
             }
         }
-        println!("After row reduce \n{}", self);
     }
 
     /**
@@ -268,6 +264,10 @@ impl Matrix {
      * Compute |vars| - dim(M(vars))
      */
     pub fn number_solutions(&mut self, vars: Vec<String>) -> usize {
+        //Echelonner matrice sur les non vars
+        //Compter nombre d'equation en bas (0 sous non vars, en dessous matrice echellonée)
+        //C'est cette partie à gérer
+        //Retourner |vars| - nombre d'equation en bas
         vars.len()
             - self
                 .get_matrix_generated_by(vars)

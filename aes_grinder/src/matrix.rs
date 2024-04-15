@@ -102,7 +102,7 @@ impl Matrix {
     }
 
     pub fn swap_columns(&mut self, col1: usize, col2: usize) {
-        assert!(col1 >= self.cols || col2 >= self.cols, "Column index out of bounds");
+        assert!(col1 < self.cols && col2 < self.cols, "Column index out of bounds");
 
         for i in 0..self.rows {
             self.data.swap(i * self.cols + col1, i * self.cols + col2);
@@ -628,14 +628,6 @@ mod tests {
     }
 
     #[test]
-    fn swap_columns() {
-        let mut matrix = Matrix::from(vec![vec![1, 2], vec![3, 4]]);
-        matrix.swap_columns(0, 1);
-        let expected = Matrix::from(vec![vec![2, 1], vec![4, 3]]);
-        assert_eq!(matrix, expected);
-    }
-
-    #[test]
     fn delete_row() {
         let mut matrix = Matrix::from(vec![vec![1, 2], vec![3, 4]]);
         matrix.delete_row(0);
@@ -815,21 +807,6 @@ mod tests {
     }
 
     #[test]
-    fn test_swap_columns() {
-        let mut matrix = Matrix::new(3, 3);
-        matrix[(0, 0)] = 1.into();
-        matrix[(1, 1)] = 1.into();
-        matrix[(2, 2)] = 2.into();
-        let mut vars_maps: HashMap<String, usize> = HashMap::new();
-        vars_maps.insert("x".to_string(), 0);
-        vars_maps.insert("y".to_string(), 1);
-        vars_maps.insert("z".to_string(), 2);
-        matrix.set_vars_map(vars_maps);
-
-
-    }
-
-    #[test]
     fn test_get_variable_if_sboxed() {
         let s: Vec<String> = vec!["X".to_string(), "S(X)".to_string(), "Y".to_string()];
         let sboxed = get_variable_if_sboxed(&s);
@@ -885,5 +862,147 @@ mod tests {
         println!("variable expect = {:?}", expect);
 
         assert_eq!(m, expect);
+    }
+}
+
+#[cfg(test)]
+mod test_fn_swap {
+    use super::*;
+
+    #[test]
+    fn swap_columns_00() {
+        let mut matrix = Matrix::new(1, 3);
+        matrix[(0, 0)] = 0.into();
+        matrix[(0, 1)] = 1.into();
+        matrix[(0, 2)] = 2.into();
+
+        let mut vars_maps: HashMap<String, usize> = HashMap::new();
+        vars_maps.insert("x".to_string(), 0);
+        vars_maps.insert("y".to_string(), 1);
+        vars_maps.insert("z".to_string(), 2);
+        matrix.set_vars_map(vars_maps);
+
+        matrix.swap_columns(0, 2);
+
+        assert_eq!(matrix.vars_map.get("x").unwrap(), &2);
+        assert_eq!(matrix.vars_map.get("z").unwrap(), &0);
+        assert_eq!(matrix[(0, 0)], 2.into());
+        assert_eq!(matrix[(0, 2)], 0.into());
+
+
+        matrix.swap_columns(0, 1);
+
+        assert_eq!(matrix.vars_map.get("y").unwrap(), &0);
+        assert_eq!(matrix.vars_map.get("z").unwrap(), &1);
+        assert_eq!(matrix[(0, 0)], 1.into());
+        assert_eq!(matrix[(0, 1)], 2.into());
+    }
+
+    #[test]
+    fn swap_columns_01() {
+        let mut matrix = Matrix::new(3, 3);
+        matrix[(0, 0)] = 0.into();
+        matrix[(0, 1)] = 1.into();
+        matrix[(0, 2)] = 2.into();
+        matrix[(1, 0)] = 0.into();
+        matrix[(1, 1)] = 1.into();
+        matrix[(1, 2)] = 2.into();
+        matrix[(2, 0)] = 0.into();
+        matrix[(2, 1)] = 1.into();
+        matrix[(2, 2)] = 2.into();
+
+        let mut vars_maps: HashMap<String, usize> = HashMap::new();
+        vars_maps.insert("x".to_string(), 0);
+        vars_maps.insert("y".to_string(), 1);
+        vars_maps.insert("z".to_string(), 2);
+        matrix.set_vars_map(vars_maps);
+
+        matrix.swap_columns(0, 2);
+
+        assert_eq!(matrix.vars_map.get("x").unwrap(), &2);
+        assert_eq!(matrix.vars_map.get("z").unwrap(), &0);
+        assert_eq!(matrix[(0, 0)], 2.into());
+        assert_eq!(matrix[(1, 0)], 2.into());
+        assert_eq!(matrix[(2, 0)], 2.into());
+        assert_eq!(matrix[(0, 2)], 0.into());
+        assert_eq!(matrix[(1, 2)], 0.into());
+        assert_eq!(matrix[(2, 2)], 0.into());
+
+
+        matrix.swap_columns(0, 1);
+
+        assert_eq!(matrix.vars_map.get("y").unwrap(), &0);
+        assert_eq!(matrix.vars_map.get("z").unwrap(), &1);
+        assert_eq!(matrix[(0, 0)], 1.into());
+        assert_eq!(matrix[(1, 0)], 1.into());
+        assert_eq!(matrix[(2, 0)], 1.into());
+        assert_eq!(matrix[(0, 1)], 2.into());
+        assert_eq!(matrix[(1, 1)], 2.into());
+        assert_eq!(matrix[(2, 1)], 2.into());
+    }
+}
+
+#[cfg(test)]
+mod test_fn_sort_left {
+    use super::*;
+
+    #[test]
+    fn sort_left_00() {
+        let mut matrix = Matrix::new(1, 3);
+        matrix[(0, 0)] = 0.into();
+        matrix[(0, 1)] = 1.into();
+        matrix[(0, 2)] = 2.into();
+
+        let mut vars_maps: HashMap<String, usize> = HashMap::new();
+        vars_maps.insert("x".to_string(), 0);
+        vars_maps.insert("y".to_string(), 1);
+        vars_maps.insert("z".to_string(), 2);
+        matrix.set_vars_map(vars_maps);
+
+        let string_lst = vec![String::from("z"), String::from("y")];
+        matrix.sort_left(string_lst);
+
+        assert_eq!(matrix.vars_map.get("z").unwrap(), &0);
+        assert_eq!(matrix.vars_map.get("y").unwrap(), &1);
+        assert_eq!(matrix.vars_map.get("x").unwrap(), &2);
+        assert_eq!(matrix[(0, 0)], 2.into());
+        assert_eq!(matrix[(0, 1)], 1.into());
+        assert_eq!(matrix[(0, 2)], 0.into());
+    }
+
+    #[test]
+    fn sort_left_01() {
+        let mut matrix = Matrix::new(3, 3);
+        matrix[(0, 0)] = 0.into();
+        matrix[(0, 1)] = 1.into();
+        matrix[(0, 2)] = 2.into();
+        matrix[(1, 0)] = 0.into();
+        matrix[(1, 1)] = 1.into();
+        matrix[(1, 2)] = 2.into();
+        matrix[(2, 0)] = 0.into();
+        matrix[(2, 1)] = 1.into();
+        matrix[(2, 2)] = 2.into();
+
+        let mut vars_maps: HashMap<String, usize> = HashMap::new();
+        vars_maps.insert("x".to_string(), 0);
+        vars_maps.insert("y".to_string(), 1);
+        vars_maps.insert("z".to_string(), 2);
+        matrix.set_vars_map(vars_maps);
+
+        let string_lst = vec![String::from("y"), String::from("z")];
+        matrix.sort_left(string_lst);
+
+        assert_eq!(matrix.vars_map.get("y").unwrap(), &0);
+        assert_eq!(matrix.vars_map.get("z").unwrap(), &1);
+        assert_eq!(matrix.vars_map.get("x").unwrap(), &2);
+        assert_eq!(matrix[(0, 0)], 1.into());
+        assert_eq!(matrix[(1, 0)], 1.into());
+        assert_eq!(matrix[(2, 0)], 1.into());
+        assert_eq!(matrix[(0, 1)], 2.into());
+        assert_eq!(matrix[(1, 1)], 2.into());
+        assert_eq!(matrix[(2, 1)], 2.into());
+        assert_eq!(matrix[(0, 2)], 0.into());
+        assert_eq!(matrix[(1, 2)], 0.into());
+        assert_eq!(matrix[(2, 2)], 0.into());
     }
 }

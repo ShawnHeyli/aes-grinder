@@ -5,13 +5,10 @@ use std::{
     cmp::{max, min},
     collections::HashSet,
 };
-
 use crate::matrix::Matrix;
 use std::hash::Hasher;
-
 use std::fs::File;
 use std::io::Write;
-use std::process::Command;
 
 #[derive(Eq, Clone, Debug)]
 pub struct Algo {
@@ -174,15 +171,10 @@ impl Algo {
 
     ///Fonction de fusion de deux algo
     pub fn fusion_two_algo(a1: Box<Algo>, a2: Box<Algo>, mut matrix: &mut Matrix) -> Algo {
-        //Union of a1 vars_val and a2 vars_val
-        let union_vars = a1
-            .vars
-            .clone()
-            .into_iter()
-            .chain(a2.vars.clone())
-            .collect();
+        todo!();
+        let union_vars:Vec<String> = a1.vars.into_iter().chain(a2.vars.into_iter()).collect();
 
-        let nb_sol = Matrix::number_solutions(matrix, union_vars);
+        let nb_sol = Matrix::number_solutions(matrix, union_vars.clone());
         Algo {
             vars: union_vars,
             //Compute the number of solutions
@@ -224,6 +216,8 @@ impl Algo {
 ///Test de l'implementation de la struct algo
 #[cfg(test)]
 mod tests {
+    use std::process::Command;
+
     use super::*;
 
     #[test]

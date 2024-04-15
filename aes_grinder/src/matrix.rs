@@ -268,7 +268,7 @@ impl Matrix {
         //Compter nombre d'equation en bas (0 sous non vars, en dessous matrice echellonée)
         //C'est cette partie à gérer
         //Retourner |vars| - nombre d'equation en bas
-        self.sort_right(vars);
+        self.sort_right(vars.clone());
         self.row_reduce();
 
         let card_vars = vars.len();
@@ -279,6 +279,7 @@ impl Matrix {
         //     - self
         //         .get_matrix_generated_by(vars)
         //         .dimension_solution_space()
+        todo!()
     }
 
     fn get_nb_ligne_zero_borded_from_bottom(&self, nb_vars:usize) -> usize{

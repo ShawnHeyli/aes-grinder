@@ -19,6 +19,34 @@ impl Matrix {
         }
     }
 
+    /// put argument vars to left of matrix
+    fn sort_left(&mut self, vars: Vec<String>) {
+        let mut swap_ndx: usize = 0;
+        let mut vars_iter = vars.iter();
+        
+        while let Some(var) = vars_iter.next() {
+            let ndx = self.vars_map.get(var).unwrap();
+            self.swap_columns(swap_ndx, *ndx);
+            
+            assert_ne!(self.cols, swap_ndx);
+            swap_ndx += 1;
+        }
+    }
+
+    /// put argument vars to right of matrix
+    fn sort_right(&mut self, vars: Vec<String>) {
+        let mut swap_ndx: usize = self.cols - 1;
+        let mut vars_iter = vars.iter();
+        
+        while let Some(var) = vars_iter.next() {
+            let ndx = self.vars_map.get(var).unwrap();
+            self.swap_columns(swap_ndx, *ndx);
+
+            assert_ne!(0, swap_ndx);
+            swap_ndx -= 1;
+        }
+    }
+
     pub fn new_from_vec(
         data: Vec<Vec<u32>>,
         vars_map: HashMap<String, usize>,

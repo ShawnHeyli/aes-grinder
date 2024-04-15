@@ -1,5 +1,5 @@
-graph my_graph {
-	N0[label="ROOT"];
+graph {
+	N0[label="PAPA"];
 	N1[label=""];
 	N2[label=""];
 	N3[label=""];

@@ -354,13 +354,11 @@ impl Matrix {
             self.delete_empty_colums();
             match variable_sboxed_max_rank_1.pop() {
                 Some((x,sx)) => {
-                    println!("{x}{sx}");
-                    self.sort_left(vec![x,sx])},
+                    println!("VARIABLE ECHELONNE {x} et {sx}\n");
+                    self.row_reduce_on(vec![x,sx]);
+                },
                 None => has_been_update = false,
             }
-            
-            println!("sorted \n{}", self);
-            self.gaussian_elimination_inv();
             println!("Apres gauss\n{}", self);
             // panic!();
 

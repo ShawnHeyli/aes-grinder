@@ -159,7 +159,7 @@ impl Matrix {
         self.cols -= 1;
     }
 
-    pub fn gaussian_elimination_inv(&mut self) -> Matrix {
+    pub fn gaussian_elimination_inv(&mut self) {
         for j in 0..max(self.cols, self.rows) {
             //Find the max
             let mut max: Number = 0.into();
@@ -201,19 +201,6 @@ impl Matrix {
                 }
             }
         }
-        //Backward substitution
-        for j in (0..self.cols).rev() {
-            for i in (0..j).rev() {
-                let factor = self[(i, j)];
-                for k in 0..self.cols {
-                    let a = self[(i, k)];
-                    let b = factor * self[(j, k)];
-                    let ab = a + b;
-                    self[(i, k)] = ab;
-                }
-            }
-        }
-        self.clone()
     }
 
     pub fn row_reduce_on(&mut self, vars: Vec<String>) -> () {
@@ -284,14 +271,14 @@ impl Matrix {
 
     /// Compute the dimension of the solution space of the system of equations
     fn dimension_solution_space(&mut self) -> usize {
-        let matrice = self.gaussian_elimination_inv();
-        let r = matrice.count_no_zero_rows();
+        self.row_reduce();
+        let r = self.count_no_zero_rows();
         println!(
             "ECHEC :  non_zero:{r} col : {:?}, row:{}",
-            matrice.cols, matrice.rows
+            self.cols, self.rows
         );
-        println!("MATRICE : \n{}", matrice);
-        matrice.cols - r as usize
+        println!("MATRICE : \n{}", self);
+        self.cols - r as usize
     }
 
     /// Perform row reduction to get row echelon form
@@ -354,25 +341,28 @@ impl Matrix {
             "Apres delete alone variable nb cols {}, nb rows {}",
             self.cols, self.rows
         );
-        println!("after delete alone : \n{}", self);
 
         let mut has_been_update: bool = true;
         //tant que la matrice a ete mise a jour on continue d'eliminer les variables lineraires
-        while has_been_update {
             let variable_of_max_rank: Vec<String> = self.get_variable_of_max_rank(1);
             let mut variable_sboxed_max_rank_1 = get_variable_if_sboxed(&variable_of_max_rank);
+            println!("tout les variable sboxed : {:?}", variable_sboxed_max_rank_1);
+        while has_been_update {
 
-            println!("Avant gauss \n{}", self);
+            println!("Clean zero \n{}", self);
             self.delete_empty_rows();
             self.delete_empty_colums();
             match variable_sboxed_max_rank_1.pop() {
-                Some((x,sx)) => self.sort_left(vec![x,sx]),
+                Some((x,sx)) => {
+                    println!("{x}{sx}");
+                    self.sort_left(vec![x,sx])},
                 None => has_been_update = false,
             }
             
+            println!("sorted \n{}", self);
             self.gaussian_elimination_inv();
             println!("Apres gauss\n{}", self);
-            println!("{}", self);
+            // panic!();
 
             //     //selctionner une varibale dans les variables non traitées et de rang 1,
             //     //et qui a une varible en sbox aussi de rang1
@@ -661,10 +651,10 @@ mod tests {
     fn test_gaussian_elimination_inv() {
         let mut matrix = Matrix::from(vec![vec![1, 2], vec![3, 4]]);
         println!("{}", matrix);
-        let result = matrix.gaussian_elimination_inv();
+        matrix.gaussian_elimination_inv();
         let expected = Matrix::from(vec![vec![1, 0], vec![0, 1]]);
-        println!("{}", result);
-        assert_eq!(result, expected);
+        println!("{}", matrix);
+        assert_eq!(matrix, expected);
     }
 
     #[test]
@@ -706,8 +696,8 @@ mod tests {
         matrix[(2, 2)] = 4.into();
         matrix[(3, 3)] = 3.into();
         println!("{}", matrix);
-        let result = matrix.gaussian_elimination_inv();
-        println!("{}", result);
+        matrix.gaussian_elimination_inv();
+        println!("{}", matrix);
         let mut vars_maps: HashMap<String, usize> = HashMap::new();
         vars_maps.insert("X_0[0,0]".to_string(), 0);
         vars_maps.insert("S(X_0[0,0])".to_string(), 1);

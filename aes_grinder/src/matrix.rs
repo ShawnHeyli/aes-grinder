@@ -212,9 +212,13 @@ impl Matrix {
         }
     }
 
+    /// Row reduce the matrix on the given variables
     pub fn row_reduce_on(&mut self, vars: Vec<String>) -> () {
         assert!(self.rows >= self.cols - vars.len());
+        println!("Before sorting\n{}", self);
         self.sort_left(vars.clone());
+        println!("After sorting\n{}", self);
+
         for j in 0..vars.len() {
             //Find the max
             let mut max: Number = 0.into();
@@ -256,6 +260,7 @@ impl Matrix {
                 }
             }
         }
+        println!("After row reduce \n{}", self);
     }
 
     /**
@@ -370,10 +375,12 @@ impl Matrix {
                 Some((x, sx)) => {
                     println!("VARIABLE ECHELONNE {x} et {sx}\n");
                     self.row_reduce_on(vec![x, sx]);
+                    //Here treat the case where the variable is linear
                 }
                 None => has_been_update = false,
             }
             println!("Apres gauss\n{}", self);
+            panic!();
             // panic!();
 
             //     //selctionner une varibale dans les variables non traitées et de rang 1,
@@ -511,9 +518,12 @@ impl Matrix {
 
 impl std::fmt::Display for Matrix {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        // Print the vars_map
-        for (k, v) in &self.vars_map {
-            writeln!(f, "{}: {}", k, v)?;
+        // Print the vars_map in sorted order by values
+        let vars_map = self.vars_map.clone();
+        let mut vars_to_display: Vec<(String, usize)> = vars_map.into_iter().collect();
+        vars_to_display.sort_by(|a, b| a.1.cmp(&b.1));
+        for (str, col) in vars_to_display {
+            write!(f, "{} {}\n", str, col)?;
         }
 
         // Print the matrix

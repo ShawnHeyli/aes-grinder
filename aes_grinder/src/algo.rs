@@ -203,7 +203,7 @@ impl Algo {
      */
     pub fn compare1(&self, other: &Self) -> Option<Ordering> {
         if self.get_all_variables() == other.get_all_variables() {
-            if(self.time <= other.time) {
+            if self.time <= other.time {
                 return Some(Ordering::Greater);
             }else {
                 return Some(Ordering::Less);

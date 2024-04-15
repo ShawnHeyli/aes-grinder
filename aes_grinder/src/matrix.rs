@@ -1,7 +1,5 @@
-use clap::builder::Str;
-
 use crate::utils::{Invertible, Number};
-use std::collections::HashMap;
+use std::{cmp::max, collections::HashMap};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Matrix {
@@ -104,13 +102,16 @@ impl Matrix {
     }
 
     pub fn swap_columns(&mut self, col1: usize, col2: usize) {
-        if col1 >= self.cols || col2 >= self.cols {
-            panic!("Column index out of bounds");
-        }
+        assert!(col1 >= self.cols || col2 >= self.cols, "Column index out of bounds");
 
         for i in 0..self.rows {
             self.data.swap(i * self.cols + col1, i * self.cols + col2);
         }
+        //Swap in vars_map
+        let col1 = <HashMap<String, usize> as Clone>::clone(&self.vars_map).into_iter().find(|(_, v)| *v == col1).unwrap();
+        let col2 = <HashMap<String, usize> as Clone>::clone(&self.vars_map).into_iter().find(|(_, v)| *v == col2).unwrap();
+        self.vars_map.insert(col1.0, col2.1);
+        self.vars_map.insert(col2.0, col1.1);
     }
 
     pub fn delete_row(&mut self, row: usize) {
@@ -159,7 +160,7 @@ impl Matrix {
     }
 
     pub fn gaussian_elimination_inv(&mut self) -> Matrix {
-        for j in 0..self.cols {
+        for j in 0..max(self.cols, self.rows) {
             //Find the max
             let mut max: Number = 0.into();
             let mut max_row = 0;
@@ -215,9 +216,10 @@ impl Matrix {
         self.clone()
     }
 
-    ///Elimination de gauss borné
-    pub fn gaussian_elimination_inv_bounded(&mut self, bound: usize) -> Matrix {
-        for j in 0..bound {
+    pub fn row_reduce_on(&mut self, vars: Vec<String>) -> () {
+        assert!(self.rows >= self.cols - vars.len());
+        self.sort_left(vars.clone());
+        for j in 0..vars.len() {
             //Find the max
             let mut max: Number = 0.into();
             let mut max_row = 0;
@@ -258,29 +260,14 @@ impl Matrix {
                 }
             }
         }
-        //Backward substitution
-        for j in (0..self.cols).rev() {
-            for i in (0..j).rev() {
-                let factor = self[(i, j)];
-                for k in 0..self.cols {
-                    let a = self[(i, k)];
-                    let b = factor * self[(j, k)];
-                    let ab = a + b;
-                    self[(i, k)] = ab;
-                }
-            }
-        }
-        self.clone()
     }
 
-    /// Compute the number of solution of the system of equations for the given variables
-    // Compute |vars| - dim(M(vars))
+    /**
+     * Compute the number of solution of the system of equations for the given variables
+     * Compute |vars| - dim(M(vars))
+     */
     pub fn number_solutions(&mut self, vars: Vec<String>) -> usize {
-        print!("NB SOLUTION \n{}", self);
-        vars.len()
-            - self
-                .get_matrix_generated_by(vars)
-                .dimension_solution_space()
+        vars.len() - self.get_matrix_generated_by(vars).dimension_solution_space()
     }
 
     fn get_matrix_generated_by(&self, vars: Vec<String>) -> Matrix {
@@ -297,7 +284,7 @@ impl Matrix {
 
     /// Compute the dimension of the solution space of the system of equations
     fn dimension_solution_space(&mut self) -> usize {
-        let matrice = self.gaussian_elimination_inv_bounded(99);
+        let matrice = self.gaussian_elimination_inv();
         let r = matrice.count_no_zero_rows();
         println!(
             "ECHEC :  non_zero:{r} col : {:?}, row:{}",
@@ -368,19 +355,24 @@ impl Matrix {
             self.cols, self.rows
         );
         println!("after delete alone : \n{}", self);
-        let has_been_update: bool = true;
+
+        let mut has_been_update: bool = true;
         //tant que la matrice a ete mise a jour on continue d'eliminer les variables lineraires
         while has_been_update {
             let variable_of_max_rank: Vec<String> = self.get_variable_of_max_rank(1);
             let mut variable_sboxed_max_rank_1 = get_variable_if_sboxed(&variable_of_max_rank);
 
             println!("Avant gauss \n{}", self);
-            let mut matrix = self.gaussian_elimination_inv();
-            println!("Apres gauss\n{}", matrix);
-            matrix.delete_empty_rows();
-            matrix.delete_empty_colums();
-            println!("{}", matrix);
-            panic!();
+            self.delete_empty_rows();
+            self.delete_empty_colums();
+            match variable_sboxed_max_rank_1.pop() {
+                Some((x,sx)) => self.sort_left(vec![x,sx]),
+                None => has_been_update = false,
+            }
+            
+            self.gaussian_elimination_inv();
+            println!("Apres gauss\n{}", self);
+            println!("{}", self);
 
             //     //selctionner une varibale dans les variables non traitées et de rang 1,
             //     //et qui a une varible en sbox aussi de rang1
@@ -728,7 +720,40 @@ mod tests {
         vars_maps.insert("X_0[0,0]".to_string(), 0);
         vars_maps.insert("S(X_0[0,0])".to_string(), 1);
         matrix.set_vars_map(vars_maps);
+    }
 
+    #[test]
+    fn test_reduce_row() {
+        // Construct matrix
+        //| 1 2 8 7 |
+        //| 6 7 2 5 |
+        //| 9 5 1 2 |
+        //| 6 4 8 1 |
+        let mut matrix = Matrix::new(4, 4);
+        matrix[(0, 0)] = 1.into();
+        matrix[(0, 1)] = 2.into();
+        matrix[(0, 2)] = 8.into();
+        matrix[(0, 3)] = 7.into();
+        matrix[(1, 0)] = 6.into();
+        matrix[(1, 1)] = 7.into();
+        matrix[(1, 2)] = 2.into();
+        matrix[(1, 3)] = 5.into();
+        matrix[(2, 0)] = 9.into();
+        matrix[(2, 1)] = 5.into();
+        matrix[(2, 2)] = 1.into();
+        matrix[(2, 3)] = 2.into();
+        matrix[(3, 0)] = 6.into();
+        matrix[(3, 1)] = 4.into();
+        matrix[(3, 2)] = 8.into();
+        matrix[(3, 3)] = 1.into();
+        matrix.set_vars_map(HashMap::from([
+            (String::from("x"), 0),
+            (String::from("y"), 1),
+            (String::from("z"), 2),
+            (String::from("k"), 3),
+        ]));
+        println!("{}", matrix);
+        matrix.row_reduce_on(vec![String::from("x"), String::from("y"), String::from("z")]);
         println!("{}", matrix);
     }
 

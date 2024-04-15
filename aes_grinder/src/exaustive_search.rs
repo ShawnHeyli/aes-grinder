@@ -24,7 +24,7 @@ pub fn exhaustive_search(mut x: Matrix, time_complexity: usize) -> HashSet<Box<A
     while !p.is_empty() {
         //Take a pair of algo from p
         let (a1, a2) = p.iter().next().unwrap();
-        let c = Box::new(Algo::fusion_two_algo(a1.clone(), a2.clone()));
+        let c = Box::new(Algo::fusion_two_algo(a1.clone(), a2.clone(), &mut x));
 
         if c.get_time_complexity() <= time_complexity {
             update_queue(&mut g, &mut p, c);

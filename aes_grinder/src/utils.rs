@@ -1,8 +1,6 @@
 use core::ops::Add;
 use std::{fmt::Display, ops::Mul};
 
-use num_integer::Integer;
-
 #[derive(Debug, Clone, Copy)]
 pub struct Number {
     value: u8,

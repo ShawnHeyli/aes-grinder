@@ -15,9 +15,9 @@ use std::process::Command;
 
 #[derive(Eq, Clone, Debug)]
 pub struct Algo {
-    vars_val: Vec<String>,
+    vars: Vec<String>,
     time: usize,
-    memory: usize,
+    memory: u32,
     nb_solutions: usize,
     son1: Option<Box<Algo>>,
     son2: Option<Box<Algo>>,
@@ -25,7 +25,7 @@ pub struct Algo {
 
 impl Hash for Algo {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.vars_val.hash(state);
+        self.vars.hash(state);
         self.time.hash(state);
         self.memory.hash(state);
         self.nb_solutions.hash(state);
@@ -36,7 +36,7 @@ impl Hash for Algo {
 
 impl PartialEq for Algo {
     fn eq(&self, other: &Self) -> bool {
-        self.vars_val == other.vars_val
+        self.vars == other.vars
             && self.time == other.time
             && self.memory == other.memory
             && self.nb_solutions == other.nb_solutions
@@ -53,10 +53,10 @@ impl PartialEq for Algo {
 impl PartialOrd for Algo {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         if <Vec<std::string::String> as Clone>::clone(&other
-            .vars_val)
+            .vars)
             .into_iter()
             .collect::<HashSet<_>>()
-            .is_subset(&<Vec<std::string::String> as Clone>::clone(&self.vars_val).into_iter().collect::<HashSet<_>>())
+            .is_subset(&<Vec<std::string::String> as Clone>::clone(&self.vars).into_iter().collect::<HashSet<_>>())
         {
             match self.time.cmp(&other.time) {
                 Ordering::Equal => match self.memory.cmp(&other.memory) {
@@ -163,7 +163,7 @@ impl Algo {
     pub fn base_solver(mut matrix: &mut Matrix, var: String) -> Algo {
         print!("{}", matrix);
         Algo {
-            vars_val: vec![var.clone()],
+            vars: vec![var.clone()],
             time: 8,
             memory: 8,
             nb_solutions: Matrix::number_solutions(&mut matrix, vec![var]),
@@ -173,25 +173,24 @@ impl Algo {
     }
 
     ///Fonction de fusion de deux algo
-    pub fn fusion_two_algo(a1: Box<Algo>, a2: Box<Algo>) -> Algo {
+    pub fn fusion_two_algo(a1: Box<Algo>, a2: Box<Algo>, mut matrix: &mut Matrix) -> Algo {
         //Union of a1 vars_val and a2 vars_val
         let union_vars = a1
-            .vars_val
+            .vars
             .clone()
             .into_iter()
-            .chain(a2.vars_val.clone())
+            .chain(a2.vars.clone())
             .collect();
 
-        //let nb_sol = Matrix::number_solutions(matrix, union_vars, modulus);
-        let nb_sol = 1;
+        let nb_sol = Matrix::number_solutions(matrix, union_vars);
         Algo {
-            vars_val: union_vars,
+            vars: union_vars,
             //Compute the number of solutions
             nb_solutions: nb_sol,
-            time: max(a1.time, max(a2.time, nb_sol)),
+            time: max(a1.time, max(a2.time, nb_sol.try_into().unwrap())),
             memory: max(
                 a1.memory,
-                max(a2.memory, min(a1.nb_solutions, a2.nb_solutions)),
+                max(a2.memory, min(a1.nb_solutions.try_into().unwrap(), a2.nb_solutions.try_into().unwrap())),
             ),
             son1: Some(a1),
             son2: Some(a2),
@@ -213,7 +212,7 @@ impl Algo {
     }
 
     pub fn get_all_variables(&self) -> HashSet<String> {
-        <Vec<std::string::String> as Clone>::clone(&self.vars_val).into_iter().collect()
+        <Vec<std::string::String> as Clone>::clone(&self.vars).into_iter().collect()
     }
 
     pub fn get_time_complexity(&self) -> usize {
@@ -230,7 +229,7 @@ mod tests {
     #[test]
     fn compare_algo() {
         let algo_sad = Algo {
-            vars_val: vec!["x".to_string()],
+            vars: vec!["x".to_string()],
             time: 100,
             memory: 100,
             nb_solutions: 20,
@@ -238,7 +237,7 @@ mod tests {
             son2: None,
         };
         let algo_good = Algo {
-            vars_val: vec!["x".to_string()],
+            vars: vec!["x".to_string()],
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -251,7 +250,7 @@ mod tests {
     #[test]
     fn compare_algo_time() {
         let algo_sad = Algo {
-            vars_val: vec!["x".to_string()],
+            vars: vec!["x".to_string()],
             time: 2,
             memory: 1,
             nb_solutions: 1,
@@ -259,7 +258,7 @@ mod tests {
             son2: None,
         };
         let algo_good = Algo {
-            vars_val: vec!["x".to_string()],
+            vars: vec!["x".to_string()],
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -273,7 +272,7 @@ mod tests {
     #[test]
     fn compare_algo_memory_for_same_time() {
         let algo_sad = Algo {
-            vars_val: vec!["x".to_string()],
+            vars: vec!["x".to_string()],
             time: 1,
             memory: 2,
             nb_solutions: 1,
@@ -281,7 +280,7 @@ mod tests {
             son2: None,
         };
         let algo_good = Algo {
-            vars_val: vec!["x".to_string()],
+            vars: vec!["x".to_string()],
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -294,7 +293,7 @@ mod tests {
     #[test]
     fn compare_algo_time_and_memory() {
         let algo_sad = Algo {
-            vars_val: vec!["x".to_string()],
+            vars: vec!["x".to_string()],
             time: 2,
             memory: 2,
             nb_solutions: 1,
@@ -302,7 +301,7 @@ mod tests {
             son2: None,
         };
         let algo_good = Algo {
-            vars_val: vec!["x".to_string()],
+            vars: vec!["x".to_string()],
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -316,7 +315,7 @@ mod tests {
     #[test]
     fn compare_algo_nb_solution() {
         let algo_sad = Algo {
-            vars_val: vec!["x".to_string()],
+            vars: vec!["x".to_string()],
             time: 1,
             memory: 1,
             nb_solutions: 2,
@@ -324,7 +323,7 @@ mod tests {
             son2: None,
         };
         let algo_good = Algo {
-            vars_val: vec!["x".to_string()],
+            vars: vec!["x".to_string()],
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -338,7 +337,7 @@ mod tests {
     #[test]
     fn to_dot_00() -> std::io::Result<()> {
         let algo_good = Algo {
-            vars_val: vec!["x".to_string()],
+            vars: vec!["x".to_string()],
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -362,7 +361,7 @@ mod tests {
     #[test]
     fn to_dot_01() -> std::io::Result<()> {
         let left = Algo {
-            vars_val: vec!["x".to_string()],
+            vars: vec!["x".to_string()],
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -370,7 +369,7 @@ mod tests {
             son2: None,
         };
         let right = Algo {
-            vars_val: vec!["x".to_string()],
+            vars: vec!["x".to_string()],
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -378,7 +377,7 @@ mod tests {
             son2: None,
         };
         let root = Algo {
-            vars_val: vec!["x".to_string()],
+            vars: vec!["x".to_string()],
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -402,7 +401,7 @@ mod tests {
     #[test]
     fn to_dot_02() -> std::io::Result<()> {
         let c1_left = Algo {
-            vars_val: vec!["x".to_string()],
+            vars: vec!["x".to_string()],
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -410,7 +409,7 @@ mod tests {
             son2: None,
         };
         let c1_right = Algo {
-            vars_val: vec!["x".to_string()],
+            vars: vec!["x".to_string()],
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -418,7 +417,7 @@ mod tests {
             son2: None,
         };
         let c0_left = Algo {
-            vars_val: vec!["x".to_string()],
+            vars: vec!["x".to_string()],
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -426,7 +425,7 @@ mod tests {
             son2: Some(Box::new(c1_right)),
         };
         let c0_right = Algo {
-            vars_val: vec!["x".to_string()],
+            vars: vec!["x".to_string()],
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -434,7 +433,7 @@ mod tests {
             son2: None,
         };
         let root = Algo {
-            vars_val: vec!["x".to_string()],
+            vars: vec!["x".to_string()],
             time: 1,
             memory: 1,
             nb_solutions: 1,

@@ -74,13 +74,16 @@ impl Matrix {
     }
 
     pub fn swap_columns(&mut self, col1: usize, col2: usize) {
-        if col1 >= self.cols || col2 >= self.cols {
-            panic!("Column index out of bounds");
-        }
+        assert!(col1 >= self.cols || col2 >= self.cols, "Column index out of bounds");
 
         for i in 0..self.rows {
             self.data.swap(i * self.cols + col1, i * self.cols + col2);
         }
+        //Swap in vars_map
+        let col1 = self.vars_map.into_iter().find(|(_, v)| *v == col1).unwrap();
+        let col2 = self.vars_map.into_iter().find(|(_, v)| *v == col2).unwrap();
+        self.vars_map.insert(col1.0, col2.1);
+        self.vars_map.insert(col2.0, col1.1);
     }
 
     pub fn delete_row(&mut self, row: usize) {

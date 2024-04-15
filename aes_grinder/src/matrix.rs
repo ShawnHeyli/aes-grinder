@@ -1,3 +1,5 @@
+use clap::builder::Str;
+
 use crate::utils::{Invertible, Number};
 use std::collections::HashMap;
 
@@ -186,7 +188,7 @@ impl Matrix {
     }
 
     ///Elimination de gauss borné
-    pub fn gaussian_elimination_inv_bounded(&mut self, bound:usize) -> Matrix {
+    pub fn gaussian_elimination_inv_bounded(&mut self, bound: usize) -> Matrix {
         for j in 0..bound {
             //Find the max
             let mut max: Number = 0.into();
@@ -267,11 +269,14 @@ impl Matrix {
 
     /// Compute the dimension of the solution space of the system of equations
     fn dimension_solution_space(&mut self) -> usize {
-        let matrice =self.gaussian_elimination_inv_bounded();
+        let matrice = self.gaussian_elimination_inv_bounded(99);
         let r = matrice.count_no_zero_rows();
-        println!("ECHEC :  non_zero:{r} col : {:?}, row:{}",matrice.cols, matrice.rows);
-        println!("MATRICE : \n{}",matrice);
-        matrice.cols  - r as usize
+        println!(
+            "ECHEC :  non_zero:{r} col : {:?}, row:{}",
+            matrice.cols, matrice.rows
+        );
+        println!("MATRICE : \n{}", matrice);
+        matrice.cols - r as usize
     }
 
     /// Perform row reduction to get row echelon form
@@ -325,7 +330,7 @@ impl Matrix {
 
     ///Drop linear variable on the matrice, update the matrix self
     pub fn drop_linear_variable(&mut self) {
-        todo!();
+        self.delete_alone_variable();
         let has_been_update: bool = true;
         //tant que la matrice a ete mise a jour on continue d'eliminer les variables lineraires
         while has_been_update {
@@ -357,6 +362,21 @@ impl Matrix {
 
             //si elle sont egales on suprimme la ligne a 1 1 et les deux colonnes
         }
+    }
+
+    fn delete_alone_variable(&mut self) {
+        let mut variables: Vec<String> = Vec::new();
+        for (name, _) in  &self.vars_map{
+            for (str, _) in &self.vars_map {
+                if name.contains(str) && name != str{
+                    variables.push(str.to_string());
+                    variables.push(name.to_string());
+                }
+            }
+        }
+        let mut variable_alone:Vec<String> = self.get_all_variables();
+        variable_alone.retain(|s| !variables.contains(s));
+        variable_alone.iter().for_each(|s| self.remove_variable(s.to_string()));
     }
 
     ///Donne les indices des colonnes dans lequel le coef max est r
@@ -751,4 +771,28 @@ mod tests {
         println!("{}", matrix2);
         assert_eq!(matrix, matrix2);
     }
+
+    #[test]
+    fn test_delete_alone_variable() {
+        let mut matrix = Matrix::new(3, 3);
+        matrix[(0, 0)] = 1.into();
+        matrix[(1, 1)] = 1.into();
+        matrix[(2, 2)] = 2.into();
+        let mut vars_maps: HashMap<String, usize> = HashMap::new();
+        vars_maps.insert("W_0[0,0]".to_string(), 0);
+        vars_maps.insert("S(X_0[1,1])".to_string(), 1);
+        vars_maps.insert("X_0[1,1]".to_string(), 2);
+        matrix.set_vars_map(vars_maps);
+
+        matrix.delete_alone_variable();
+        let mut m = matrix.get_all_variables();
+        let mut expect = vec!["S(X_0[1,1])".to_string(), "X_0[1,1]".to_string()];
+        m.sort();
+        expect.sort();
+        println!("variable de matrix = {:?}", m);
+        println!("variable expect = {:?}", expect);
+
+        assert_eq!(m, expect);
+    }
+
 }

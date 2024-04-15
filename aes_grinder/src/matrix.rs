@@ -23,11 +23,11 @@ impl Matrix {
     fn sort_left(&mut self, vars: Vec<String>) {
         let mut swap_ndx: usize = 0;
         let mut vars_iter = vars.iter();
-        
+
         while let Some(var) = vars_iter.next() {
             let ndx = self.vars_map.get(var).unwrap();
             self.swap_columns(swap_ndx, *ndx);
-            
+
             assert_ne!(self.cols, swap_ndx);
             swap_ndx += 1;
         }
@@ -37,7 +37,7 @@ impl Matrix {
     fn sort_right(&mut self, vars: Vec<String>) {
         let mut swap_ndx: usize = self.cols - 1;
         let mut vars_iter = vars.iter();
-        
+
         while let Some(var) = vars_iter.next() {
             let ndx = self.vars_map.get(var).unwrap();
             self.swap_columns(swap_ndx, *ndx);
@@ -102,14 +102,23 @@ impl Matrix {
     }
 
     pub fn swap_columns(&mut self, col1: usize, col2: usize) {
-        assert!(col1 < self.cols && col2 < self.cols, "Column index out of bounds");
+        assert!(
+            col1 < self.cols && col2 < self.cols,
+            "Column index out of bounds"
+        );
 
         for i in 0..self.rows {
             self.data.swap(i * self.cols + col1, i * self.cols + col2);
         }
         //Swap in vars_map
-        let col1 = <HashMap<String, usize> as Clone>::clone(&self.vars_map).into_iter().find(|(_, v)| *v == col1).unwrap();
-        let col2 = <HashMap<String, usize> as Clone>::clone(&self.vars_map).into_iter().find(|(_, v)| *v == col2).unwrap();
+        let col1 = <HashMap<String, usize> as Clone>::clone(&self.vars_map)
+            .into_iter()
+            .find(|(_, v)| *v == col1)
+            .unwrap();
+        let col2 = <HashMap<String, usize> as Clone>::clone(&self.vars_map)
+            .into_iter()
+            .find(|(_, v)| *v == col2)
+            .unwrap();
         self.vars_map.insert(col1.0, col2.1);
         self.vars_map.insert(col2.0, col1.1);
     }
@@ -159,7 +168,7 @@ impl Matrix {
         self.cols -= 1;
     }
 
-    pub fn gaussian_elimination_inv(&mut self) -> Matrix {
+    pub fn gaussian_elimination_inv(&mut self) {
         for j in 0..max(self.cols, self.rows) {
             //Find the max
             let mut max: Number = 0.into();
@@ -201,19 +210,6 @@ impl Matrix {
                 }
             }
         }
-        //Backward substitution
-        for j in (0..self.cols).rev() {
-            for i in (0..j).rev() {
-                let factor = self[(i, j)];
-                for k in 0..self.cols {
-                    let a = self[(i, k)];
-                    let b = factor * self[(j, k)];
-                    let ab = a + b;
-                    self[(i, k)] = ab;
-                }
-            }
-        }
-        self.clone()
     }
 
     pub fn row_reduce_on(&mut self, vars: Vec<String>) -> () {
@@ -267,7 +263,10 @@ impl Matrix {
      * Compute |vars| - dim(M(vars))
      */
     pub fn number_solutions(&mut self, vars: Vec<String>) -> usize {
-        vars.len() - self.get_matrix_generated_by(vars).dimension_solution_space()
+        vars.len()
+            - self
+                .get_matrix_generated_by(vars)
+                .dimension_solution_space()
     }
 
     fn get_matrix_generated_by(&self, vars: Vec<String>) -> Matrix {
@@ -284,14 +283,14 @@ impl Matrix {
 
     /// Compute the dimension of the solution space of the system of equations
     fn dimension_solution_space(&mut self) -> usize {
-        let matrice = self.gaussian_elimination_inv();
-        let r = matrice.count_no_zero_rows();
+        self.row_reduce();
+        let r = self.count_no_zero_rows();
         println!(
             "ECHEC :  non_zero:{r} col : {:?}, row:{}",
-            matrice.cols, matrice.rows
+            self.cols, self.rows
         );
-        println!("MATRICE : \n{}", matrice);
-        matrice.cols - r as usize
+        println!("MATRICE : \n{}", self);
+        self.cols - r as usize
     }
 
     /// Perform row reduction to get row echelon form
@@ -354,25 +353,28 @@ impl Matrix {
             "Apres delete alone variable nb cols {}, nb rows {}",
             self.cols, self.rows
         );
-        println!("after delete alone : \n{}", self);
 
         let mut has_been_update: bool = true;
         //tant que la matrice a ete mise a jour on continue d'eliminer les variables lineraires
+        let variable_of_max_rank: Vec<String> = self.get_variable_of_max_rank(1);
+        let mut variable_sboxed_max_rank_1 = get_variable_if_sboxed(&variable_of_max_rank);
+        println!(
+            "tout les variable sboxed : {:?}",
+            variable_sboxed_max_rank_1
+        );
         while has_been_update {
-            let variable_of_max_rank: Vec<String> = self.get_variable_of_max_rank(1);
-            let mut variable_sboxed_max_rank_1 = get_variable_if_sboxed(&variable_of_max_rank);
-
-            println!("Avant gauss \n{}", self);
+            println!("Clean zero \n{}", self);
             self.delete_empty_rows();
             self.delete_empty_colums();
             match variable_sboxed_max_rank_1.pop() {
-                Some((x,sx)) => self.sort_left(vec![x,sx]),
+                Some((x, sx)) => {
+                    println!("VARIABLE ECHELONNE {x} et {sx}\n");
+                    self.row_reduce_on(vec![x, sx]);
+                }
                 None => has_been_update = false,
             }
-            
-            self.gaussian_elimination_inv();
             println!("Apres gauss\n{}", self);
-            println!("{}", self);
+            // panic!();
 
             //     //selctionner une varibale dans les variables non traitées et de rang 1,
             //     //et qui a une varible en sbox aussi de rang1
@@ -433,7 +435,7 @@ impl Matrix {
         let my_col = self.get_col_of_max_rank(r);
         let mut variables: Vec<String> = Vec::new();
         for (str, col) in &self.vars_map {
-            if my_col.contains(&col) {
+            if my_col.contains(col) {
                 variables.push(str.to_string());
             }
         }
@@ -447,7 +449,7 @@ impl Matrix {
             let row = self.get_row(last_update);
             let mut is_zero = true;
             for num in row {
-                if num.get_value() != 0.into() {
+                if num.get_value() != 0 {
                     is_zero = false;
                     break;
                 }
@@ -661,10 +663,10 @@ mod tests {
     fn test_gaussian_elimination_inv() {
         let mut matrix = Matrix::from(vec![vec![1, 2], vec![3, 4]]);
         println!("{}", matrix);
-        let result = matrix.gaussian_elimination_inv();
+        matrix.gaussian_elimination_inv();
         let expected = Matrix::from(vec![vec![1, 0], vec![0, 1]]);
-        println!("{}", result);
-        assert_eq!(result, expected);
+        println!("{}", matrix);
+        assert_eq!(matrix, expected);
     }
 
     #[test]
@@ -706,8 +708,8 @@ mod tests {
         matrix[(2, 2)] = 4.into();
         matrix[(3, 3)] = 3.into();
         println!("{}", matrix);
-        let result = matrix.gaussian_elimination_inv();
-        println!("{}", result);
+        matrix.gaussian_elimination_inv();
+        println!("{}", matrix);
         let mut vars_maps: HashMap<String, usize> = HashMap::new();
         vars_maps.insert("X_0[0,0]".to_string(), 0);
         vars_maps.insert("S(X_0[0,0])".to_string(), 1);
@@ -745,7 +747,11 @@ mod tests {
             (String::from("k"), 3),
         ]));
         println!("{}", matrix);
-        matrix.row_reduce_on(vec![String::from("x"), String::from("y"), String::from("z")]);
+        matrix.row_reduce_on(vec![
+            String::from("x"),
+            String::from("y"),
+            String::from("z"),
+        ]);
         println!("{}", matrix);
     }
 
@@ -824,6 +830,7 @@ mod tests {
         let z = matrix.count_no_zero_rows();
         assert_eq!(z, 3);
     }
+
     #[test]
     fn test_row_reduce() {
         let mut matrix = Matrix::new(3, 3);
@@ -890,7 +897,6 @@ mod test_fn_swap {
         assert_eq!(matrix[(0, 0)], 2.into());
         assert_eq!(matrix[(0, 2)], 0.into());
 
-
         matrix.swap_columns(0, 1);
 
         assert_eq!(matrix.vars_map.get("y").unwrap(), &0);
@@ -928,7 +934,6 @@ mod test_fn_swap {
         assert_eq!(matrix[(0, 2)], 0.into());
         assert_eq!(matrix[(1, 2)], 0.into());
         assert_eq!(matrix[(2, 2)], 0.into());
-
 
         matrix.swap_columns(0, 1);
 
@@ -1002,6 +1007,71 @@ mod test_fn_sort_left {
         assert_eq!(matrix[(0, 1)], 2.into());
         assert_eq!(matrix[(1, 1)], 2.into());
         assert_eq!(matrix[(2, 1)], 2.into());
+        assert_eq!(matrix[(0, 2)], 0.into());
+        assert_eq!(matrix[(1, 2)], 0.into());
+        assert_eq!(matrix[(2, 2)], 0.into());
+    }
+}
+
+#[cfg(test)]
+mod test_fn_sort_right {
+    use super::*;
+
+    #[test]
+    fn sort_right_00() {
+        let mut matrix = Matrix::new(1, 3);
+        matrix[(0, 0)] = 0.into();
+        matrix[(0, 1)] = 1.into();
+        matrix[(0, 2)] = 2.into();
+
+        let mut vars_maps: HashMap<String, usize> = HashMap::new();
+        vars_maps.insert("x".to_string(), 0);
+        vars_maps.insert("y".to_string(), 1);
+        vars_maps.insert("z".to_string(), 2);
+        matrix.set_vars_map(vars_maps);
+
+        let string_lst = vec![String::from("x"), String::from("y")];
+        matrix.sort_right(string_lst);
+
+        assert_eq!(matrix.vars_map.get("z").unwrap(), &0);
+        assert_eq!(matrix.vars_map.get("y").unwrap(), &1);
+        assert_eq!(matrix.vars_map.get("x").unwrap(), &2);
+        assert_eq!(matrix[(0, 0)], 2.into());
+        assert_eq!(matrix[(0, 1)], 1.into());
+        assert_eq!(matrix[(0, 2)], 0.into());
+    }
+
+    #[test]
+    fn sort_right_01() {
+        let mut matrix = Matrix::new(3, 3);
+        matrix[(0, 0)] = 0.into();
+        matrix[(0, 1)] = 1.into();
+        matrix[(0, 2)] = 2.into();
+        matrix[(1, 0)] = 0.into();
+        matrix[(1, 1)] = 1.into();
+        matrix[(1, 2)] = 2.into();
+        matrix[(2, 0)] = 0.into();
+        matrix[(2, 1)] = 1.into();
+        matrix[(2, 2)] = 2.into();
+
+        let mut vars_maps: HashMap<String, usize> = HashMap::new();
+        vars_maps.insert("x".to_string(), 0);
+        vars_maps.insert("y".to_string(), 1);
+        vars_maps.insert("z".to_string(), 2);
+        matrix.set_vars_map(vars_maps);
+
+        let string_lst = vec![String::from("x"), String::from("y")];
+        matrix.sort_right(string_lst);
+
+        assert_eq!(matrix.vars_map.get("z").unwrap(), &0);
+        assert_eq!(matrix.vars_map.get("y").unwrap(), &1);
+        assert_eq!(matrix.vars_map.get("x").unwrap(), &2);
+        assert_eq!(matrix[(0, 0)], 2.into());
+        assert_eq!(matrix[(1, 0)], 2.into());
+        assert_eq!(matrix[(2, 0)], 2.into());
+        assert_eq!(matrix[(0, 1)], 1.into());
+        assert_eq!(matrix[(1, 1)], 1.into());
+        assert_eq!(matrix[(2, 1)], 1.into());
         assert_eq!(matrix[(0, 2)], 0.into());
         assert_eq!(matrix[(1, 2)], 0.into());
         assert_eq!(matrix[(2, 2)], 0.into());

@@ -330,53 +330,69 @@ impl Matrix {
 
     ///Drop linear variable on the matrice, update the matrix self
     pub fn drop_linear_variable(&mut self) {
+        println!(
+            "Avant delete alone variable nb cols {}, nb rows {}",
+            self.cols, self.rows
+        );
         self.delete_alone_variable();
+        println!(
+            "Apres delete alone variable nb cols {}, nb rows {}",
+            self.cols, self.rows
+        );
+        println!("after delete alone : \n{}", self);
         let has_been_update: bool = true;
         //tant que la matrice a ete mise a jour on continue d'eliminer les variables lineraires
         while has_been_update {
             let variable_of_max_rank: Vec<String> = self.get_variable_of_max_rank(1);
             let mut variable_sboxed_max_rank_1 = get_variable_if_sboxed(&variable_of_max_rank);
+
+            println!("Avant gauss \n{}", self);
             let mut matrix = self.gaussian_elimination_inv();
-            self.delete_empty_rows();
-            self.delete_empty_colums();
+            println!("Apres gauss\n{}", matrix);
+            matrix.delete_empty_rows();
+            matrix.delete_empty_colums();
+            println!("{}", matrix);
+            panic!();
 
-            //selctionner une varibale dans les variables non traitées et de rang 1,
-            //et qui a une varible en sbox aussi de rang1
-            for (x, sx) in variable_sboxed_max_rank_1 {
-                let x_index = self.vars_map.get(&x);
-                let sx_index = self.vars_map.get(&sx);
-                match (x_index, sx_index) {
-                    (Some(some_x), Some(some_y)) => {
-                        let colum_x = matrix.get_column(*some_x);
-                        let colum_sx = matrix.get_column(*some_y);
-                        if colum_x == colum_sx {
-                            todo!()
-                        }
-                    }
-                    (_, _) => panic!(),
-                }
-            }
-            todo!()
+            //     //selctionner une varibale dans les variables non traitées et de rang 1,
+            //     //et qui a une varible en sbox aussi de rang1
+            //     for (x, sx) in variable_sboxed_max_rank_1 {
+            //         let x_index = self.vars_map.get(&x);
+            //         let sx_index = self.vars_map.get(&sx);
+            //         match (x_index, sx_index) {
+            //             (Some(some_x), Some(some_y)) => {
+            //                 let colum_x = matrix.get_column(*some_x);
+            //                 let colum_sx = matrix.get_column(*some_y);
+            //                 if colum_x == colum_sx {
+            //                     todo!()
+            //                 }
+            //             }
+            //             (_, _) => panic!(),
+            //         }
+            //     }
+            //     todo!()
 
-            //compare les deux colonnes
+            //     compare les deux colonnes
 
-            //si elle sont egales on suprimme la ligne a 1 1 et les deux colonnes
+            //     si elle sont egales on suprimme la ligne a 1 1 et les deux colonnes
         }
     }
 
     fn delete_alone_variable(&mut self) {
         let mut variables: Vec<String> = Vec::new();
-        for (name, _) in  &self.vars_map{
+        for (name, _) in &self.vars_map {
             for (str, _) in &self.vars_map {
-                if name.contains(str) && name != str{
+                if name.contains(str) && name != str {
                     variables.push(str.to_string());
                     variables.push(name.to_string());
                 }
             }
         }
-        let mut variable_alone:Vec<String> = self.get_all_variables();
+        let mut variable_alone: Vec<String> = self.get_all_variables();
         variable_alone.retain(|s| !variables.contains(s));
-        variable_alone.iter().for_each(|s| self.remove_variable(s.to_string()));
+        variable_alone
+            .iter()
+            .for_each(|s| self.remove_variable(s.to_string()));
     }
 
     ///Donne les indices des colonnes dans lequel le coef max est r
@@ -406,8 +422,9 @@ impl Matrix {
 
     /// Deletes all rows that are only made of 0 in place
     fn delete_empty_rows(&mut self) {
-        for i in 0..self.rows - 1 {
-            let row = self.get_row(i);
+        let mut last_update = 0;
+        while last_update < self.rows {
+            let row = self.get_row(last_update);
             let mut is_zero = true;
             for num in row {
                 if num.get_value() != 0.into() {
@@ -416,15 +433,18 @@ impl Matrix {
                 }
             }
             if is_zero {
-                self.delete_row(i);
+                self.delete_row(last_update);
+            } else {
+                last_update += 1;
             }
         }
     }
 
     /// Deletes all columns that are only made of 0 in place
     fn delete_empty_colums(&mut self) {
-        for i in 0..self.cols - 1 {
-            let column = self.get_column(i);
+        let mut last_update = 0;
+        while last_update < self.cols {
+            let column = self.get_column(last_update);
             let mut is_zero = true;
             for num in column {
                 if num.get_value() != 0 {
@@ -433,7 +453,9 @@ impl Matrix {
                 }
             }
             if is_zero {
-                self.delete_column(i);
+                self.delete_column(last_update);
+            } else {
+                last_update += 1;
             }
         }
     }
@@ -636,7 +658,9 @@ mod tests {
     #[test]
     fn delete_empty_rows() {
         let mut matrix = Matrix::from(vec![vec![1, 2], vec![0, 0], vec![3, 4]]);
+        println!("{}", matrix);
         matrix.delete_empty_rows();
+        println!("{}", matrix);
         let expected = Matrix::from(vec![vec![1, 2], vec![3, 4]]);
         assert_eq!(matrix, expected);
     }
@@ -794,5 +818,4 @@ mod tests {
 
         assert_eq!(m, expect);
     }
-
 }

@@ -23,11 +23,11 @@ impl Matrix {
     fn sort_left(&mut self, vars: Vec<String>) {
         let mut swap_ndx: usize = 0;
         let mut vars_iter = vars.iter();
-        
+
         while let Some(var) = vars_iter.next() {
             let ndx = self.vars_map.get(var).unwrap();
             self.swap_columns(swap_ndx, *ndx);
-            
+
             assert_ne!(self.cols, swap_ndx);
             swap_ndx += 1;
         }
@@ -37,7 +37,7 @@ impl Matrix {
     fn sort_right(&mut self, vars: Vec<String>) {
         let mut swap_ndx: usize = self.cols - 1;
         let mut vars_iter = vars.iter();
-        
+
         while let Some(var) = vars_iter.next() {
             let ndx = self.vars_map.get(var).unwrap();
             self.swap_columns(swap_ndx, *ndx);
@@ -102,14 +102,23 @@ impl Matrix {
     }
 
     pub fn swap_columns(&mut self, col1: usize, col2: usize) {
-        assert!(col1 < self.cols && col2 < self.cols, "Column index out of bounds");
+        assert!(
+            col1 < self.cols && col2 < self.cols,
+            "Column index out of bounds"
+        );
 
         for i in 0..self.rows {
             self.data.swap(i * self.cols + col1, i * self.cols + col2);
         }
         //Swap in vars_map
-        let col1 = <HashMap<String, usize> as Clone>::clone(&self.vars_map).into_iter().find(|(_, v)| *v == col1).unwrap();
-        let col2 = <HashMap<String, usize> as Clone>::clone(&self.vars_map).into_iter().find(|(_, v)| *v == col2).unwrap();
+        let col1 = <HashMap<String, usize> as Clone>::clone(&self.vars_map)
+            .into_iter()
+            .find(|(_, v)| *v == col1)
+            .unwrap();
+        let col2 = <HashMap<String, usize> as Clone>::clone(&self.vars_map)
+            .into_iter()
+            .find(|(_, v)| *v == col2)
+            .unwrap();
         self.vars_map.insert(col1.0, col2.1);
         self.vars_map.insert(col2.0, col1.1);
     }
@@ -254,7 +263,10 @@ impl Matrix {
      * Compute |vars| - dim(M(vars))
      */
     pub fn number_solutions(&mut self, vars: Vec<String>) -> usize {
-        vars.len() - self.get_matrix_generated_by(vars).dimension_solution_space()
+        vars.len()
+            - self
+                .get_matrix_generated_by(vars)
+                .dimension_solution_space()
     }
 
     fn get_matrix_generated_by(&self, vars: Vec<String>) -> Matrix {
@@ -344,19 +356,21 @@ impl Matrix {
 
         let mut has_been_update: bool = true;
         //tant que la matrice a ete mise a jour on continue d'eliminer les variables lineraires
-            let variable_of_max_rank: Vec<String> = self.get_variable_of_max_rank(1);
-            let mut variable_sboxed_max_rank_1 = get_variable_if_sboxed(&variable_of_max_rank);
-            println!("tout les variable sboxed : {:?}", variable_sboxed_max_rank_1);
+        let variable_of_max_rank: Vec<String> = self.get_variable_of_max_rank(1);
+        let mut variable_sboxed_max_rank_1 = get_variable_if_sboxed(&variable_of_max_rank);
+        println!(
+            "tout les variable sboxed : {:?}",
+            variable_sboxed_max_rank_1
+        );
         while has_been_update {
-
             println!("Clean zero \n{}", self);
             self.delete_empty_rows();
             self.delete_empty_colums();
             match variable_sboxed_max_rank_1.pop() {
-                Some((x,sx)) => {
+                Some((x, sx)) => {
                     println!("VARIABLE ECHELONNE {x} et {sx}\n");
-                    self.row_reduce_on(vec![x,sx]);
-                },
+                    self.row_reduce_on(vec![x, sx]);
+                }
                 None => has_been_update = false,
             }
             println!("Apres gauss\n{}", self);
@@ -421,7 +435,7 @@ impl Matrix {
         let my_col = self.get_col_of_max_rank(r);
         let mut variables: Vec<String> = Vec::new();
         for (str, col) in &self.vars_map {
-            if my_col.contains(&col) {
+            if my_col.contains(col) {
                 variables.push(str.to_string());
             }
         }
@@ -435,7 +449,7 @@ impl Matrix {
             let row = self.get_row(last_update);
             let mut is_zero = true;
             for num in row {
-                if num.get_value() != 0.into() {
+                if num.get_value() != 0 {
                     is_zero = false;
                     break;
                 }
@@ -733,7 +747,11 @@ mod tests {
             (String::from("k"), 3),
         ]));
         println!("{}", matrix);
-        matrix.row_reduce_on(vec![String::from("x"), String::from("y"), String::from("z")]);
+        matrix.row_reduce_on(vec![
+            String::from("x"),
+            String::from("y"),
+            String::from("z"),
+        ]);
         println!("{}", matrix);
     }
 
@@ -812,7 +830,7 @@ mod tests {
         let z = matrix.count_no_zero_rows();
         assert_eq!(z, 3);
     }
-    
+
     #[test]
     fn test_row_reduce() {
         let mut matrix = Matrix::new(3, 3);
@@ -878,7 +896,6 @@ mod test_fn_swap {
         assert_eq!(matrix[(0, 0)], 2.into());
         assert_eq!(matrix[(0, 2)], 0.into());
 
-
         matrix.swap_columns(0, 1);
 
         assert_eq!(matrix.vars_map.get("y").unwrap(), &0);
@@ -916,7 +933,6 @@ mod test_fn_swap {
         assert_eq!(matrix[(0, 2)], 0.into());
         assert_eq!(matrix[(1, 2)], 0.into());
         assert_eq!(matrix[(2, 2)], 0.into());
-
 
         matrix.swap_columns(0, 1);
 

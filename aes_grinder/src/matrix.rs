@@ -354,25 +354,28 @@ impl Matrix {
             "Apres delete alone variable nb cols {}, nb rows {}",
             self.cols, self.rows
         );
-        println!("after delete alone : \n{}", self);
 
         let mut has_been_update: bool = true;
         //tant que la matrice a ete mise a jour on continue d'eliminer les variables lineraires
-        while has_been_update {
             let variable_of_max_rank: Vec<String> = self.get_variable_of_max_rank(1);
             let mut variable_sboxed_max_rank_1 = get_variable_if_sboxed(&variable_of_max_rank);
+            println!("tout les variable sboxed : {:?}", variable_sboxed_max_rank_1);
+        while has_been_update {
 
-            println!("Avant gauss \n{}", self);
+            println!("Clean zero \n{}", self);
             self.delete_empty_rows();
             self.delete_empty_colums();
             match variable_sboxed_max_rank_1.pop() {
-                Some((x,sx)) => self.sort_left(vec![x,sx]),
+                Some((x,sx)) => {
+                    println!("{x}{sx}");
+                    self.sort_left(vec![x,sx])},
                 None => has_been_update = false,
             }
             
+            println!("sorted \n{}", self);
             self.gaussian_elimination_inv();
             println!("Apres gauss\n{}", self);
-            println!("{}", self);
+            // panic!();
 
             //     //selctionner une varibale dans les variables non traitées et de rang 1,
             //     //et qui a une varible en sbox aussi de rang1

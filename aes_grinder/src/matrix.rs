@@ -1,7 +1,5 @@
-use clap::builder::Str;
-
 use crate::utils::{Invertible, Number};
-use std::collections::HashMap;
+use std::{cmp::max, collections::HashMap};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Matrix {
@@ -131,7 +129,7 @@ impl Matrix {
     }
 
     pub fn gaussian_elimination_inv(&mut self) -> Matrix {
-        for j in 0..self.cols {
+        for j in 0..max(self.cols, self.rows) {
             //Find the max
             let mut max: Number = 0.into();
             let mut max_row = 0;
@@ -187,9 +185,10 @@ impl Matrix {
         self.clone()
     }
 
-    ///Elimination de gauss borné
-    pub fn gaussian_elimination_inv_bounded(&mut self, bound: usize) -> Matrix {
-        for j in 0..bound {
+    pub fn row_reduce_on(&mut self, vars: Vec<String>) -> () {
+        assert!(self.rows >= self.cols - vars.len());
+        self.sort_vars(vars.clone());
+        for j in 0..vars.len() {
             //Find the max
             let mut max: Number = 0.into();
             let mut max_row = 0;
@@ -230,29 +229,14 @@ impl Matrix {
                 }
             }
         }
-        //Backward substitution
-        for j in (0..self.cols).rev() {
-            for i in (0..j).rev() {
-                let factor = self[(i, j)];
-                for k in 0..self.cols {
-                    let a = self[(i, k)];
-                    let b = factor * self[(j, k)];
-                    let ab = a + b;
-                    self[(i, k)] = ab;
-                }
-            }
-        }
-        self.clone()
     }
 
-    /// Compute the number of solution of the system of equations for the given variables
-    // Compute |vars| - dim(M(vars))
+    /**
+     * Compute the number of solution of the system of equations for the given variables
+     * Compute |vars| - dim(M(vars))
+     */
     pub fn number_solutions(&mut self, vars: Vec<String>) -> usize {
-        print!("NB SOLUTION \n{}", self);
-        vars.len()
-            - self
-                .get_matrix_generated_by(vars)
-                .dimension_solution_space()
+        vars.len() - self.get_matrix_generated_by(vars).dimension_solution_space()
     }
 
     fn get_matrix_generated_by(&self, vars: Vec<String>) -> Matrix {
@@ -269,7 +253,7 @@ impl Matrix {
 
     /// Compute the dimension of the solution space of the system of equations
     fn dimension_solution_space(&mut self) -> usize {
-        let matrice = self.gaussian_elimination_inv_bounded(99);
+        let matrice = self.gaussian_elimination_inv();
         let r = matrice.count_no_zero_rows();
         println!(
             "ECHEC :  non_zero:{r} col : {:?}, row:{}",
@@ -700,7 +684,40 @@ mod tests {
         vars_maps.insert("X_0[0,0]".to_string(), 0);
         vars_maps.insert("S(X_0[0,0])".to_string(), 1);
         matrix.set_vars_map(vars_maps);
+    }
 
+    #[test]
+    fn test_reduce_row() {
+        // Construct matrix
+        //| 1 2 8 7 |
+        //| 6 7 2 5 |
+        //| 9 5 1 2 |
+        //| 6 4 8 1 |
+        let mut matrix = Matrix::new(4, 4);
+        matrix[(0, 0)] = 1.into();
+        matrix[(0, 1)] = 2.into();
+        matrix[(0, 2)] = 8.into();
+        matrix[(0, 3)] = 7.into();
+        matrix[(1, 0)] = 6.into();
+        matrix[(1, 1)] = 7.into();
+        matrix[(1, 2)] = 2.into();
+        matrix[(1, 3)] = 5.into();
+        matrix[(2, 0)] = 9.into();
+        matrix[(2, 1)] = 5.into();
+        matrix[(2, 2)] = 1.into();
+        matrix[(2, 3)] = 2.into();
+        matrix[(3, 0)] = 6.into();
+        matrix[(3, 1)] = 4.into();
+        matrix[(3, 2)] = 8.into();
+        matrix[(3, 3)] = 1.into();
+        matrix.set_vars_map(HashMap::from([
+            (String::from("x"), 0),
+            (String::from("y"), 1),
+            (String::from("z"), 2),
+            (String::from("k"), 3),
+        ]));
+        println!("{}", matrix);
+        matrix.row_reduce_on(vec![String::from("x"), String::from("y"), String::from("z")]);
         println!("{}", matrix);
     }
 

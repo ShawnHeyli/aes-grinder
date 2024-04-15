@@ -179,23 +179,18 @@ impl Matrix {
                     max_row = i;
                 }
             }
-            for i in 0..self.cols {
-                if self[(max_row, i)] != 0.into() && i == max_row {
+            for i in 0..self.rows {
+                if self[(i, j)] != 0.into() && i == max_row {
                     //This is the pivot
                     //Set the pivot to one by multiplying the inverse of it in the field
-                    //Use bigInt extended gcd to find the inverse
-                    let pivot = self[(max_row, j)];
+                    let pivot = self[(i, j)];
                     let inverse = pivot.invert();
                     //Normalize the pivot line
                     for k in 0..self.cols {
-                        self[(max_row, k)] = self[(max_row, k)] * inverse;
+                        self[(i, k)] = self[(i, k)] * inverse;
                     }
                     //Swap the line
-                    for k in 0..self.rows {
-                        let temp = self[(j, k)];
-                        self[(j, k)] = self[(max_row, k)];
-                        self[(max_row, k)] = temp;
-                    }
+                    self.swap_lines(i, j);
                     //Set 0 under the pivot
                     for k in j + 1..self.rows {
                         let factor = self[(k, j)];
@@ -210,6 +205,74 @@ impl Matrix {
                 }
             }
         }
+        //Backward substitution
+        for j in (0..self.cols).rev() {
+            for i in (0..j).rev() {
+                let factor = self[(i, j)];
+                for k in 0..self.cols {
+                    let a = self[(i, k)];
+                    let b = factor * self[(j, k)];
+                    let ab = a + b;
+                    self[(i, k)] = ab;
+                }
+            }
+        }
+    }
+
+    /// Perform gaussian elimination with inversion on the given variables and return the number of echelon rows
+    pub fn gaussian_elimination_inv_on(&mut self, vars: Vec<String>) -> usize {
+        self.sort_left(vars.clone());
+        let mut nb_echelon_rows = 0;
+        for j in 0..vars.len() {
+            //Find the max
+            let mut max: Number = 0.into();
+            let mut max_row = 0;
+            for i in j..self.rows {
+                if self[(i, j)] > max {
+                    max = self[(i, j)];
+                    max_row = i;
+                }
+            }
+            for i in 0..self.rows {
+                if self[(i, j)] != 0.into() && i == max_row {
+                    //This is the pivot
+                    nb_echelon_rows += 1;
+                    //Set the pivot to one by multiplying the inverse of it in the field
+                    let pivot = self[(i, j)];
+                    let inverse = pivot.invert();
+                    //Normalize the pivot line
+                    for k in 0..self.cols {
+                        self[(i, k)] = self[(i, k)] * inverse;
+                    }
+                    //Swap the line
+                    self.swap_lines(i, j);
+                    //Set 0 under the pivot
+                    for k in j + 1..self.rows {
+                        let factor = self[(k, j)];
+                        for l in 0..self.cols {
+                            let a = self[(k, l)];
+                            let b = factor * self[(j, l)];
+                            let ab = a + b;
+                            self[(k, l)] = ab;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+        //Backward substitution
+        for j in (0..self.cols).rev() {
+            for i in (0..j).rev() {
+                let factor = self[(i, j)];
+                for k in 0..self.cols {
+                    let a = self[(i, k)];
+                    let b = factor * self[(j, k)];
+                    let ab = a + b;
+                    self[(i, k)] = ab;
+                }
+            }
+        }
+        nb_echelon_rows
     }
 
     fn swap_lines(&mut self, i: usize, j: usize) {
@@ -268,26 +331,17 @@ impl Matrix {
         //Compter nombre d'equation en bas (0 sous non vars, en dessous matrice echellonée)
         //C'est cette partie à gérer
         //Retourner |vars| - nombre d'equation en bas
-        self.sort_right(vars);
-        self.row_reduce();
-
-        let card_vars = vars.len();
-        let nb_ligne_zero_borded_from_bottom = self.get_nb_ligne_zero_borded_from_bottom(card_vars);
-
-        // 👇👇👇 vieux code de samu
-        // vars.len()
-        //     - self
-        //         .get_matrix_generated_by(vars)
-        //         .dimension_solution_space()
+        //Get variables from matrix that are not in vars
+        let not_vars: Vec<String> = self.get_all_variables().into_iter().filter(|x| !vars.contains(x)).collect();
+        let echelon_rows = self.gaussian_elimination_inv_on(not_vars);
+        vars.len() - (self.rows - echelon_rows)
     }
 
     fn get_nb_ligne_zero_borded_from_bottom(&self, nb_vars:usize) -> usize{
         let max = self.cols - nb_vars;
         let nb_ligne = 0;
         for i in self.rows-1..0{
-            for j in 0..nb_vars{
-
-            }
+            
         }
         todo!()
     }

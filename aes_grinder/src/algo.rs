@@ -1,14 +1,14 @@
 //! Struc Algo permettant de représenter des Algo
-use std::{hash::Hash, vec};
+use crate::matrix::Matrix;
 use core::cmp::Ordering;
+use std::fs::File;
+use std::hash::Hasher;
+use std::io::Write;
 use std::{
     cmp::{max, min},
     collections::HashSet,
 };
-use crate::matrix::Matrix;
-use std::hash::Hasher;
-use std::fs::File;
-use std::io::Write;
+use std::{hash::Hash, vec};
 
 #[derive(Eq, Clone, Debug)]
 pub struct Algo {
@@ -40,7 +40,7 @@ impl PartialEq for Algo {
             && self.son1 == other.son1
             && self.son2 == other.son2
     }
-    
+
     fn ne(&self, other: &Self) -> bool {
         !self.eq(other)
     }
@@ -49,11 +49,14 @@ impl PartialEq for Algo {
 ///Implemtation de l'ordre partiel pour comparer deux algo entre eux
 impl PartialOrd for Algo {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        if <Vec<std::string::String> as Clone>::clone(&other
-            .vars)
+        if <Vec<std::string::String> as Clone>::clone(&other.vars)
             .into_iter()
             .collect::<HashSet<_>>()
-            .is_subset(&<Vec<std::string::String> as Clone>::clone(&self.vars).into_iter().collect::<HashSet<_>>())
+            .is_subset(
+                &<Vec<std::string::String> as Clone>::clone(&self.vars)
+                    .into_iter()
+                    .collect::<HashSet<_>>(),
+            )
         {
             match self.time.cmp(&other.time) {
                 Ordering::Equal => match self.memory.cmp(&other.memory) {
@@ -76,26 +79,31 @@ impl PartialOrd for Algo {
 
 ///Implementation de la struc algo
 impl Algo {
-    fn browse_algo_for_write (&self, dot_file: &mut File, 
-    cmpt: &mut u64) -> std::io::Result<()> {
+    fn browse_algo_for_write(&self, dot_file: &mut File, cmpt: &mut u64) -> std::io::Result<()> {
         let mark_father = *cmpt;
         let mut mark_son_left = None;
         let mut mark_son_right = None;
 
-
         if mark_father == 0 {
             dot_file.write_all(
-                format!("\t{}[label=\"PAPA\"];\n", *cmpt).as_bytes()
+                format!(
+                    "\t{}[style=\"filled\" label=\"nb_sol = {}\" color=\"firebrick1\"];\n",
+                    *cmpt, self.nb_solutions
+                )
+                .as_bytes(),
             )?;
         } else {
             if self.vars.len() == 1 {
                 dot_file.write_all(
-                    format!("\t{}[label=\"{}\" color=\"chartreuse\"];\n",
-                    *cmpt, self.vars[0]).as_bytes()
+                    format!(
+                        "\t{}[style=\"filled\" label=\"{}\nnb_sol = {}\" color=\"chartreuse\"];\n",
+                        *cmpt, self.vars[0], self.nb_solutions
+                    )
+                    .as_bytes(),
                 )?;
             } else {
                 dot_file.write_all(
-                    format!("\t{}[label=\"\"];\n", *cmpt).as_bytes()
+                    format!("\t{}[label=\"nb_sol = {}\"];\n", *cmpt, self.nb_solutions).as_bytes(),
                 )?;
             }
         }
@@ -110,59 +118,45 @@ impl Algo {
             mark_son_right = Some(*cmpt);
             son_right.browse_algo_for_write(dot_file, cmpt)?;
         }
-        
 
         if !mark_son_left.is_none() || !mark_son_right.is_none() {
-            dot_file.write_all(
-                format!("\t{} -> {{", mark_father).as_bytes()
-            )?;
+            dot_file.write_all(format!("\t{} -> {{", mark_father).as_bytes())?;
 
             if !mark_son_left.is_none() {
-                dot_file.write_all(
-                    format!(" {}", mark_son_left.unwrap()).as_bytes()
-                )?;
+                dot_file.write_all(format!(" {}", mark_son_left.unwrap()).as_bytes())?;
             }
             if !mark_son_right.is_none() {
-                dot_file.write_all(
-                    format!(" {}", mark_son_right.unwrap()).as_bytes()
-                )?;
+                dot_file.write_all(format!(" {}", mark_son_right.unwrap()).as_bytes())?;
             }
 
-            dot_file.write_all(
-                format!("}}\n").as_bytes()
-            )?;
+            dot_file.write_all(format!("}}\n").as_bytes())?;
         }
 
         Ok(())
     }
 
     /// Print into filename the dot corresponding to self Algo
-    pub fn to_dot(&self, filename: &str) -> std::io::Result<()>  {
+    pub fn to_dot(&self, filename: &str) -> std::io::Result<()> {
         let mut file = File::create(filename)?;
 
         // Write data to the file
-        file.write_all(
-            format!("digraph {{\n").as_bytes()
-        )?;
+        file.write_all(format!("digraph {{\n").as_bytes())?;
 
-        self.browse_algo_for_write (&mut file, & mut 0)?;
+        self.browse_algo_for_write(&mut file, &mut 0)?;
 
-        file.write_all(
-            format!("}}\n").as_bytes()
-        )?;
+        file.write_all(format!("}}\n").as_bytes())?;
 
         Ok(())
     }
 
-
     ///Constructeur d'un base solver
     pub fn base_solver(mut matrix: &mut Matrix, var: String) -> Algo {
-        print!("{}", matrix);
+        dbg!("{}", matrix);
         Algo {
-            vars: vec![var.clone()],
+            vars: vec![var],
             time: 8,
             memory: 8,
-            nb_solutions: Matrix::number_solutions(&mut matrix, vec![var]),
+            nb_solutions: 256,
             son1: None,
             son2: None,
         }
@@ -170,8 +164,8 @@ impl Algo {
 
     ///Fonction de fusion de deux algo
     pub fn fusion_two_algo(a1: Box<Algo>, a2: Box<Algo>, mut matrix: &mut Matrix) -> Algo {
-        let mut union_vars:Vec<String> = a1.vars.clone();
-        let union_vars2:Vec<String> = a2.vars.clone();
+        let mut union_vars: Vec<String> = a1.vars.clone();
+        let union_vars2: Vec<String> = a2.vars.clone();
         union_vars.extend(union_vars2);
         union_vars.dedup();
         let union_varstmp=union_vars.clone();
@@ -184,7 +178,13 @@ impl Algo {
             time: max(a1.time, max(a2.time, nb_sol.try_into().unwrap())),
             memory: max(
                 a1.memory,
-                max(a2.memory, min(a1.nb_solutions.try_into().unwrap(), a2.nb_solutions.try_into().unwrap())),
+                max(
+                    a2.memory,
+                    min(
+                        a1.nb_solutions.try_into().unwrap(),
+                        a2.nb_solutions.try_into().unwrap(),
+                    ),
+                ),
             ),
             son1: Some(a1),
             son2: Some(a2),
@@ -212,7 +212,9 @@ impl Algo {
     }
 
     pub fn get_all_variables(&self) -> HashSet<String> {
-        <Vec<std::string::String> as Clone>::clone(&self.vars).into_iter().collect()
+        <Vec<std::string::String> as Clone>::clone(&self.vars)
+            .into_iter()
+            .collect()
     }
 
     pub fn get_time_complexity(&self) -> usize {
@@ -336,6 +338,15 @@ mod tests {
     }
 
     #[test]
+    fn test_number_solutions() {
+        println!("Test number solutions");
+        let mut matrix = Matrix::from(vec![vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]);
+        let algo = Algo::base_solver(&mut matrix, "X_1".to_string());
+        println!("After num sol\n{}", matrix);
+        assert_eq!(1, algo.nb_solutions);
+    }
+
+    #[test]
     fn to_dot_00() -> std::io::Result<()> {
         let algo_good = Algo {
             vars: vec!["x".to_string()],
@@ -349,9 +360,9 @@ mod tests {
         algo_good.to_dot("test/to_dot_00.dot")?;
 
         let status = Command::new("diff")
-        .args(&["-q", "test/to_dot_00.dot", "test/to_dot_00_valid.dot"])
-        .status()
-        .expect("failed to execute diff");
+            .args(&["-q", "test/to_dot_00.dot", "test/to_dot_00_valid.dot"])
+            .status()
+            .expect("failed to execute diff");
 
         // Check the return code
         assert_eq!(Some(0), status.code());
@@ -389,9 +400,9 @@ mod tests {
         root.to_dot("test/to_dot_01.dot")?;
 
         let status = Command::new("diff")
-        .args(&["-q", "test/to_dot_01.dot", "test/to_dot_01_valid.dot"])
-        .status()
-        .expect("failed to execute diff");
+            .args(&["-q", "test/to_dot_01.dot", "test/to_dot_01_valid.dot"])
+            .status()
+            .expect("failed to execute diff");
 
         // Check the return code
         assert_eq!(Some(0), status.code());
@@ -445,9 +456,9 @@ mod tests {
         root.to_dot("test/to_dot_02.dot")?;
 
         let status = Command::new("diff")
-        .args(&["-q", "test/to_dot_02.dot", "test/to_dot_02_valid.dot"])
-        .status()
-        .expect("failed to execute diff");
+            .args(&["-q", "test/to_dot_02.dot", "test/to_dot_02_valid.dot"])
+            .status()
+            .expect("failed to execute diff");
 
         // Check the return code
         assert_eq!(Some(0), status.code());

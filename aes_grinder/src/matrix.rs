@@ -659,6 +659,10 @@ impl From<Vec<Vec<u8>>> for Matrix {
         let cols = data[0].len();
         let mut matrix = Matrix::new(rows, cols);
         matrix.data.clear();
+        //Name the columns with alphabet
+        for i in 0..rows {
+            matrix.vars_map.insert(format!("X_{}", i), i);
+        }
 
         for i in 0..rows {
             for j in 0..cols {

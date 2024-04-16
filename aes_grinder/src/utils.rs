@@ -63,14 +63,14 @@ impl Mul for Number {
 
         while a > 0 {
             if a % 2 == 1 {
-                result = result ^ b;
+                result ^= b;
             }
             tmp = b & 0x80;
-            b = b << 1;
+            b <<= 1;
             if tmp != 0 {
-                b = b ^ (self.poly as u8);
+                b ^= self.poly as u8;
             }
-            a = a >> 1;
+            a >>= 1;
         }
 
         Self {value: result, poly: self.poly}

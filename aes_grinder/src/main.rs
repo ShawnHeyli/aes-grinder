@@ -35,7 +35,7 @@ fn main() {
     let matrix = parser_mod
         .parse_system(&mut globals)
         .expect("Error while parsing system");
-    let mut matrix = matrix::Matrix::from(matrix);
+    let mut matrix = matrix;
     matrix.set_vars_map(parser_mod.vars_map);
     
     println!("{}", matrix);

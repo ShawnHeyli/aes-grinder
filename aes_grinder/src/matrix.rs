@@ -22,9 +22,9 @@ impl Matrix {
     /// put argument vars to left of matrix
     fn sort_left(&mut self, vars: Vec<String>) {
         let mut swap_ndx: usize = 0;
-        let mut vars_iter = vars.iter();
+        let vars_iter = vars.iter();
 
-        while let Some(var) = vars_iter.next() {
+        for var in vars_iter {
             let ndx = self.vars_map.get(var).unwrap();
             self.swap_columns(swap_ndx, *ndx);
 
@@ -36,9 +36,9 @@ impl Matrix {
     /// put argument vars to right of matrix
     fn sort_right(&mut self, vars: Vec<String>) {
         let mut swap_ndx: usize = self.cols - 1;
-        let mut vars_iter = vars.iter();
+        let vars_iter = vars.iter();
 
-        while let Some(var) = vars_iter.next() {
+        for var in vars_iter {
             let ndx = self.vars_map.get(var).unwrap();
             self.swap_columns(swap_ndx, *ndx);
 
@@ -49,7 +49,7 @@ impl Matrix {
 
     pub fn new_from_vec(
         data: Vec<Vec<u32>>,
-        vars_map: HashMap<String, usize>,
+        _vars_map: HashMap<String, usize>,
         polynomial: u16,
     ) -> Self {
         let rows = data.len();
@@ -59,7 +59,7 @@ impl Matrix {
 
         for i in 0..rows {
             for j in 0..cols {
-                if data[i][j] >= 2u32.pow((16 - polynomial.leading_zeros()) as u32) {
+                if data[i][j] >= 2u32.pow(16 - polynomial.leading_zeros()) {
                     panic!("Invalid number for the given polynomial");
                 }
                 matrix
@@ -111,7 +111,7 @@ impl Matrix {
             self.data.swap(i * self.cols + col1, i * self.cols + col2);
         }
         //Swap in vars_map
-        for (var, col) in self.vars_map.iter_mut() {
+        for (_var, col) in self.vars_map.iter_mut() {
             if *col == col1 {
                 *col = col2;
             } else if *col == col2 {
@@ -281,10 +281,11 @@ impl Matrix {
         }
     }
     /// Row reduce the matrix on the given variables
-    pub fn row_reduce_on(&mut self, vars: Vec<String>) -> () {
+    pub fn row_reduce_on(&mut self, vars: Vec<String>) {
         assert!(self.rows >= vars.len());
         self.sort_left(vars.clone());
-        for j in 0..vars.len() {//Cols
+        for j in 0..vars.len() {
+            //Cols
             //Find the max
             let mut max: Number = 0.into();
             let mut max_row = 0;
@@ -329,17 +330,19 @@ impl Matrix {
         //C'est cette partie à gérer
         //Retourner |vars| - nombre d'equation en bas
         //Get variables from matrix that are not in vars
-        let not_vars: Vec<String> = self.get_all_variables().into_iter().filter(|x| !vars.contains(x)).collect();
+        let not_vars: Vec<String> = self
+            .get_all_variables()
+            .into_iter()
+            .filter(|x| !vars.contains(x))
+            .collect();
         let echelon_rows = self.gaussian_elimination_inv_on(not_vars);
         vars.len() - (self.rows - echelon_rows)
     }
 
-    fn get_nb_ligne_zero_borded_from_bottom(&self, nb_vars:usize) -> usize{
-        let max = self.cols - nb_vars;
-        let nb_ligne = 0;
-        for i in self.rows-1..0{
-            
-        }
+    fn get_nb_ligne_zero_borded_from_bottom(&self, nb_vars: usize) -> usize {
+        let _max = self.cols - nb_vars;
+        let _nb_ligne = 0;
+        for _i in self.rows - 1..0 {}
         todo!()
     }
 
@@ -591,7 +594,7 @@ impl std::fmt::Display for Matrix {
         let mut vars_to_display: Vec<(String, usize)> = vars_map.into_iter().collect();
         vars_to_display.sort_by(|a, b| a.1.cmp(&b.1));
         for (str, col) in vars_to_display {
-            write!(f, "{} {}\n", str, col)?;
+            writeln!(f, "{} {}", str, col)?;
         }
 
         // Print the matrix
@@ -775,7 +778,7 @@ mod tests {
         vars_maps.insert("S(X_0[0,0])".to_string(), 1);
         matrix.set_vars_map(vars_maps);
 
-        let mut expected = vec!["X_0[0,0]".to_string(), "S(X_0[0,0])".to_string()];
+        let _expected = ["X_0[0,0]".to_string(), "S(X_0[0,0])".to_string()];
         println!("{}", matrix);
     }
     #[test]

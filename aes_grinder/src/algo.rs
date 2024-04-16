@@ -196,22 +196,28 @@ impl Algo {
         alg
     }
 
-    /**
-     * Definition of the comparision 1 (define in the paper)
-     */
+    /// Compares two algorithms if they have the same variables, the one with the smallest time is better
+    /// Corresponds to comparaison1 in the paper
     pub fn compare1(&self, other: &Self) -> Option<Ordering> {
-        if self.get_all_variables() == other.get_all_variables() {
-            if self.time <= other.time {
-                return Some(Ordering::Greater);
+        let mut vec1 = self.vars.clone();
+        let mut vec2 = other.vars.clone();
+
+        vec1.sort();
+        vec2.sort();
+
+        if vec1 == vec2 {
+            if vec1 <= vec2 {
+                Some(Ordering::Greater)
             } else {
-                return Some(Ordering::Less);
+                Some(Ordering::Less)
             }
+        } else {
+            None
         }
-        None
     }
 
     pub fn get_all_variables(&self) -> HashSet<String> {
-        <Vec<std::string::String> as Clone>::clone(&self.vars).into_iter().collect()
+        self.vars.iter().cloned().collect::<HashSet<String>>()
     }
 
     pub fn get_time_complexity(&self) -> usize {

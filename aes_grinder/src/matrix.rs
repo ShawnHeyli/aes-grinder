@@ -111,16 +111,13 @@ impl Matrix {
             self.data.swap(i * self.cols + col1, i * self.cols + col2);
         }
         //Swap in vars_map
-        let col1 = <HashMap<String, usize> as Clone>::clone(&self.vars_map)
-            .into_iter()
-            .find(|(_, v)| *v == col1)
-            .unwrap();
-        let col2 = <HashMap<String, usize> as Clone>::clone(&self.vars_map)
-            .into_iter()
-            .find(|(_, v)| *v == col2)
-            .unwrap();
-        self.vars_map.insert(col1.0, col2.1);
-        self.vars_map.insert(col2.0, col1.1);
+        for (var, col) in self.vars_map.iter_mut() {
+            if *col == col1 {
+                *col = col2;
+            } else if *col == col2 {
+                *col = col1;
+            }
+        }
     }
 
     pub fn delete_row(&mut self, row: usize) {

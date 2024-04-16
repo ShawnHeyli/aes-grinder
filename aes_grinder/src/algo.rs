@@ -151,7 +151,6 @@ impl Algo {
 
     ///Constructeur d'un base solver
     pub fn base_solver(mut matrix: &mut Matrix, var: String) -> Algo {
-        dbg!("{}", matrix);
         Algo {
             vars: vec![var],
             time: 8,

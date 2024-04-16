@@ -16,6 +16,8 @@ pub fn exhaustive_search(mut x: Matrix, time_complexity: usize) -> HashSet<Box<A
     g.clone().iter().enumerate().for_each(|(i, a1)| {
         g.clone().iter().enumerate().for_each(|(j, a2)| {
             if i < j {
+                // println!("a1 : {:?}", a1.clone());
+                // println!("a2 : {:?}", a2.clone());
                 p.insert((a1.clone(), a2.clone()));
             }
         });
@@ -23,7 +25,12 @@ pub fn exhaustive_search(mut x: Matrix, time_complexity: usize) -> HashSet<Box<A
 
     while !p.is_empty() {
         //Take a pair of algo from p
-        let (a1, a2) = p.iter().next().unwrap();
+                print!(" plen : {:?}", p.len());
+        let a = p.iter().next().unwrap();
+        let (a1,a2) = p.take(&a.clone()).unwrap();
+
+        // println!("take : {:?}\n{:?}", a2.clone(),a1.clone());
+        // println!("plen : {:?}", p.len());
         let c = Box::new(Algo::fusion_two_algo(a1.clone(), a2.clone(), &mut x));
 
         if c.get_time_complexity() <= time_complexity {
@@ -104,5 +111,24 @@ fn update_queue(
         // Update g and p
         *g = gprim;
         *p = uprim;
+    }
+}
+
+#[cfg(test)]
+mod test_exhaustive {
+
+    use std::collections::HashMap;
+
+    use super::*;
+
+    #[test]
+    fn test_exhaustive1() {
+        let mut matrix = Matrix::from(vec![vec![1, 2, 3], vec![4, 3, 2], vec![4, 8, 2]]);
+        let mut vars_maps: HashMap<String, usize> = HashMap::new();
+        vars_maps.insert("A".to_string(), 0);
+        vars_maps.insert("B".to_string(), 1);
+        vars_maps.insert("C".to_string(), 2);
+        matrix.set_vars_map(vars_maps.clone());
+        exhaustive_search(matrix, 50);
     }
 }

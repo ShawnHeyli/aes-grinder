@@ -40,7 +40,8 @@ fn main() {
     
     println!("{}", matrix);
     matrix.drop_linear_variable();
-    // let graph = exhaustive_search(matrix, 50);
+    let graph = exhaustive_search(matrix, 5);
     // assert!(graph.len()==1);
-    // println!("{:?}",graph);
+    println!("LEN GRAPH{:?}",graph);
+    // graph.to_dot();
 }

@@ -261,14 +261,15 @@ impl Matrix {
         }
         //Backward substitution
         for j in (0..vars.len()).rev() {
-        for j in (0..vars.len()).rev() {
-            for i in (0..j).rev() {
-                let factor = self[(i, j)];
-                for k in 0..self.cols {
-                    let a = self[(i, k)];
-                    let b = factor * self[(j, k)];
-                    let ab = a + b;
-                    self[(i, k)] = ab;
+            for j in (0..vars.len()).rev() {
+                for i in (0..j).rev() {
+                    let factor = self[(i, j)];
+                    for k in 0..self.cols {
+                        let a = self[(i, k)];
+                        let b = factor * self[(j, k)];
+                        let ab = a + b;
+                        self[(i, k)] = ab;
+                    }
                 }
             }
         }
@@ -276,8 +277,13 @@ impl Matrix {
     }
 
     fn swap_lines(&mut self, i: usize, j: usize) {
-        println!("Swap lines {} and {}", i, j);
-        assert!(i < self.rows && j < self.rows, "ERROR :: in swap_line :: out of bound {} {}", i, j);
+        // println!("Swap lines {} and {}", i, j);
+        assert!(
+            i < self.rows && j < self.rows,
+            "ERROR :: in swap_line :: out of bound {} {}",
+            i,
+            j
+        );
         for k in 0..self.cols {
             let temp = self[(i, k)];
             self[(i, k)] = self[(j, k)];
@@ -287,36 +293,7 @@ impl Matrix {
 
     /// Perform row reduction to get row echelon form
     fn scale(&mut self) {
-        for i in 0..self.rows {
-            let row = self.get_row(i);
-            let mut pivot = 0;
-            for j in 0..self.cols {
-                if row[j] != 0.into() {
-                    pivot = j;
-                    break;
-                }
-            }
-            if pivot == 0 {
-                continue;
-            }
-            for j in 0..self.rows {
-                if j == i {
-                    continue;
-                }
-                let inv = self[(j, pivot)].invert();
-                for k in 0..self.cols {
-                    self[(j, k)] = self[(j, k)] + inv * self[(i, k)];
-                }
-            }
-        }
-    }
-
-    /// Row reduce the matrix on the given variables
-    pub fn scale_on(&mut self, vars: Vec<String>) -> () {
-        assert!(self.rows >= vars.len());
-        self.sort_left(vars.clone());
-        for j in 0..vars.len() {
-            //Cols
+        for j in 0..min(self.cols, self.rows) {
             //Find the max
             let mut max: Number = 0.into();
             let mut max_row = 0;
@@ -326,26 +303,70 @@ impl Matrix {
                     max_row = i;
                 }
             }
-            if max == 0.into() {
-                continue;
+            for i in 0..self.rows {
+                if self[(i, j)] != 0.into() && i == max_row {
+                    //This is the pivot
+                    //Set the pivot to one by multiplying the inverse of it in the field
+                    let pivot = self[(i, j)];
+                    let inverse = pivot.invert();
+                    //Normalize the pivot line
+                    for k in 0..self.cols {
+                        self[(i, k)] = self[(i, k)] * inverse;
+                    }
+                    //Swap the line
+                    self.swap_lines(i, j);
+                    //Set 0 under the pivot
+                    for k in j + 1..self.rows {
+                        let factor = self[(k, j)];
+                        for l in 0..self.cols {
+                            let a = self[(k, l)];
+                            let b = factor * self[(j, l)];
+                            let ab = a + b;
+                            self[(k, l)] = ab;
+                        }
+                    }
+                    break;
+                }
             }
-            //Swap the line
-            self.swap_lines(max_row, j);
-            //Normalize
-            //Set the pivot to one by multiplying the inverse of it in the field
-            let pivot = self[(j, j)];
-            let inverse = pivot.invert();
-            for k in 0..self.cols {
-                self[(j, k)] = self[(j, k)] * inverse;
+        }
+    }
+
+    /// Row reduce the matrix on the given variables
+    pub fn scale_on(&mut self, vars: Vec<String>) -> () {
+        self.sort_left(vars.clone());
+        for j in 0..vars.len() {
+            //Find the max
+            let mut max: Number = 0.into();
+            let mut max_row = 0;
+            for i in j..self.rows {
+                if self[(i, j)] > max {
+                    max = self[(i, j)];
+                    max_row = i;
+                }
             }
-            //Set 0 under the pivot
-            for k in j + 1..self.rows {
-                let factor = self[(k, j)];
-                for l in 0..self.cols {
-                    let a = self[(k, l)];
-                    let b = factor * self[(j, l)];
-                    let ab = a + b;
-                    self[(k, l)] = ab;
+            for i in 0..self.rows {
+                if self[(i, j)] != 0.into() && i == max_row {
+                    //This is the pivot
+                    //Set the pivot to one by multiplying the inverse of it in the field
+                    let pivot = self[(i, j)];
+                    let inverse = pivot.invert();
+                    //Normalize the pivot line
+                    for k in 0..self.cols {
+                        self[(i, k)] = self[(i, k)] * inverse;
+                    }
+                    //Swap the line
+                    self.swap_lines(i, j);
+                    //Set 0 under the pivot
+                    for k in j + 1..self.rows {
+                        let factor = self[(k, j)];
+                        for l in 0..self.cols {
+                            let a = self[(k, l)];
+                            let b = factor * self[(j, l)];
+                            let ab = a + b;
+                            self[(k, l)] = ab;
+                        }
+                    }
+                    break;
                 }
             }
         }
@@ -463,7 +484,9 @@ impl Matrix {
             match variable_sboxed_max_rank_1.pop() {
                 Some((x, sx)) => {
                     println!("VARIABLE ECHELONNE {x} et {sx}\n");
-                    self.scale_on(vec![x, sx]);
+                    // self.scale_on(vec![x, sx]);
+                    self.sort_left(vec![x, sx]);
+                    self.scale();
                     //Here treat the case where the variable is linear
                 }
                 None => has_been_update = false,
@@ -761,7 +784,6 @@ mod tests {
         assert_eq!(matrix, expected);
     }
 
-
     #[test]
     fn delete_empty_rows() {
         let mut matrix = Matrix::from(vec![vec![1, 2], vec![0, 0], vec![3, 4]]);
@@ -1000,14 +1022,19 @@ mod test_fn_solve {
         matrix.solve();
         println!("SOLVED\n{}", matrix);
 
-        assert_eq!(matrix.get_row(0), vec![1.into(), 0.into(), 0.into(), 0.into()]);
-        assert_eq!(matrix.get_row(1), vec![0.into(), 1.into(), 0.into(), 0.into()]);
+        assert_eq!(
+            matrix.get_row(0),
+            vec![1.into(), 0.into(), 0.into(), 0.into()]
+        );
+        assert_eq!(
+            matrix.get_row(1),
+            vec![0.into(), 1.into(), 0.into(), 0.into()]
+        );
     }
-    
+
     #[test]
     fn test_solve_02() {
-        let mut matrix = Matrix::from(vec![vec![4, 4, 111],
-            vec![4, 21, 250], vec![7, 8, 9]]);
+        let mut matrix = Matrix::from(vec![vec![4, 4, 111], vec![4, 21, 250], vec![7, 8, 9]]);
         println!("UNSOLVED\n{}", matrix);
 
         matrix.solve();
@@ -1018,14 +1045,14 @@ mod test_fn_solve {
 
     #[test]
     fn test_solve_03() {
-        let mut matrix = Matrix::from(vec![vec![4, 4, 111],vec![4, 21, 250],vec![7, 8, 9]]);
+        let mut matrix = Matrix::from(vec![vec![4, 4, 111], vec![4, 21, 250], vec![7, 8, 9]]);
         let mut vars_maps: HashMap<String, usize> = HashMap::new();
         vars_maps.insert("A".to_string(), 0);
         vars_maps.insert("B".to_string(), 1);
         vars_maps.insert("C".to_string(), 2);
         matrix.set_vars_map(vars_maps.clone());
         println!("matrice a : \n{}", matrix);
-        let mut expected = Matrix::from(vec![vec![1, 0, 101],vec![0, 1, 56],vec![0, 0, 242]]);
+        let mut expected = Matrix::from(vec![vec![1, 0, 101], vec![0, 1, 56], vec![0, 0, 242]]);
         expected.set_vars_map(vars_maps.clone());
 
         matrix.solve();
@@ -1042,17 +1069,17 @@ mod test_fn_solve_on {
 
     #[test]
     fn test_solve_on_00() {
-        let mut matrix = Matrix::from(vec![vec![4, 4, 111],vec![4, 21, 250],vec![7, 8, 9]]);
+        let mut matrix = Matrix::from(vec![vec![4, 4, 111], vec![4, 21, 250], vec![7, 8, 9]]);
         let mut vars_maps: HashMap<String, usize> = HashMap::new();
         vars_maps.insert("A".to_string(), 0);
         vars_maps.insert("B".to_string(), 1);
         vars_maps.insert("C".to_string(), 2);
         matrix.set_vars_map(vars_maps.clone());
         println!("matrice a : \n{}", matrix);
-        let mut expected = Matrix::from(vec![vec![1, 0, 101],vec![0, 1, 56],vec![0, 0, 242]]);
+        let mut expected = Matrix::from(vec![vec![1, 0, 101], vec![0, 1, 56], vec![0, 0, 242]]);
         expected.set_vars_map(vars_maps.clone());
 
-        matrix.solve_on(vec!["A".to_string(),"B".to_string()]);
+        matrix.solve_on(vec!["A".to_string(), "B".to_string()]);
         println!("matrice expected : \n{}", expected);
         println!("matrice obtenue : \n{}", matrix);
         assert_eq!(matrix, expected);
@@ -1060,7 +1087,7 @@ mod test_fn_solve_on {
 
     #[test]
     fn test_solve_on_01() {
-        let mut matrix = Matrix::from(vec![vec![1, 2, 3, 4],vec![4, 3, 2, 1]]);
+        let mut matrix = Matrix::from(vec![vec![1, 2, 3, 4], vec![4, 3, 2, 1]]);
         let mut vars_maps: HashMap<String, usize> = HashMap::new();
         vars_maps.insert("A".to_string(), 0);
         vars_maps.insert("B".to_string(), 1);
@@ -1071,7 +1098,7 @@ mod test_fn_solve_on {
         println!("matrice a : \n{}", matrix);
         //expected.set_vars_map(vars_maps.clone());
 
-        matrix.solve_on(vec!["A".to_string(),"B".to_string()]);
+        matrix.solve_on(vec!["A".to_string(), "B".to_string()]);
         //println!("matrice expected : \n{}", expected);
         println!("matrice obtenue : \n{}", matrix);
         //assert_eq!(matrix, expected);
@@ -1083,7 +1110,7 @@ mod test_fn_solve_on {
 
     #[test]
     fn test_solve_on_02() {
-        let mut matrix = Matrix::from(vec![vec![1, 2, 3, 4],vec![4, 3, 2, 1]]);
+        let mut matrix = Matrix::from(vec![vec![1, 2, 3, 4], vec![4, 3, 2, 1]]);
         let mut vars_maps: HashMap<String, usize> = HashMap::new();
         vars_maps.insert("A".to_string(), 0);
         vars_maps.insert("B".to_string(), 1);
@@ -1180,10 +1207,9 @@ mod test_fn_swap {
         assert_eq!(matrix[(2, 1)], 2.into());
     }
 
-
     #[test]
     fn test_number_solutions2() {
-        let mut matrix = Matrix::from(vec![vec![1, 1,0,1], vec![0, 0,1,0], vec![0, 0,0,1]]);
+        let mut matrix = Matrix::from(vec![vec![1, 1, 0, 1], vec![0, 0, 1, 0], vec![0, 0, 0, 1]]);
 
         let mut vars_maps: HashMap<String, usize> = HashMap::new();
         vars_maps.insert("A".to_string(), 0);
@@ -1192,7 +1218,7 @@ mod test_fn_swap {
         vars_maps.insert("D".to_string(), 3);
         matrix.set_vars_map(vars_maps);
         println!(" m : {}", matrix);
-        let nb_sol = matrix.number_solutions(vec!["C".to_string(),"D".to_string()]);
+        let nb_sol = matrix.number_solutions(vec!["C".to_string(), "D".to_string()]);
         print!("sol : {}", nb_sol);
         assert_eq!(2, nb_sol);
     }

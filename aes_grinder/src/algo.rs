@@ -126,7 +126,7 @@ impl Algo {
             }
 
             dot_file.write_all("}\n".to_string().as_bytes())?;
-        }
+        } // Je suis SAMUEL LE ROBOT
 
         Ok(())
     }

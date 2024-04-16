@@ -128,6 +128,7 @@ impl Algo {
             }
 
             dot_file.write_all("}\n".to_string().as_bytes())?;
+        }
         if !mark_son_left.is_none() || !mark_son_right.is_none() {
             dot_file.write_all(format!("\t{} -> {{", mark_father).as_bytes())?;
 
@@ -177,7 +178,7 @@ impl Algo {
         let union_vars2: Vec<String> = a2.vars.clone();
         union_vars.extend(union_vars2);
         union_vars.dedup();
-        let union_varstmp=union_vars.clone();
+        let union_varstmp = union_vars.clone();
 
         let nb_sol = Matrix::number_solutions(matrix, union_vars.clone());
         let alg = Algo {
@@ -200,9 +201,13 @@ impl Algo {
         };
         let mut h = std::hash::DefaultHasher::new();
         alg.hash(&mut h);
-        
-        let name = format!("/tmp/algo{}",h.finish());
-        println!("fusion {:?} cardinal algo : {}",alg.to_dot(&name), union_varstmp.len());
+
+        let name = format!("/tmp/algo{}", h.finish());
+        println!(
+            "fusion {:?} cardinal algo : {}",
+            alg.to_dot(&name),
+            union_varstmp.len()
+        );
         alg
     }
 

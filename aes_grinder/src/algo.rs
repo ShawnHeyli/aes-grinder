@@ -85,13 +85,25 @@ impl Algo {
         } else if self.vars.len() == 1 {
             dot_file.write_all(
                 format!(
-                    "\t{}[label=\"{}\" color=\"chartreuse\"];\n",
-                    *cmpt, self.vars[0]
+                    "\t{}[style=\"filled\" label=\"nb_sol = {}\" color=\"firebrick1\"];\n",
+                    *cmpt, self.nb_solutions
                 )
                 .as_bytes(),
             )?;
         } else {
-            dot_file.write_all(format!("\t{}[label=\"\"];\n", *cmpt).as_bytes())?;
+            if self.vars.len() == 1 {
+                dot_file.write_all(
+                    format!(
+                        "\t{}[style=\"filled\" label=\"{}\nnb_sol = {}\" color=\"chartreuse\"];\n",
+                        *cmpt, self.vars[0], self.nb_solutions
+                    )
+                    .as_bytes(),
+                )?;
+            } else {
+                dot_file.write_all(
+                    format!("\t{}[label=\"nb_sol = {}\"];\n", *cmpt, self.nb_solutions).as_bytes(),
+                )?;
+            }
         }
 
         if let Some(son_left) = &self.son1 {
@@ -116,6 +128,17 @@ impl Algo {
             }
 
             dot_file.write_all("}\n".to_string().as_bytes())?;
+        if !mark_son_left.is_none() || !mark_son_right.is_none() {
+            dot_file.write_all(format!("\t{} -> {{", mark_father).as_bytes())?;
+
+            if !mark_son_left.is_none() {
+                dot_file.write_all(format!(" {}", mark_son_left.unwrap()).as_bytes())?;
+            }
+            if !mark_son_right.is_none() {
+                dot_file.write_all(format!(" {}", mark_son_right.unwrap()).as_bytes())?;
+            }
+
+            dot_file.write_all(format!("}}\n").as_bytes())?;
         }
 
         Ok(())
@@ -126,34 +149,35 @@ impl Algo {
         let mut file = File::create(filename)?;
 
         // Write data to the file
-        file.write_all("digraph {\n".to_string().as_bytes())?;
+        file.write_all(format!("digraph {{\n").as_bytes())?;
 
         self.browse_algo_for_write(&mut file, &mut 0)?;
 
-        file.write_all("}\n".to_string().as_bytes())?;
+        file.write_all(format!("}}\n").as_bytes())?;
 
         Ok(())
     }
 
     ///Constructeur d'un base solver
-    pub fn base_solver(matrix: &mut Matrix, var: String) -> Algo {
-        print!("{}", matrix);
+    pub fn base_solver(mut matrix: &mut Matrix, var: String) -> Algo {
+        dbg!("{}", matrix);
         Algo {
-            vars: vec![var.clone()],
+            vars: vec![var],
             time: 8,
             memory: 8,
-            nb_solutions: Matrix::number_solutions(matrix, vec![var]),
+            nb_solutions: 256,
             son1: None,
             son2: None,
         }
     }
 
     ///Fonction de fusion de deux algo
-    pub fn fusion_two_algo(a1: Box<Algo>, a2: Box<Algo>, matrix: &mut Matrix) -> Algo {
+    pub fn fusion_two_algo(a1: Box<Algo>, a2: Box<Algo>, mut matrix: &mut Matrix) -> Algo {
         let mut union_vars: Vec<String> = a1.vars.clone();
         let union_vars2: Vec<String> = a2.vars.clone();
         union_vars.extend(union_vars2);
         union_vars.dedup();
+        let union_varstmp=union_vars.clone();
 
         let nb_sol = Matrix::number_solutions(matrix, union_vars.clone());
         let alg = Algo {
@@ -176,9 +200,9 @@ impl Algo {
         };
         let mut h = std::hash::DefaultHasher::new();
         alg.hash(&mut h);
-
-        let name = format!("/tmp/algo{}", h.finish());
-        println!("fusion {:?} ", alg.to_dot(&name));
+        
+        let name = format!("/tmp/algo{}",h.finish());
+        println!("fusion {:?} cardinal algo : {}",alg.to_dot(&name), union_varstmp.len());
         alg
     }
 
@@ -327,6 +351,15 @@ mod tests {
     }
 
     #[test]
+    fn test_number_solutions() {
+        println!("Test number solutions");
+        let mut matrix = Matrix::from(vec![vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]);
+        let algo = Algo::base_solver(&mut matrix, "X_1".to_string());
+        println!("After num sol\n{}", matrix);
+        assert_eq!(1, algo.nb_solutions);
+    }
+
+    #[test]
     fn to_dot_00() -> std::io::Result<()> {
         let algo_good = Algo {
             vars: vec!["x".to_string()],
@@ -340,7 +373,7 @@ mod tests {
         algo_good.to_dot("test/to_dot_00.dot")?;
 
         let status = Command::new("diff")
-            .args(["-q", "test/to_dot_00.dot", "test/to_dot_00_valid.dot"])
+            .args(&["-q", "test/to_dot_00.dot", "test/to_dot_00_valid.dot"])
             .status()
             .expect("failed to execute diff");
 
@@ -380,7 +413,7 @@ mod tests {
         root.to_dot("test/to_dot_01.dot")?;
 
         let status = Command::new("diff")
-            .args(["-q", "test/to_dot_01.dot", "test/to_dot_01_valid.dot"])
+            .args(&["-q", "test/to_dot_01.dot", "test/to_dot_01_valid.dot"])
             .status()
             .expect("failed to execute diff");
 
@@ -436,7 +469,7 @@ mod tests {
         root.to_dot("test/to_dot_02.dot")?;
 
         let status = Command::new("diff")
-            .args(["-q", "test/to_dot_02.dot", "test/to_dot_02_valid.dot"])
+            .args(&["-q", "test/to_dot_02.dot", "test/to_dot_02_valid.dot"])
             .status()
             .expect("failed to execute diff");
 

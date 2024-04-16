@@ -1,5 +1,5 @@
 use crate::utils::{Invertible, Number};
-use std::{cmp::max, collections::HashMap};
+use std::{cmp::max, cmp::min, collections::HashMap};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Matrix {
@@ -165,8 +165,8 @@ impl Matrix {
         self.cols -= 1;
     }
 
-    pub fn gaussian_elimination_inv(&mut self) {
-        for j in 0..max(self.cols, self.rows) {
+    pub fn solve(&mut self) {
+        for j in 0..min(self.cols, self.rows) {
             //Find the max
             let mut max: Number = 0.into();
             let mut max_row = 0;
@@ -203,7 +203,7 @@ impl Matrix {
             }
         }
         //Backward substitution
-        for j in (0..self.cols).rev() {
+        for j in (0..min(self.cols, self.rows)).rev() {
             for i in (0..j).rev() {
                 let factor = self[(i, j)];
                 for k in 0..self.cols {
@@ -217,9 +217,9 @@ impl Matrix {
     }
 
     /// Perform gaussian elimination with inversion on the given variables and return the number of echelon rows
-    pub fn gaussian_elimination_inv_on(&mut self, vars: Vec<String>) -> usize {
+    pub fn solve_on(&mut self, vars: Vec<String>) -> usize {
         self.sort_left(vars.clone());
-        let mut nb_echelon_rows = 0;
+        let nb_echelon_rows = 0;
         for j in 0..vars.len() {
             //Find the max
             let mut max: Number = 0.into();
@@ -233,7 +233,6 @@ impl Matrix {
             for i in 0..self.rows {
                 if self[(i, j)] != 0.into() && i == max_row {
                     //This is the pivot
-                    nb_echelon_rows += 1;
                     //Set the pivot to one by multiplying the inverse of it in the field
                     let pivot = self[(i, j)];
                     let inverse = pivot.invert();
@@ -258,14 +257,16 @@ impl Matrix {
             }
         }
         //Backward substitution
-        for j in (0..self.cols).rev() {
-            for i in (0..j).rev() {
-                let factor = self[(i, j)];
-                for k in 0..self.cols {
-                    let a = self[(i, k)];
-                    let b = factor * self[(j, k)];
-                    let ab = a + b;
-                    self[(i, k)] = ab;
+        for j in (0..vars.len()).rev() {
+            for j in (0..vars.len()).rev() {
+                for i in (0..j).rev() {
+                    let factor = self[(i, j)];
+                    for k in 0..self.cols {
+                        let a = self[(i, k)];
+                        let b = factor * self[(j, k)];
+                        let ab = a + b;
+                        self[(i, k)] = ab;
+                    }
                 }
             }
         }
@@ -273,15 +274,48 @@ impl Matrix {
     }
 
     fn swap_lines(&mut self, i: usize, j: usize) {
-        // println!("Swap lines {} and {}", i, j);
+        println!("Swap lines {} and {}", i, j);
+        assert!(
+            i < self.rows && j < self.rows,
+            "ERROR :: in swap_line :: out of bound {} {}",
+            i,
+            j
+        );
         for k in 0..self.cols {
             let temp = self[(i, k)];
             self[(i, k)] = self[(j, k)];
             self[(j, k)] = temp;
         }
     }
+
+    /// Perform row reduction to get row echelon form
+    fn scale(&mut self) {
+        for i in 0..self.rows {
+            let row = self.get_row(i);
+            let mut pivot = 0;
+            for j in 0..self.cols {
+                if row[j] != 0.into() {
+                    pivot = j;
+                    break;
+                }
+            }
+            if pivot == 0 {
+                continue;
+            }
+            for j in 0..self.rows {
+                if j == i {
+                    continue;
+                }
+                let inv = self[(j, pivot)].invert();
+                for k in 0..self.cols {
+                    self[(j, k)] = self[(j, k)] + inv * self[(i, k)];
+                }
+            }
+        }
+    }
+
     /// Row reduce the matrix on the given variables
-    pub fn row_reduce_on(&mut self, vars: Vec<String>) {
+    pub fn scale_on(&mut self, vars: Vec<String>) -> () {
         assert!(self.rows >= vars.len());
         self.sort_left(vars.clone());
         for j in 0..vars.len() {
@@ -335,15 +369,26 @@ impl Matrix {
             .into_iter()
             .filter(|x| !vars.contains(x))
             .collect();
-        let echelon_rows = self.gaussian_elimination_inv_on(not_vars);
-        vars.len() - (self.rows - echelon_rows)
+        self.solve_on(not_vars);
+
+        //vieux code de samumu
+        // vars.len() - (self.rows - echelon_rows)
+
+        self.get_nb_ligne_zero_borded_from_bottom(vars.len())
     }
 
     fn get_nb_ligne_zero_borded_from_bottom(&self, nb_vars: usize) -> usize {
-        let _max = self.cols - nb_vars;
-        let _nb_ligne = 0;
-        for _i in self.rows - 1..0 {}
-        todo!()
+        let max = self.cols - nb_vars;
+        let mut nb_ligne = 1;
+        for i in (0..self.rows - 1).rev() {
+            for j in 0..max {
+                if self[(i, j)] != 0.into() {
+                    return nb_ligne;
+                }
+            }
+            nb_ligne += 1;
+        }
+        nb_ligne
     }
 
     fn get_matrix_generated_by(&self, vars: Vec<String>) -> Matrix {
@@ -360,7 +405,7 @@ impl Matrix {
 
     /// Compute the dimension of the solution space of the system of equations
     fn dimension_solution_space(&mut self) -> usize {
-        self.row_reduce();
+        self.scale();
         let r = self.count_no_zero_rows();
         println!(
             "ECHEC :  non_zero:{r} col : {:?}, row:{}",
@@ -368,32 +413,6 @@ impl Matrix {
         );
         println!("MATRICE : \n{}", self);
         self.cols - r as usize
-    }
-
-    /// Perform row reduction to get row echelon form
-    fn row_reduce(&mut self) {
-        for i in 0..self.rows {
-            let row = self.get_row(i);
-            let mut pivot = 0;
-            for j in 0..self.cols {
-                if row[j] != 0.into() {
-                    pivot = j;
-                    break;
-                }
-            }
-            if pivot == 0 {
-                continue;
-            }
-            for j in 0..self.rows {
-                if j == i {
-                    continue;
-                }
-                let inv = self[(j, pivot)].invert();
-                for k in 0..self.cols {
-                    self[(j, k)] = self[(j, k)] + inv * self[(i, k)];
-                }
-            }
-        }
     }
 
     fn count_no_zero_rows(&self) -> u32 {
@@ -433,20 +452,20 @@ impl Matrix {
 
         let mut has_been_update: bool = true;
         //tant que la matrice a ete mise a jour on continue d'eliminer les variables lineraires
-        let variable_of_max_rank: Vec<String> = self.get_variable_of_max_rank(1);
-        let mut variable_sboxed_max_rank_1 = get_variable_if_sboxed(&variable_of_max_rank);
+        // let variable_of_max_rank: Vec<String> = self.get_variable_of_max_rank(1);
+        // let mut variable_sboxed_max_rank_1 = get_variable_if_sboxed(&variable_of_max_rank);
+        let mut variable_sboxed_max_rank_1 = get_variable_if_sboxed(&self.get_all_variables());
         println!(
             "tout les variable sboxed : {:?}",
             variable_sboxed_max_rank_1
         );
         while has_been_update {
-            println!("Clean zero \n{}", self);
             self.delete_empty_rows();
             self.delete_empty_colums();
             match variable_sboxed_max_rank_1.pop() {
                 Some((x, sx)) => {
                     println!("VARIABLE ECHELONNE {x} et {sx}\n");
-                    self.row_reduce_on(vec![x, sx]);
+                    self.scale_on(vec![x, sx]);
                     //Here treat the case where the variable is linear
                 }
                 None => has_been_update = false,
@@ -643,6 +662,10 @@ impl From<Vec<Vec<u8>>> for Matrix {
         let cols = data[0].len();
         let mut matrix = Matrix::new(rows, cols);
         matrix.data.clear();
+        //Name the columns with alphabet
+        for i in 0..rows {
+            matrix.vars_map.insert(format!("X_{}", i), i);
+        }
 
         for i in 0..rows {
             for j in 0..cols {
@@ -741,16 +764,6 @@ mod tests {
     }
 
     #[test]
-    fn test_gaussian_elimination_inv() {
-        let mut matrix = Matrix::from(vec![vec![1, 2], vec![3, 4]]);
-        println!("{}", matrix);
-        matrix.gaussian_elimination_inv();
-        let expected = Matrix::from(vec![vec![1, 0], vec![0, 1]]);
-        println!("{}", matrix);
-        assert_eq!(matrix, expected);
-    }
-
-    #[test]
     fn delete_empty_rows() {
         let mut matrix = Matrix::from(vec![vec![1, 2], vec![0, 0], vec![3, 4]]);
         println!("{}", matrix);
@@ -789,7 +802,7 @@ mod tests {
         matrix[(2, 2)] = 4.into();
         matrix[(3, 3)] = 3.into();
         println!("{}", matrix);
-        matrix.gaussian_elimination_inv();
+        matrix.solve();
         println!("{}", matrix);
         let mut vars_maps: HashMap<String, usize> = HashMap::new();
         vars_maps.insert("X_0[0,0]".to_string(), 0);
@@ -828,7 +841,7 @@ mod tests {
             (String::from("k"), 3),
         ]));
         println!("{}", matrix);
-        matrix.row_reduce_on(vec![
+        matrix.scale_on(vec![
             String::from("x"),
             String::from("y"),
             String::from("z"),
@@ -913,7 +926,7 @@ mod tests {
     }
 
     #[test]
-    fn test_row_reduce() {
+    fn test_scale() {
         let mut matrix = Matrix::new(3, 3);
         matrix[(0, 0)] = 1.into();
         matrix[(1, 1)] = 1.into();
@@ -923,7 +936,7 @@ mod tests {
         matrix[(0, 0)] = 1.into();
         matrix[(1, 1)] = 1.into();
         matrix[(2, 2)] = 2.into();
-        matrix.row_reduce();
+        matrix.scale();
         println!("{}", matrix);
         println!("{}", matrix2);
         assert_eq!(matrix, matrix2);
@@ -950,6 +963,151 @@ mod tests {
         println!("variable expect = {:?}", expect);
 
         assert_eq!(m, expect);
+    }
+
+    #[test]
+    fn test_number_solutions() {
+        //une solution
+        let mut matrix = Matrix::from(vec![vec![1, 0], vec![0, 1]]);
+        let mut vars_maps: HashMap<String, usize> = HashMap::new();
+        vars_maps.insert("A".to_string(), 0);
+        vars_maps.insert("B".to_string(), 1);
+        matrix.set_vars_map(vars_maps);
+        let nb_sol = matrix.number_solutions(vec!["B".to_string()]);
+        assert_eq!(1, nb_sol);
+        let nb_sol = matrix.number_solutions(vec!["A".to_string()]);
+    }
+}
+
+#[cfg(test)]
+mod test_fn_solve {
+    use super::*;
+
+    #[test]
+    fn test_solve_00() {
+        let mut matrix = Matrix::from(vec![vec![1, 2], vec![3, 4]]);
+        println!("{}", matrix);
+        matrix.solve();
+        let expected = Matrix::from(vec![vec![1, 0], vec![0, 1]]);
+        println!("{}", matrix);
+        assert_eq!(matrix, expected);
+    }
+
+    #[test]
+    fn test_solve_01() {
+        let mut matrix = Matrix::from(vec![vec![1, 2, 3, 4], vec![4, 3, 2, 1]]);
+        println!("UNSOLVED\n{}", matrix);
+
+        matrix.solve();
+        println!("SOLVED\n{}", matrix);
+
+        assert_eq!(
+            matrix.get_row(0),
+            vec![1.into(), 0.into(), 0.into(), 0.into()]
+        );
+        assert_eq!(
+            matrix.get_row(1),
+            vec![0.into(), 1.into(), 0.into(), 0.into()]
+        );
+    }
+
+    #[test]
+    fn test_solve_02() {
+        let mut matrix = Matrix::from(vec![vec![4, 4, 111], vec![4, 21, 250], vec![7, 8, 9]]);
+        println!("UNSOLVED\n{}", matrix);
+
+        matrix.solve();
+        println!("SOLVED\n{}", matrix);
+
+        assert_eq!(1, 2);
+    }
+
+    #[test]
+    fn test_solve_03() {
+        let mut matrix = Matrix::from(vec![vec![4, 4, 111], vec![4, 21, 250], vec![7, 8, 9]]);
+        let mut vars_maps: HashMap<String, usize> = HashMap::new();
+        vars_maps.insert("A".to_string(), 0);
+        vars_maps.insert("B".to_string(), 1);
+        vars_maps.insert("C".to_string(), 2);
+        matrix.set_vars_map(vars_maps.clone());
+        println!("matrice a : \n{}", matrix);
+        let mut expected = Matrix::from(vec![vec![1, 0, 101], vec![0, 1, 56], vec![0, 0, 242]]);
+        expected.set_vars_map(vars_maps.clone());
+
+        matrix.solve();
+
+        println!("matrice expected : \n{}", expected);
+        println!("matrice obtenue : \n{}", matrix);
+        assert_eq!(matrix, expected);
+    }
+}
+
+#[cfg(test)]
+mod test_fn_solve_on {
+    use super::*;
+
+    #[test]
+    fn test_solve_on_00() {
+        let mut matrix = Matrix::from(vec![vec![4, 4, 111], vec![4, 21, 250], vec![7, 8, 9]]);
+        let mut vars_maps: HashMap<String, usize> = HashMap::new();
+        vars_maps.insert("A".to_string(), 0);
+        vars_maps.insert("B".to_string(), 1);
+        vars_maps.insert("C".to_string(), 2);
+        matrix.set_vars_map(vars_maps.clone());
+        println!("matrice a : \n{}", matrix);
+        let mut expected = Matrix::from(vec![vec![1, 0, 101], vec![0, 1, 56], vec![0, 0, 242]]);
+        expected.set_vars_map(vars_maps.clone());
+
+        matrix.solve_on(vec!["A".to_string(), "B".to_string()]);
+        println!("matrice expected : \n{}", expected);
+        println!("matrice obtenue : \n{}", matrix);
+        assert_eq!(matrix, expected);
+    }
+
+    #[test]
+    fn test_solve_on_01() {
+        let mut matrix = Matrix::from(vec![vec![1, 2, 3, 4], vec![4, 3, 2, 1]]);
+        let mut vars_maps: HashMap<String, usize> = HashMap::new();
+        vars_maps.insert("A".to_string(), 0);
+        vars_maps.insert("B".to_string(), 1);
+        vars_maps.insert("C".to_string(), 2);
+        vars_maps.insert("D".to_string(), 3);
+        matrix.set_vars_map(vars_maps.clone());
+
+        println!("matrice a : \n{}", matrix);
+        //expected.set_vars_map(vars_maps.clone());
+
+        matrix.solve_on(vec!["A".to_string(), "B".to_string()]);
+        //println!("matrice expected : \n{}", expected);
+        println!("matrice obtenue : \n{}", matrix);
+        //assert_eq!(matrix, expected);
+
+        assert_eq!(1, 2);
+        //assert_eq!(matrix.get_row(0), vec![1.into(), 0.into(), 0.into(), 0.into()]);
+        //assert_eq!(matrix.get_row(1), vec![0.into(), 1.into(), 0.into(), 0.into()]);
+    }
+
+    #[test]
+    fn test_solve_on_02() {
+        let mut matrix = Matrix::from(vec![vec![1, 2, 3, 4], vec![4, 3, 2, 1]]);
+        let mut vars_maps: HashMap<String, usize> = HashMap::new();
+        vars_maps.insert("A".to_string(), 0);
+        vars_maps.insert("B".to_string(), 1);
+        vars_maps.insert("C".to_string(), 2);
+        vars_maps.insert("D".to_string(), 3);
+        matrix.set_vars_map(vars_maps.clone());
+
+        println!("matrice a : \n{}", matrix);
+        //expected.set_vars_map(vars_maps.clone());
+
+        matrix.solve_on(vec!["A".to_string()]);
+        //println!("matrice expected : \n{}", expected);
+        println!("matrice obtenue : \n{}", matrix);
+        //assert_eq!(matrix, expected);
+
+        assert_eq!(1, 2);
+        //assert_eq!(matrix.get_row(0), vec![1.into(), 0.into(), 0.into(), 0.into()]);
+        //assert_eq!(matrix.get_row(1), vec![0.into(), 1.into(), 0.into(), 0.into()]);
     }
 }
 
@@ -1026,6 +1184,22 @@ mod test_fn_swap {
         assert_eq!(matrix[(0, 1)], 2.into());
         assert_eq!(matrix[(1, 1)], 2.into());
         assert_eq!(matrix[(2, 1)], 2.into());
+    }
+
+    #[test]
+    fn test_number_solutions2() {
+        let mut matrix = Matrix::from(vec![vec![1, 1, 0, 1], vec![0, 0, 1, 0], vec![0, 0, 0, 1]]);
+
+        let mut vars_maps: HashMap<String, usize> = HashMap::new();
+        vars_maps.insert("A".to_string(), 0);
+        vars_maps.insert("B".to_string(), 1);
+        vars_maps.insert("C".to_string(), 2);
+        vars_maps.insert("D".to_string(), 3);
+        matrix.set_vars_map(vars_maps);
+        println!(" m : {}", matrix);
+        let nb_sol = matrix.number_solutions(vec!["C".to_string(), "D".to_string()]);
+        print!("sol : {}", nb_sol);
+        assert_eq!(2, nb_sol);
     }
 }
 

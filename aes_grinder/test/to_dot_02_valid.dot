@@ -1,9 +1,12 @@
 digraph {
-	0[label="PAPA"];
-	1[label=""];
-	2[label="x" color="chartreuse"];
-	3[label="x" color="chartreuse"];
+	0[style="filled" label="nb_sol = 1" color="firebrick1"];
+	1[label="nb_sol = 1"];
+	2[style="filled" label="x
+nb_sol = 1" color="chartreuse"];
+	3[style="filled" label="x
+nb_sol = 1" color="chartreuse"];
 	1 -> { 2 3}
-	4[label="x" color="chartreuse"];
+	4[style="filled" label="x
+nb_sol = 1" color="chartreuse"];
 	0 -> { 1 4}
 }

@@ -261,6 +261,7 @@ impl Matrix {
         }
         //Backward substitution
         for j in (0..vars.len()).rev() {
+        for j in (0..vars.len()).rev() {
             for i in (0..j).rev() {
                 let factor = self[(i, j)];
                 for k in 0..self.cols {
@@ -449,14 +450,14 @@ impl Matrix {
 
         let mut has_been_update: bool = true;
         //tant que la matrice a ete mise a jour on continue d'eliminer les variables lineraires
-        let variable_of_max_rank: Vec<String> = self.get_variable_of_max_rank(1);
-        let mut variable_sboxed_max_rank_1 = get_variable_if_sboxed(&variable_of_max_rank);
+        // let variable_of_max_rank: Vec<String> = self.get_variable_of_max_rank(1);
+        // let mut variable_sboxed_max_rank_1 = get_variable_if_sboxed(&variable_of_max_rank);
+        let mut variable_sboxed_max_rank_1 = get_variable_if_sboxed(&self.get_all_variables());
         println!(
             "tout les variable sboxed : {:?}",
             variable_sboxed_max_rank_1
         );
         while has_been_update {
-            println!("Clean zero \n{}", self);
             self.delete_empty_rows();
             self.delete_empty_colums();
             match variable_sboxed_max_rank_1.pop() {
@@ -965,6 +966,7 @@ mod tests {
 
     #[test]
     fn test_number_solutions() {
+        //une solution
         let mut matrix = Matrix::from(vec![vec![1, 0], vec![0, 1]]);
         let mut vars_maps: HashMap<String, usize> = HashMap::new();
         vars_maps.insert("A".to_string(), 0);
@@ -1176,6 +1178,23 @@ mod test_fn_swap {
         assert_eq!(matrix[(0, 1)], 2.into());
         assert_eq!(matrix[(1, 1)], 2.into());
         assert_eq!(matrix[(2, 1)], 2.into());
+    }
+
+
+    #[test]
+    fn test_number_solutions2() {
+        let mut matrix = Matrix::from(vec![vec![1, 1,0,1], vec![0, 0,1,0], vec![0, 0,0,1]]);
+
+        let mut vars_maps: HashMap<String, usize> = HashMap::new();
+        vars_maps.insert("A".to_string(), 0);
+        vars_maps.insert("B".to_string(), 1);
+        vars_maps.insert("C".to_string(), 2);
+        vars_maps.insert("D".to_string(), 3);
+        matrix.set_vars_map(vars_maps);
+        println!(" m : {}", matrix);
+        let nb_sol = matrix.number_solutions(vec!["C".to_string(),"D".to_string()]);
+        print!("sol : {}", nb_sol);
+        assert_eq!(2, nb_sol);
     }
 }
 

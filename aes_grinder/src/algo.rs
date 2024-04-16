@@ -168,6 +168,7 @@ impl Algo {
         let union_vars2: Vec<String> = a2.vars.clone();
         union_vars.extend(union_vars2);
         union_vars.dedup();
+        let union_varstmp=union_vars.clone();
 
         let nb_sol = Matrix::number_solutions(matrix, union_vars.clone());
         let alg = Algo {
@@ -190,9 +191,9 @@ impl Algo {
         };
         let mut h = std::hash::DefaultHasher::new();
         alg.hash(&mut h);
-
-        let name = format!("/tmp/algo{}", h.finish());
-        println!("fusion {:?} ", alg.to_dot(&name));
+        
+        let name = format!("/tmp/algo{}",h.finish());
+        println!("fusion {:?} cardinal algo : {}",alg.to_dot(&name), union_varstmp.len());
         alg
     }
 

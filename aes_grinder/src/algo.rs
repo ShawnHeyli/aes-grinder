@@ -157,12 +157,12 @@ impl Algo {
 
     ///Constructeur d'un base solver
     pub fn base_solver(mut matrix: &mut Matrix, var: String) -> Algo {
-        print!("{}", matrix);
+        dbg!("{}", matrix);
         Algo {
-            vars: vec![var.clone()],
+            vars: vec![var],
             time: 8,
             memory: 8,
-            nb_solutions: Matrix::number_solutions(&mut matrix, vec![var]),
+            nb_solutions: 256,
             son1: None,
             son2: None,
         }
@@ -332,6 +332,15 @@ mod tests {
         };
 
         assert!(algo_sad < algo_good);
+    }
+
+    #[test]
+    fn test_number_solutions() {
+        println!("Test number solutions");
+        let mut matrix = Matrix::from(vec![vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]);
+        let algo = Algo::base_solver(&mut matrix, "X_1".to_string());
+        println!("After num sol\n{}", matrix);
+        assert_eq!(1, algo.nb_solutions);
     }
 
     #[test]

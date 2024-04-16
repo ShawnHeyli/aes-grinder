@@ -40,10 +40,6 @@ impl PartialEq for Algo {
             && self.son1 == other.son1
             && self.son2 == other.son2
     }
-
-    fn ne(&self, other: &Self) -> bool {
-        !self.eq(other)
-    }
 }
 
 ///Implemtation de l'ordre partiel pour comparer deux algo entre eux
@@ -119,17 +115,17 @@ impl Algo {
             son_right.browse_algo_for_write(dot_file, cmpt)?;
         }
 
-        if !mark_son_left.is_none() || !mark_son_right.is_none() {
+        if mark_son_left.is_some() || mark_son_right.is_some() {
             dot_file.write_all(format!("\t{} -> {{", mark_father).as_bytes())?;
 
-            if !mark_son_left.is_none() {
+            if mark_son_left.is_some() {
                 dot_file.write_all(format!(" {}", mark_son_left.unwrap()).as_bytes())?;
             }
-            if !mark_son_right.is_none() {
+            if mark_son_right.is_some() {
                 dot_file.write_all(format!(" {}", mark_son_right.unwrap()).as_bytes())?;
             }
 
-            dot_file.write_all(format!("}}\n").as_bytes())?;
+            dot_file.write_all("}\n".to_string().as_bytes())?;
         }
 
         Ok(())
@@ -167,14 +163,14 @@ impl Algo {
         let union_vars2: Vec<String> = a2.vars.clone();
         union_vars.extend(union_vars2);
         union_vars.dedup();
-        let union_varstmp=union_vars.clone();
+        let union_varstmp = union_vars.clone();
 
         let nb_sol = Matrix::number_solutions(matrix, union_vars.clone());
         let alg = Algo {
             vars: union_vars,
             //Compute the number of solutions
             nb_solutions: nb_sol,
-            time: max(a1.time, max(a2.time, nb_sol.try_into().unwrap())),
+            time: max(a1.time, max(a2.time, nb_sol)),
             memory: max(
                 a1.memory,
                 max(
@@ -190,30 +186,38 @@ impl Algo {
         };
         let mut h = std::hash::DefaultHasher::new();
         alg.hash(&mut h);
-        
-        let name = format!("/tmp/algo{}",h.finish());
-        println!("fusion {:?} cardinal algo : {}",alg.to_dot(&name), union_varstmp.len());
+
+        let name = format!("/tmp/algo{}", h.finish());
+        println!(
+            "fusion {:?} cardinal algo : {}",
+            alg.to_dot(&name),
+            union_varstmp.len()
+        );
         alg
     }
 
-    /**
-     * Definition of the comparision 1 (define in the paper)
-     */
+    /// Compares two algorithms if they have the same variables, the one with the smallest time is better
+    /// Corresponds to comparaison1 in the paper
     pub fn compare1(&self, other: &Self) -> Option<Ordering> {
-        if self.get_all_variables() == other.get_all_variables() {
-            if self.time <= other.time {
-                return Some(Ordering::Greater);
+        let mut vec1 = self.vars.clone();
+        let mut vec2 = other.vars.clone();
+
+        vec1.sort();
+        vec2.sort();
+
+        if vec1 == vec2 {
+            if vec1 <= vec2 {
+                Some(Ordering::Greater)
             } else {
-                return Some(Ordering::Less);
+                Some(Ordering::Less)
             }
+        } else {
+            None
         }
-        None
     }
 
     pub fn get_all_variables(&self) -> HashSet<String> {
-        <Vec<std::string::String> as Clone>::clone(&self.vars)
-            .into_iter()
-            .collect()
+        self.vars.iter().cloned().collect::<HashSet<String>>()
     }
 
     pub fn get_time_complexity(&self) -> usize {

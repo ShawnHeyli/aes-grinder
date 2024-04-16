@@ -22,9 +22,9 @@ impl Matrix {
     /// put argument vars to left of matrix
     fn sort_left(&mut self, vars: Vec<String>) {
         let mut swap_ndx: usize = 0;
-        let mut vars_iter = vars.iter();
+        let vars_iter = vars.iter();
 
-        while let Some(var) = vars_iter.next() {
+        for var in vars_iter {
             let ndx = self.vars_map.get(var).unwrap();
             self.swap_columns(swap_ndx, *ndx);
 
@@ -36,9 +36,9 @@ impl Matrix {
     /// put argument vars to right of matrix
     fn sort_right(&mut self, vars: Vec<String>) {
         let mut swap_ndx: usize = self.cols - 1;
-        let mut vars_iter = vars.iter();
+        let vars_iter = vars.iter();
 
-        while let Some(var) = vars_iter.next() {
+        for var in vars_iter {
             let ndx = self.vars_map.get(var).unwrap();
             self.swap_columns(swap_ndx, *ndx);
 
@@ -49,7 +49,7 @@ impl Matrix {
 
     pub fn new_from_vec(
         data: Vec<Vec<u32>>,
-        vars_map: HashMap<String, usize>,
+        _vars_map: HashMap<String, usize>,
         polynomial: u16,
     ) -> Self {
         let rows = data.len();
@@ -59,7 +59,7 @@ impl Matrix {
 
         for i in 0..rows {
             for j in 0..cols {
-                if data[i][j] >= 2u32.pow((16 - polynomial.leading_zeros()) as u32) {
+                if data[i][j] >= 2u32.pow(16 - polynomial.leading_zeros()) {
                     panic!("Invalid number for the given polynomial");
                 }
                 matrix
@@ -111,16 +111,13 @@ impl Matrix {
             self.data.swap(i * self.cols + col1, i * self.cols + col2);
         }
         //Swap in vars_map
-        let col1 = <HashMap<String, usize> as Clone>::clone(&self.vars_map)
-            .into_iter()
-            .find(|(_, v)| *v == col1)
-            .unwrap();
-        let col2 = <HashMap<String, usize> as Clone>::clone(&self.vars_map)
-            .into_iter()
-            .find(|(_, v)| *v == col2)
-            .unwrap();
-        self.vars_map.insert(col1.0, col2.1);
-        self.vars_map.insert(col2.0, col1.1);
+        for (_var, col) in self.vars_map.iter_mut() {
+            if *col == col1 {
+                *col = col2;
+            } else if *col == col2 {
+                *col = col1;
+            }
+        }
     }
 
     pub fn delete_row(&mut self, row: usize) {
@@ -382,7 +379,6 @@ impl Matrix {
         //C'est cette partie à gérer
         //Retourner |vars| - nombre d'equation en bas
         //Get variables from matrix that are not in vars
-
         let not_vars: Vec<String> = self
             .get_all_variables()
             .into_iter()
@@ -634,7 +630,7 @@ impl std::fmt::Display for Matrix {
         let mut vars_to_display: Vec<(String, usize)> = vars_map.into_iter().collect();
         vars_to_display.sort_by(|a, b| a.1.cmp(&b.1));
         for (str, col) in vars_to_display {
-            write!(f, "{} {}\n", str, col)?;
+            writeln!(f, "{} {}", str, col)?;
         }
 
         // Print the matrix
@@ -812,7 +808,7 @@ mod tests {
         vars_maps.insert("S(X_0[0,0])".to_string(), 1);
         matrix.set_vars_map(vars_maps);
 
-        let mut expected = vec!["X_0[0,0]".to_string(), "S(X_0[0,0])".to_string()];
+        let _expected = ["X_0[0,0]".to_string(), "S(X_0[0,0])".to_string()];
         println!("{}", matrix);
     }
     #[test]
@@ -1032,8 +1028,10 @@ mod test_fn_solve {
         );
     }
 
+
     #[test]
     fn test_solve_02() {
+        let mut matrix = Matrix::from(vec![vec![4, 4, 111], vec![4, 21, 250], vec![7, 8, 9]]);
         let mut matrix = Matrix::from(vec![vec![4, 4, 111], vec![4, 21, 250], vec![7, 8, 9]]);
         println!("UNSOLVED\n{}", matrix);
 
@@ -1070,6 +1068,7 @@ mod test_fn_solve_on {
     #[test]
     fn test_solve_on_00() {
         let mut matrix = Matrix::from(vec![vec![4, 4, 111], vec![4, 21, 250], vec![7, 8, 9]]);
+        let mut matrix = Matrix::from(vec![vec![4, 4, 111], vec![4, 21, 250], vec![7, 8, 9]]);
         let mut vars_maps: HashMap<String, usize> = HashMap::new();
         vars_maps.insert("A".to_string(), 0);
         vars_maps.insert("B".to_string(), 1);
@@ -1080,6 +1079,7 @@ mod test_fn_solve_on {
         expected.set_vars_map(vars_maps.clone());
 
         matrix.solve_on(vec!["A".to_string(), "B".to_string()]);
+        matrix.solve_on(vec!["A".to_string(), "B".to_string()]);
         println!("matrice expected : \n{}", expected);
         println!("matrice obtenue : \n{}", matrix);
         assert_eq!(matrix, expected);
@@ -1087,6 +1087,7 @@ mod test_fn_solve_on {
 
     #[test]
     fn test_solve_on_01() {
+        let mut matrix = Matrix::from(vec![vec![1, 2, 3, 4], vec![4, 3, 2, 1]]);
         let mut matrix = Matrix::from(vec![vec![1, 2, 3, 4], vec![4, 3, 2, 1]]);
         let mut vars_maps: HashMap<String, usize> = HashMap::new();
         vars_maps.insert("A".to_string(), 0);
@@ -1101,15 +1102,20 @@ mod test_fn_solve_on {
         matrix.solve_on(vec!["A".to_string(), "B".to_string()]);
         //println!("matrice expected : \n{}", expected);
         println!("matrice obtenue : \n{}", matrix);
-        //assert_eq!(matrix, expected);
 
-        assert_eq!(1, 2);
-        //assert_eq!(matrix.get_row(0), vec![1.into(), 0.into(), 0.into(), 0.into()]);
-        //assert_eq!(matrix.get_row(1), vec![0.into(), 1.into(), 0.into(), 0.into()]);
+        assert_eq!(
+            matrix.get_row(0),
+            vec![1.into(), 0.into(), 192.into(), 236.into()]
+        );
+        assert_eq!(
+            matrix.get_row(1),
+            vec![0.into(), 1.into(), 236.into(), 116.into()]
+        );
     }
 
     #[test]
     fn test_solve_on_02() {
+        let mut matrix = Matrix::from(vec![vec![1, 2, 3, 4], vec![4, 3, 2, 1]]);
         let mut matrix = Matrix::from(vec![vec![1, 2, 3, 4], vec![4, 3, 2, 1]]);
         let mut vars_maps: HashMap<String, usize> = HashMap::new();
         vars_maps.insert("A".to_string(), 0);
@@ -1119,16 +1125,18 @@ mod test_fn_solve_on {
         matrix.set_vars_map(vars_maps.clone());
 
         println!("matrice a : \n{}", matrix);
-        //expected.set_vars_map(vars_maps.clone());
 
         matrix.solve_on(vec!["A".to_string()]);
-        //println!("matrice expected : \n{}", expected);
         println!("matrice obtenue : \n{}", matrix);
-        //assert_eq!(matrix, expected);
 
-        assert_eq!(1, 2);
-        //assert_eq!(matrix.get_row(0), vec![1.into(), 0.into(), 0.into(), 0.into()]);
-        //assert_eq!(matrix.get_row(1), vec![0.into(), 1.into(), 0.into(), 0.into()]);
+        assert_eq!(
+            matrix.get_row(0),
+            vec![1.into(), 70.into(), 141.into(), 203.into()]
+        );
+        assert_eq!(
+            matrix.get_row(1),
+            vec![0.into(), 68.into(), 142.into(), 207.into()]
+        );
     }
 }
 
@@ -1210,6 +1218,7 @@ mod test_fn_swap {
     #[test]
     fn test_number_solutions2() {
         let mut matrix = Matrix::from(vec![vec![1, 1, 0, 1], vec![0, 0, 1, 0], vec![0, 0, 0, 1]]);
+        let mut matrix = Matrix::from(vec![vec![1, 1, 0, 1], vec![0, 0, 1, 0], vec![0, 0, 0, 1]]);
 
         let mut vars_maps: HashMap<String, usize> = HashMap::new();
         vars_maps.insert("A".to_string(), 0);
@@ -1218,6 +1227,7 @@ mod test_fn_swap {
         vars_maps.insert("D".to_string(), 3);
         matrix.set_vars_map(vars_maps);
         println!(" m : {}", matrix);
+        let nb_sol = matrix.number_solutions(vec!["C".to_string(), "D".to_string()]);
         let nb_sol = matrix.number_solutions(vec!["C".to_string(), "D".to_string()]);
         print!("sol : {}", nb_sol);
         assert_eq!(2, nb_sol);

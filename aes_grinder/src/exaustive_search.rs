@@ -52,7 +52,7 @@ fn update_queue(
     g: &mut HashSet<Box<Algo>>,
     p: &mut HashSet<(Box<Algo>, Box<Algo>)>,
     c: Box<Algo>,
-) -> () {
+) {
     let mut dominated = false;
     g.iter().for_each(|a| {
         if let Some(Ordering::Greater) = c.compare1(a) {

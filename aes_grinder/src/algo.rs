@@ -81,8 +81,6 @@ impl Algo {
         let mut mark_son_right = None;
 
         if mark_father == 0 {
-            dot_file.write_all(format!("\t{}[label=\"PAPA\"];\n", *cmpt).as_bytes())?;
-        } else if self.vars.len() == 1 {
             dot_file.write_all(
                 format!(
                     "\t{}[style=\"filled\" label=\"nb_sol = {}\" color=\"firebrick1\"];\n",
@@ -128,18 +126,6 @@ impl Algo {
             }
 
             dot_file.write_all("}\n".to_string().as_bytes())?;
-        }
-        if !mark_son_left.is_none() || !mark_son_right.is_none() {
-            dot_file.write_all(format!("\t{} -> {{", mark_father).as_bytes())?;
-
-            if !mark_son_left.is_none() {
-                dot_file.write_all(format!(" {}", mark_son_left.unwrap()).as_bytes())?;
-            }
-            if !mark_son_right.is_none() {
-                dot_file.write_all(format!(" {}", mark_son_right.unwrap()).as_bytes())?;
-            }
-
-            dot_file.write_all(format!("}}\n").as_bytes())?;
         }
 
         Ok(())

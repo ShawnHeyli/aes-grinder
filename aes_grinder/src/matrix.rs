@@ -287,7 +287,8 @@ impl Matrix {
     pub fn row_reduce_on(&mut self, vars: Vec<String>) -> () {
         assert!(self.rows >= vars.len());
         self.sort_left(vars.clone());
-        for j in 0..vars.len() {//Cols
+        for j in 0..vars.len() {
+            //Cols
             //Find the max
             let mut max: Number = 0.into();
             let mut max_row = 0;
@@ -332,18 +333,32 @@ impl Matrix {
         //C'est cette partie à gérer
         //Retourner |vars| - nombre d'equation en bas
         //Get variables from matrix that are not in vars
-        let not_vars: Vec<String> = self.get_all_variables().into_iter().filter(|x| !vars.contains(x)).collect();
-        let echelon_rows = self.gaussian_elimination_inv_on(not_vars);
-        vars.len() - (self.rows - echelon_rows)
+
+        let not_vars: Vec<String> = self
+            .get_all_variables()
+            .into_iter()
+            .filter(|x| !vars.contains(x))
+            .collect();
+        self.gaussian_elimination_inv_on(not_vars);
+
+        //vieux code de samumu
+        // vars.len() - (self.rows - echelon_rows)
+
+        self.get_nb_ligne_zero_borded_from_bottom(vars.len())
     }
 
-    fn get_nb_ligne_zero_borded_from_bottom(&self, nb_vars:usize) -> usize{
+    fn get_nb_ligne_zero_borded_from_bottom(&self, nb_vars: usize) -> usize {
         let max = self.cols - nb_vars;
-        let nb_ligne = 0;
-        for i in self.rows-1..0{
-            
+        let mut nb_ligne = 1;
+        for i in (0..self.rows - 1).rev() {
+            for j in 0..max {
+                if self[(i, j)] != 0.into() {
+                    return nb_ligne;
+                }
+            }
+            nb_ligne += 1;
         }
-        todo!()
+        nb_ligne
     }
 
     fn get_matrix_generated_by(&self, vars: Vec<String>) -> Matrix {
@@ -750,6 +765,7 @@ mod tests {
         assert_eq!(matrix, expected);
     }
 
+
     #[test]
     fn delete_empty_rows() {
         let mut matrix = Matrix::from(vec![vec![1, 2], vec![0, 0], vec![3, 4]]);
@@ -950,6 +966,19 @@ mod tests {
         println!("variable expect = {:?}", expect);
 
         assert_eq!(m, expect);
+    }
+
+    #[test]
+    fn test_number_solutions() {
+        let mut matrix = Matrix::from(vec![vec![1, 0], vec![0, 1]]);
+        let mut vars_maps: HashMap<String, usize> = HashMap::new();
+        vars_maps.insert("A".to_string(), 0);
+        vars_maps.insert("B".to_string(), 1);
+        matrix.set_vars_map(vars_maps);
+        let nb_sol = matrix.number_solutions(vec!["B".to_string()]);
+        assert_eq!(1, nb_sol);
+        let nb_sol = matrix.number_solutions(vec!["A".to_string()]);
+        assert_eq!(1, nb_sol);
     }
 }
 

@@ -25,9 +25,9 @@ pub fn exhaustive_search(mut x: Matrix, time_complexity: usize) -> HashSet<Box<A
 
     while !p.is_empty() {
         //Take a pair of algo from p
-                print!(" plen : {:?}", p.len());
+        print!(" plen : {:?}", p.len());
         let a = p.iter().next().unwrap();
-        let (a1,a2) = p.take(&a.clone()).unwrap();
+        let (a1, a2) = p.take(&a.clone()).unwrap();
 
         // println!("take : {:?}\n{:?}", a2.clone(),a1.clone());
         // println!("plen : {:?}", p.len());
@@ -48,11 +48,7 @@ pub fn exhaustive_search(mut x: Matrix, time_complexity: usize) -> HashSet<Box<A
 //     end if
 //     return (G', P')
 // end function
-fn update_queue(
-    g: &mut HashSet<Box<Algo>>,
-    p: &mut HashSet<(Box<Algo>, Box<Algo>)>,
-    c: Box<Algo>,
-) {
+fn update_queue(g: &mut HashSet<Box<Algo>>, p: &mut HashSet<(Box<Algo>, Box<Algo>)>, c: Box<Algo>) {
     let mut dominated = false;
     g.iter().for_each(|a| {
         if let Some(Ordering::Greater) = c.compare1(a) {

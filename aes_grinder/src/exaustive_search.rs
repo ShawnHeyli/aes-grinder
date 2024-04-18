@@ -2,7 +2,7 @@ use crate::{algo::Algo, matrix::Matrix};
 use std::{cmp::Ordering, collections::HashSet};
 use rand::Rng;
 
-pub fn random_search (mut matrix: Matrix, time_complexity: usize) -> Box<Algo> {
+pub fn random_search (mut matrix: Matrix) -> Box<Algo> {
     //Set of base solvers
     let mut lst_algo: Vec<Box<Algo>> = vec![];
 

@@ -1,5 +1,32 @@
 use crate::{algo::Algo, matrix::Matrix};
 use std::{cmp::Ordering, collections::HashSet};
+use rand::Rng;
+
+pub fn random_search (mut matrix: Matrix, time_complexity: usize) -> Box<Algo> {
+    //Set of base solvers
+    let mut lst_algo: Vec<Box<Algo>> = vec![];
+
+    for x_var in matrix.get_all_variables() {
+        //We create a base solver for each variables for variables that are not S(x)
+        if x_var.contains('(') {
+            continue;
+        }
+        lst_algo.push(Box::new(Algo::base_solver(&mut matrix, x_var)));
+    }
+
+    let mut size_of_lst = lst_algo.len();
+    while  size_of_lst > 1 {
+        let first_rand  = rand::thread_rng().gen_range(0..size_of_lst);
+        size_of_lst -= 1;
+        let second_rand = rand::thread_rng().gen_range(0..size_of_lst);
+        let first_algo = lst_algo.remove(first_rand);
+        let second_algo = lst_algo.remove(second_rand);
+        lst_algo.push(Box::new(Algo::fusion_two_algo(first_algo,
+            second_algo, &mut matrix)));   
+    }
+
+    lst_algo.pop().unwrap()
+}
 
 pub fn exhaustive_search(mut x: Matrix, time_complexity: usize) -> HashSet<Box<Algo>> {
     //Set of base solvers

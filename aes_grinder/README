@@ -1,5 +1,8 @@
 Basic commande to run the project:
 cargo run -- -e equation_system/dp_example.eqs
 
+Open documentation
+cargo doc --open
+
 Research paper :
 https://eprint.iacr.org/2012/069.pdf

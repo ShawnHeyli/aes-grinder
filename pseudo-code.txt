@@ -1,0 +1,42 @@
+Remarks on this exercice :
+- Well understanding the subject with matematical knowledge
+- Meeting with our supervisor were useful to have more informations and to see if we were in the good direction for the following devlopements
+
+Parsing part :
+- Remove spaces and comments
+- Transform the equation into a double entry table which represent the matrix
+- Isolate each elements and record it on the good form for the Gaussian Elimination
+
+Exaustive search
+From a matrix and a complexity, we return the best possible algorithms
+For each variable which is not passed into the SBox, we have to fins the best possible solver. If we find it in the list, we replace it into the list
+	In details :
+		We define several algorithms and for each variable which is not a SBox, se add it to the list of base solvers for each x of the set
+		For each element A1 and A2 belongs to G1 and G2, id i < j :
+			we put A1 and A2 in le P list
+		
+		We go through the list p :
+			- We do the fusion of algorithms between them
+			- If the time complexity of 2 algortihms previously choosen is best, we update our algo-object with the best algo pairs value
+
+Update queue (used in the exaustive search) :
+	Update the best algorithm in the queue
+
+Partial order : Can compare 2 algorithms in the aim to find the best one
+
+Algorithm class : represent the algorithm (that's we also call the solver)
+	- Get a set of solutions
+	- A corresponding number of solutions
+	- A time complexity
+	- A memory complexity
+	
+
+Compare1 :
+	It taks all the variables and did a comparison in time (we want the lowest possible value)
+
+Sparse_Matrix :
+	The representation of the matrix which contains only coeffiacients of appearence of all the variable in the corresponding equation
+	
+Retirer variables lineaires nb solutions
+
+Explications en quelques lignes de Gauss

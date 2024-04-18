@@ -51,9 +51,11 @@ pub fn exhaustive_search(mut x: Matrix, time_complexity: usize) -> HashSet<Box<A
 fn update_queue(g: &mut HashSet<Box<Algo>>, p: &mut HashSet<(Box<Algo>, Box<Algo>)>, c: Box<Algo>) {
     let mut dominated = false;
     g.iter().for_each(|a| {
-        if let Some(Ordering::Greater) = c.compare1(a) {
+        let cmp = (*c).partial_cmp(a.as_ref());
+        if cmp == Some(Ordering::Greater)  {
             dominated = true;
         }
+        print!("  dominné {:?} : {}\n",cmp, dominated);
     });
 
     if !dominated {
@@ -126,5 +128,42 @@ mod test_exhaustive {
         vars_maps.insert("C".to_string(), 2);
         matrix.set_vars_map(vars_maps.clone());
         exhaustive_search(matrix, 50);
+    }
+    #[test]
+    fn test_update_queue() {
+        let mut matrix = Matrix::from(vec![
+            vec![1, 4, 1, 1],
+            vec![0, 1, 1, 0],
+            vec![0, 0, 0, 1],
+            vec![0, 7, 0, 1],
+        ]);
+        let mut vars_maps: HashMap<String, usize> = HashMap::new();
+        vars_maps.insert("A".to_string(), 0);
+        vars_maps.insert("B".to_string(), 1);
+        vars_maps.insert("C".to_string(), 2);
+        vars_maps.insert("D".to_string(), 3);
+        matrix.set_vars_map(vars_maps.clone());
+        let c1 = Algo::base_solver(&mut matrix, "A".to_string());
+        let c2 = Algo::base_solver(&mut matrix, "B".to_string());
+        let c3 = Algo::base_solver(&mut matrix, "C".to_string());
+        let c4 = Algo::base_solver(&mut matrix, "D".to_string());
+        let c = Algo::fusion_two_algo(Box::new(c1.clone()), Box::new(c2.clone()), &mut matrix);
+
+        let mut g: HashSet<Box<Algo>> = HashSet::new();
+        let mut p: HashSet<(Box<Algo>, Box<Algo>)> = HashSet::new();
+        g.insert(Box::new(c1.clone()));
+        g.insert(Box::new(c2.clone()));
+        g.insert(Box::new(c3.clone()));
+        g.insert(Box::new(c4.clone()));
+
+        p.insert((Box::new(c1.clone()), Box::new(c2.clone())));
+        p.insert((Box::new(c1.clone()), Box::new(c3.clone())));
+        p.insert((Box::new(c1.clone()), Box::new(c4.clone())));
+        p.insert((Box::new(c2.clone()), Box::new(c3.clone())));
+        p.insert((Box::new(c2.clone()), Box::new(c4.clone())));
+        p.insert((Box::new(c3.clone()), Box::new(c4.clone())));
+        update_queue(&mut g, &mut p, Box::new(c.clone()));
+        println!("p : {:?}", p);
+        println!("g : {:?}", g);
     }
 }

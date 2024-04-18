@@ -146,7 +146,7 @@ impl Algo {
     }
 
     ///Constructeur d'un base solver
-    pub fn base_solver(mut matrix: &mut Matrix, var: String) -> Algo {
+    pub fn base_solver(matrix: &mut Matrix, var: String) -> Algo {
         Algo {
             vars: vec![var.clone()],
             time: 1,
@@ -196,7 +196,8 @@ impl Algo {
         alg
     }
 
-    /// Compares two algorithms if they have the same variables, the one with the smallest time is better
+    /// Compares two algorithms if they have the same variables, 
+    /// the one with the smallest time is better
     /// Corresponds to comparaison1 in the paper
     pub fn compare1(&self, other: &Self) -> Option<Ordering> {
         let mut vec1 = self.vars.clone();
@@ -206,7 +207,7 @@ impl Algo {
         vec2.sort();
 
         if vec1 == vec2 {
-            if vec1 <= vec2 {
+            if self.time <= other.time {
                 Some(Ordering::Greater)
             } else {
                 Some(Ordering::Less)

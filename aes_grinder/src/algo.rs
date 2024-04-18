@@ -148,10 +148,10 @@ impl Algo {
     ///Constructeur d'un base solver
     pub fn base_solver(mut matrix: &mut Matrix, var: String) -> Algo {
         Algo {
-            vars: vec![var],
-            time: 8,
-            memory: 8,
-            nb_solutions: 256,
+            vars: vec![var.clone()],
+            time: 1,
+            memory: 1,
+            nb_solutions: matrix.number_solutions(vec![var]),
             son1: None,
             son2: None,
         }

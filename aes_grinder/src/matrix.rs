@@ -384,7 +384,7 @@ impl Matrix {
             .into_iter()
             .filter(|x| !vars.contains(x))
             .collect();
-        self.solve_on(not_vars);
+        self.scale_on(not_vars);
 
         //vieux code de samumu
         // vars.len() - (self.rows - echelon_rows)
@@ -992,7 +992,6 @@ mod tests {
         matrix.set_vars_map(vars_maps);
         let nb_sol = matrix.number_solutions(vec!["B".to_string()]);
         assert_eq!(1, nb_sol);
-        let nb_sol = matrix.number_solutions(vec!["A".to_string()]);
     }
 }
 
@@ -1217,8 +1216,10 @@ mod test_fn_swap {
 
     #[test]
     fn test_number_solutions2() {
-        let mut matrix = Matrix::from(vec![vec![1, 1, 0, 1], vec![0, 0, 1, 0], vec![0, 0, 0, 1]]);
-        let mut matrix = Matrix::from(vec![vec![1, 1, 0, 1], vec![0, 0, 1, 0], vec![0, 0, 0, 1]]);
+        let mut matrix = Matrix::from(vec![vec![1, 4, 1, 1], 
+                                                    vec![0, 1, 1, 0], 
+                                                    vec![0, 0, 0, 1]]);
+        
 
         let mut vars_maps: HashMap<String, usize> = HashMap::new();
         vars_maps.insert("A".to_string(), 0);
@@ -1228,8 +1229,28 @@ mod test_fn_swap {
         matrix.set_vars_map(vars_maps);
         println!(" m : {}", matrix);
         let nb_sol = matrix.number_solutions(vec!["C".to_string(), "D".to_string()]);
+        print!("sol : {}", nb_sol);
+        println!(" m : {}", matrix);
+        assert_eq!(1, nb_sol);
+    }
+    #[test]
+    fn test_number_solutions3() {
+        let mut matrix = Matrix::from(vec![vec![1, 4, 1, 1], 
+                                                    vec![0, 1, 1, 0], 
+                                                    vec![0, 0, 0, 1], 
+                                                    vec![0, 7, 0, 1]]);
+        
+
+        let mut vars_maps: HashMap<String, usize> = HashMap::new();
+        vars_maps.insert("A".to_string(), 0);
+        vars_maps.insert("B".to_string(), 1);
+        vars_maps.insert("C".to_string(), 2);
+        vars_maps.insert("D".to_string(), 3);
+        matrix.set_vars_map(vars_maps);
+        println!(" m : {}", matrix);
         let nb_sol = matrix.number_solutions(vec!["C".to_string(), "D".to_string()]);
         print!("sol : {}", nb_sol);
+        println!(" m : {}", matrix);
         assert_eq!(2, nb_sol);
     }
 }

@@ -388,8 +388,11 @@ impl Matrix {
 
         //vieux code de samumu
         // vars.len() - (self.rows - echelon_rows)
+//nb sol = nb_ var-nb_eq
 
-        self.get_nb_ligne_zero_borded_from_bottom(vars.len())
+        let nb_eq = self.get_nb_ligne_zero_borded_from_bottom(vars.len());
+        let nb_sol = vars.len()-nb_eq;
+        nb_sol
     }
 
     fn get_nb_ligne_zero_borded_from_bottom(&self, nb_vars: usize) -> usize {
@@ -470,24 +473,32 @@ impl Matrix {
         // let variable_of_max_rank: Vec<String> = self.get_variable_of_max_rank(1);
         // let mut variable_sboxed_max_rank_1 = get_variable_if_sboxed(&variable_of_max_rank);
         let mut variable_sboxed_max_rank_1 = get_variable_if_sboxed(&self.get_all_variables());
+
+        //echelonné sur la variable a supprimer et suprimer la colonne et la ligne
+
         println!(
             "tout les variable sboxed : {:?}",
             variable_sboxed_max_rank_1
         );
-        while has_been_update {
-            self.delete_empty_rows();
-            self.delete_empty_colums();
-            match variable_sboxed_max_rank_1.pop() {
-                Some((x, sx)) => {
-                    println!("VARIABLE ECHELONNE {x} et {sx}\n");
-                    // self.scale_on(vec![x, sx]);
-                    self.sort_left(vec![x, sx]);
-                    self.scale();
-                    //Here treat the case where the variable is linear
-                }
-                None => has_been_update = false,
-            }
-            println!("Apres gauss\n{}", self);
+        self.delete_empty_rows();
+        self.delete_empty_colums();
+
+        
+
+
+
+        // while has_been_update {
+        //     match variable_sboxed_max_rank_1.pop() {
+        //         Some((x, sx)) => {
+        //             // println!("VARIABLE ECHELONNE {x} et {sx}\n");
+        //             // self.scale_on(vec![x, sx]);
+        //             self.sort_left(vec![x, sx]);
+        //             self.scale();
+        //             //Here treat the case where the variable is linear
+        //         }
+        //         None => has_been_update = false,
+        //     }
+            // println!("Apres gauss\n{}", self);
             // panic!();
 
             //     //selctionner une varibale dans les variables non traitées et de rang 1,
@@ -511,7 +522,7 @@ impl Matrix {
             //     compare les deux colonnes
 
             //     si elle sont egales on suprimme la ligne a 1 1 et les deux colonnes
-        }
+        // }
     }
 
     fn delete_alone_variable(&mut self) {

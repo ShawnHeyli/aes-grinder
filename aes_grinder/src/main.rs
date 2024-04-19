@@ -6,7 +6,7 @@ mod utils;
 mod exaustive_search;
 
 use clap::Parser as ClapParser;
-use crate::exaustive_search::exhaustive_search;
+use crate::exaustive_search::{exhaustive_search, random_search};
 
 struct GlobalInfos {
     filename_eq_sys: String,
@@ -40,8 +40,12 @@ fn main() {
     
     println!("{}", matrix);
     matrix.drop_linear_variable();
-    let graph = exhaustive_search(matrix, 6);
+    println!("{}", matrix);
+    let graph = exhaustive_search(matrix, 10);
     // assert!(graph.len()==1);
+    // let graph = random_search(matrix);
+
     println!("LEN GRAPH{:?}",graph);
-    // graph.to_dot();
+    let x = graph.iter().next().unwrap();
+    let _ = x.to_dot("/tmp/algoo");
 }

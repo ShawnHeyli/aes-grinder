@@ -6,7 +6,7 @@ mod utils;
 mod exaustive_search;
 
 use clap::Parser as ClapParser;
-use crate::exaustive_search::exhaustive_search;
+use crate::exaustive_search::{exhaustive_search, random_search};
 
 struct GlobalInfos {
     filename_eq_sys: String,

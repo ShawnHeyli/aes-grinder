@@ -386,8 +386,11 @@ impl Matrix {
 
         //vieux code de samumu
         // vars.len() - (self.rows - echelon_rows)
+        //nb sol = nb_ var-nb_eq
 
-        self.get_nb_ligne_zero_borded_from_bottom(vars.len())
+        let nb_eq = self.get_nb_ligne_zero_borded_from_bottom(vars.len());
+        let nb_sol = vars.len() - nb_eq;
+        nb_sol
     }
 
     fn get_nb_ligne_zero_borded_from_bottom(&self, nb_vars: usize) -> usize {
@@ -1019,7 +1022,6 @@ mod test_fn_solve {
         );
     }
 
-
     #[test]
     fn test_solve_02() {
         let mut matrix = Matrix::from(vec![vec![4, 4, 111], vec![4, 21, 250], vec![7, 8, 9]]);
@@ -1204,10 +1206,7 @@ mod test_fn_swap {
 
     #[test]
     fn test_number_solutions2() {
-        let mut matrix = Matrix::from(vec![vec![1, 4, 1, 1], 
-                                                    vec![0, 1, 1, 0], 
-                                                    vec![0, 0, 0, 1]]);
-        
+        let mut matrix = Matrix::from(vec![vec![1, 4, 1, 1], vec![0, 1, 1, 0], vec![0, 0, 0, 1]]);
 
         let mut vars_maps: HashMap<String, usize> = HashMap::new();
         vars_maps.insert("A".to_string(), 0);
@@ -1223,11 +1222,12 @@ mod test_fn_swap {
     }
     #[test]
     fn test_number_solutions3() {
-        let mut matrix = Matrix::from(vec![vec![1, 4, 1, 1], 
-                                                    vec![0, 1, 1, 0], 
-                                                    vec![0, 0, 0, 1], 
-                                                    vec![0, 7, 0, 1]]);
-        
+        let mut matrix = Matrix::from(vec![
+            vec![1, 4, 1, 1],
+            vec![0, 1, 1, 0],
+            vec![0, 0, 0, 1],
+            vec![0, 7, 0, 1],
+        ]);
 
         let mut vars_maps: HashMap<String, usize> = HashMap::new();
         vars_maps.insert("A".to_string(), 0);

@@ -388,10 +388,10 @@ impl Matrix {
 
         //vieux code de samumu
         // vars.len() - (self.rows - echelon_rows)
-//nb sol = nb_ var-nb_eq
+        //nb sol = nb_ var-nb_eq
 
         let nb_eq = self.get_nb_ligne_zero_borded_from_bottom(vars.len());
-        let nb_sol = vars.len()-nb_eq;
+        let nb_sol = vars.len() - nb_eq;
         nb_sol
     }
 
@@ -458,71 +458,28 @@ impl Matrix {
 
     ///Drop linear variable on the matrice, update the matrix self
     pub fn drop_linear_variable(&mut self) {
-        println!(
-            "Avant delete alone variable nb cols {}, nb rows {}",
-            self.cols, self.rows
-        );
-        self.delete_alone_variable();
-        println!(
-            "Apres delete alone variable nb cols {}, nb rows {}",
-            self.cols, self.rows
-        );
+        let mut variables: Vec<String> = Vec::new();
+        for (name, _) in &self.vars_map {
+            for (str, _) in &self.vars_map {
+                if name.contains(str) && name != str {
+                    variables.push(str.to_string());
+                    variables.push(name.to_string());
+                }
+            }
+        }
+        let mut variable_alone: Vec<String> = self.get_all_variables();
+        variable_alone.retain(|s| !variables.contains(s));
+        variable_alone
+            .iter()
+            .for_each(|s| self.remove_variable(s.to_string()));
 
-        let mut has_been_update: bool = true;
-        //tant que la matrice a ete mise a jour on continue d'eliminer les variables lineraires
-        // let variable_of_max_rank: Vec<String> = self.get_variable_of_max_rank(1);
-        // let mut variable_sboxed_max_rank_1 = get_variable_if_sboxed(&variable_of_max_rank);
-        let mut variable_sboxed_max_rank_1 = get_variable_if_sboxed(&self.get_all_variables());
-
-        //echelonné sur la variable a supprimer et suprimer la colonne et la ligne
-
-        println!(
-            "tout les variable sboxed : {:?}",
-            variable_sboxed_max_rank_1
-        );
-        self.delete_empty_rows();
-        self.delete_empty_colums();
-
-        
-
-
-
-        // while has_been_update {
-        //     match variable_sboxed_max_rank_1.pop() {
-        //         Some((x, sx)) => {
-        //             // println!("VARIABLE ECHELONNE {x} et {sx}\n");
-        //             // self.scale_on(vec![x, sx]);
-        //             self.sort_left(vec![x, sx]);
-        //             self.scale();
-        //             //Here treat the case where the variable is linear
-        //         }
-        //         None => has_been_update = false,
-        //     }
-            // println!("Apres gauss\n{}", self);
-            // panic!();
-
-            //     //selctionner une varibale dans les variables non traitées et de rang 1,
-            //     //et qui a une varible en sbox aussi de rang1
-            //     for (x, sx) in variable_sboxed_max_rank_1 {
-            //         let x_index = self.vars_map.get(&x);
-            //         let sx_index = self.vars_map.get(&sx);
-            //         match (x_index, sx_index) {
-            //             (Some(some_x), Some(some_y)) => {
-            //                 let colum_x = matrix.get_column(*some_x);
-            //                 let colum_sx = matrix.get_column(*some_y);
-            //                 if colum_x == colum_sx {
-            //                     todo!()
-            //                 }
-            //             }
-            //             (_, _) => panic!(),
-            //         }
-            //     }
-            //     todo!()
-
-            //     compare les deux colonnes
-
-            //     si elle sont egales on suprimme la ligne a 1 1 et les deux colonnes
-        // }
+        print!("{:?}", variable_alone);
+        for alone in variable_alone {
+            print!(" Varible alone : {}", alone);
+            self.scale_on(vec![alone]);
+            self.delete_row(0);
+            self.delete_row(1);
+        }
     }
 
     fn delete_alone_variable(&mut self) {
@@ -1038,7 +995,6 @@ mod test_fn_solve {
         );
     }
 
-
     #[test]
     fn test_solve_02() {
         let mut matrix = Matrix::from(vec![vec![4, 4, 111], vec![4, 21, 250], vec![7, 8, 9]]);
@@ -1227,10 +1183,7 @@ mod test_fn_swap {
 
     #[test]
     fn test_number_solutions2() {
-        let mut matrix = Matrix::from(vec![vec![1, 4, 1, 1], 
-                                                    vec![0, 1, 1, 0], 
-                                                    vec![0, 0, 0, 1]]);
-        
+        let mut matrix = Matrix::from(vec![vec![1, 4, 1, 1], vec![0, 1, 1, 0], vec![0, 0, 0, 1]]);
 
         let mut vars_maps: HashMap<String, usize> = HashMap::new();
         vars_maps.insert("A".to_string(), 0);
@@ -1246,11 +1199,12 @@ mod test_fn_swap {
     }
     #[test]
     fn test_number_solutions3() {
-        let mut matrix = Matrix::from(vec![vec![1, 4, 1, 1], 
-                                                    vec![0, 1, 1, 0], 
-                                                    vec![0, 0, 0, 1], 
-                                                    vec![0, 7, 0, 1]]);
-        
+        let mut matrix = Matrix::from(vec![
+            vec![1, 4, 1, 1],
+            vec![0, 1, 1, 0],
+            vec![0, 0, 0, 1],
+            vec![0, 7, 0, 1],
+        ]);
 
         let mut vars_maps: HashMap<String, usize> = HashMap::new();
         vars_maps.insert("A".to_string(), 0);

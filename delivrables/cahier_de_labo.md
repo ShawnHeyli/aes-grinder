@@ -38,6 +38,8 @@ implementing the elimination of gauss and some comparison fonctions of Algo
 ### 05/04/2024
 This week since we didn't have much time, we decided re-read the paper to make very sure to understand everything (and find some questions for our supervisor), after that we handed out work to each member to be done by monday the 08
 
-
 ### 12/04/2024
 Fix errors spotted with supervisor and write code to complete first attack.
+
+### 19/04/2024
+Rereading all the code to check the specification is consistent with the paper and fixing bugs. Added tests on critical functions. Implementation of a second algorithm to search for the best algorithm since the first does not work (detect during rereading). We had two meetings with the supervisor this week

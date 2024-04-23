@@ -41,11 +41,9 @@ fn main() {
     println!("{}", matrix);
     matrix.drop_linear_variable();
     println!("{}", matrix);
-    let graph = exhaustive_search(matrix, 10);
-    // assert!(graph.len()==1);
-    // let graph = random_search(matrix);
 
-    println!("LEN GRAPH{:?}",graph);
-    let x = graph.iter().next().unwrap();
-    let _ = x.to_dot("/tmp/algoo");
+    //let graph = exhaustive_search(matrix, 6);
+    // assert!(graph.len()==1);
+    //println!("LEN GRAPH{:?}",graph);
+    //graph.iter().next().unwrap().to_dot("/tmp/algo.dot");
 }

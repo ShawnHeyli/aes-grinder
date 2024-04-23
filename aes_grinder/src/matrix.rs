@@ -467,18 +467,30 @@ impl Matrix {
                 }
             }
         }
-        let mut variable_alone: Vec<String> = self.get_all_variables();
-        variable_alone.retain(|s| !variables.contains(s));
-        variable_alone
-            .iter()
-            .for_each(|s| self.remove_variable(s.to_string()));
+        let mut modified = true;
+        while modified {
+            modified = false;
+            let mut variable_alone: Vec<String> = self.get_all_variables();
+            variable_alone.retain(|s| !variables.contains(s));
 
-        print!("{:?}", variable_alone);
-        for alone in variable_alone {
-            print!(" Varible alone : {}", alone);
-            self.scale_on(vec![alone]);
-            self.delete_row(0);
-            self.delete_row(1);
+            print!("col:{}, row:{}, {:?}", self.cols, self.rows, variable_alone);
+            for alone in variable_alone {
+                self.delete_empty_colums();
+                print!("Veut sort : {}\n",alone.clone());
+                print!("{}",self);
+                self.sort_left(vec![alone.clone()]);
+                self.scale();
+                if self[(0, 0)] == 1.into() {
+                    println!("DETRUIT : {}", alone.clone());
+                    self.delete_row(0);
+                    self.remove_variable(alone.clone());
+                    modified = true;
+                }else{
+                    println!("PAS DETRUIT : {}", alone.clone());
+
+                }
+                // self.scale_on(vec![alone.clone()]);
+            }
         }
     }
 

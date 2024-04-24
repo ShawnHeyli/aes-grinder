@@ -218,9 +218,10 @@ impl Matrix {
 
     /// Perform gaussian elimination with inversion on the given variables and return the number of echelon rows
     pub fn solve_on(&mut self, vars: Vec<String>) -> usize {
+        assert!(vars.len() <= self.cols, "ERROR :: in solve_on :: vars.len() > self.cols");
         self.sort_left(vars.clone());
         let nb_echelon_rows = 0;
-        for j in 0..vars.len() {
+        for j in 0..min(vars.len(), self.rows) {
             //Find the max
             let mut max: Number = 0.into();
             let mut max_row = 0;
@@ -275,9 +276,12 @@ impl Matrix {
         // println!("Swap lines {} and {}", i, j);
         assert!(
             i < self.rows && j < self.rows,
-            "ERROR :: in swap_line :: out of bound {} {}",
+            "ERROR :: in swap_line :: out of bound {} {}\n Matrix ({}, {})\n{}",
             i,
-            j
+            j,
+            self.rows,
+            self.cols,
+            self
         );
         for k in 0..self.cols {
             let temp = self[(i, k)];
@@ -328,8 +332,9 @@ impl Matrix {
 
     /// Row reduce the matrix on the given variables
     pub fn scale_on(&mut self, vars: Vec<String>) -> () {
+        assert!(vars.len() <= self.cols, "ERROR :: in scale_on :: vars.len() > self.cols");
         self.sort_left(vars.clone());
-        for j in 0..vars.len() {
+        for j in 0..min(vars.len(), self.rows) {
             //Find the max
             let mut max: Number = 0.into();
             let mut max_row = 0;
@@ -611,10 +616,13 @@ impl Matrix {
             panic!("La Variable que l'on veut détruire n'existe pas");
         }
         self.solve_on(vec![variable.clone()]);
-        println!("Post echelonnage {}\n", self);
         //Remove first line and first column
         assert!(self.is_only_one_1_on_column(0));
-        self.delete_row(0);
+        if variable.contains("P") || variable.contains("C") {
+            self.delete_column(0);
+        } else {
+            self.delete_row(0);
+        }
         self.delete_empty_colums();
     }
 

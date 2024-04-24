@@ -1,0 +1,29 @@
+In this projet, we sould realise a program that can lead the possibility to find the solutions to the AES equation during only some turn.
+The resistance of this algorithm is based of the number of turn we could do.
+
+For all the computations, we work on the finite corpus of AES, which is represented by 11b.
+
+In this program, AES is represented by a sequel of equations which are in a file.
+These equations are transformed in a matrix with on the top each variable and on the second entry, the equations. Moreover, each column represente a variable but which could be represented at different step of the AES algorithm.
+
+Each element of the equation is either a variable or the representation of an element at each step of the AES algorithm.
+
+Below, you can find the different representations of all the variables :
+- S[x] represent an element during the SBox step
+- xi : the step before subbyte
+- yi : state between subyte and shifrows
+- zi : state before Mixcolumns
+- wi : state after mixcolumns
+
+Used of based solvers
+We are going to use at it is said in the paper, a base solver which is an algorithm. We have to find the most optimised solutions in term of time, space or number of solutions
+
+To do ??
+	- Do we need to explain a little bit how AES works ?
+	- Possible summary of the report : 
+		- Introduction to the problem
+		- A little explanation about AES
+		- The representation of the algorithm in our problem
+		- Presentation of the work flow of the algorithm
+		- Possible solutions found
+		- Problems encountered and solutions found ??

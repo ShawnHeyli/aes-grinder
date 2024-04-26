@@ -43,3 +43,7 @@ Fix errors spotted with supervisor and write code to complete first attack.
 
 ### 19/04/2024
 Rereading all the code to check the specification is consistent with the paper and fixing bugs. Added tests on critical functions. Implementation of a second algorithm to search for the best algorithm since the first does not work (detect during rereading). We had two meetings with the supervisor this week
+
+### 26/04/2024
+Start writing project report.
+Patch tentative issues

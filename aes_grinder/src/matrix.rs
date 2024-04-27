@@ -142,7 +142,7 @@ impl Matrix {
         if column >= self.cols {
             panic!("Column index out of bounds");
         }
-
+        println!("Deleted variable: {}", self.vars_map.iter().find(|(_, v)| **v == column).unwrap().0);
         // update the vars_map
         self.vars_map.retain(|_, v| *v != column);
         // update the column index in the vars_map after column
@@ -291,7 +291,7 @@ impl Matrix {
     }
 
     /// Perform row reduction to get row echelon form
-    fn scale(&mut self) {
+    pub fn scale(&mut self) {
         for j in 0..min(self.cols, self.rows) {
             //Find the max
             let mut max: Number = 0.into();
@@ -618,7 +618,7 @@ impl Matrix {
         self.solve_on(vec![variable.clone()]);
         //Remove first line and first column
         assert!(self.is_only_one_1_on_column(0));
-        if variable.contains("P") || variable.contains("C") {
+        if variable.contains("P") || variable.contains("C") || variable.contains("KV") {
             self.delete_column(0);
         } else {
             self.delete_row(0);

@@ -166,44 +166,46 @@ impl Matrix {
     }
 
     pub fn solve(&mut self) {
-        for j in 0..min(self.cols, self.rows) {
+        let mut pivot_line = 0;
+        for j in 0..self.cols {
+            if pivot_line >= self.rows {
+                break;
+            }
             //Find the max
             let mut max: Number = 0.into();
             let mut max_row = 0;
-            for i in j..self.rows {
+            for i in pivot_line..self.rows {
                 if self[(i, j)] > max {
                     max = self[(i, j)];
                     max_row = i;
                 }
             }
-            for i in 0..self.rows {
-                if self[(i, j)] != 0.into() && i == max_row {
-                    //This is the pivot
-                    //Set the pivot to one by multiplying the inverse of it in the field
-                    let pivot = self[(i, j)];
-                    let inverse = pivot.invert();
-                    //Normalize the pivot line
-                    for k in 0..self.cols {
-                        self[(i, k)] = self[(i, k)] * inverse;
-                    }
-                    //Swap the line
-                    self.swap_lines(i, j);
-                    //Set 0 under the pivot
-                    for k in j + 1..self.rows {
-                        let factor = self[(k, j)];
-                        for l in 0..self.cols {
-                            let a = self[(k, l)];
-                            let b = factor * self[(j, l)];
-                            let ab = a + b;
-                            self[(k, l)] = ab;
-                        }
-                    }
-                    break;
+            if max == 0.into() {
+                continue;
+            }
+            
+            //Swap the pivot line to the right place
+            self.swap_lines(max_row, pivot_line);
+            let inverse = self[(pivot_line, pivot_line)].invert();
+            //Normalize the pivot line
+            for k in 0..self.cols {
+                self[(pivot_line, k)] = self[(pivot_line, k)] * inverse;
+            }
+
+            //Set 0 under the pivot
+            for k in pivot_line + 1..self.rows {
+                let factor = self[(k, pivot_line)];
+                for l in 0..self.cols {
+                    let a = self[(k, l)];
+                    let b = factor * self[(pivot_line, l)];
+                    let ab = a + b;
+                    self[(k, l)] = ab;
                 }
             }
+            pivot_line += 1;
         }
         //Backward substitution
-        for j in (0..min(self.cols, self.rows)).rev() {
+        for j in (0..pivot_line).rev() {
             for i in (0..j).rev() {
                 let factor = self[(i, j)];
                 for k in 0..self.cols {
@@ -231,29 +233,25 @@ impl Matrix {
                     max_row = i;
                 }
             }
-            for i in 0..self.rows {
-                if self[(i, j)] != 0.into() && i == max_row {
-                    //This is the pivot
-                    //Set the pivot to one by multiplying the inverse of it in the field
-                    let pivot = self[(i, j)];
-                    let inverse = pivot.invert();
-                    //Normalize the pivot line
-                    for k in 0..self.cols {
-                        self[(i, k)] = self[(i, k)] * inverse;
-                    }
-                    //Swap the line
-                    self.swap_lines(i, j);
-                    //Set 0 under the pivot
-                    for k in j + 1..self.rows {
-                        let factor = self[(k, j)];
-                        for l in 0..self.cols {
-                            let a = self[(k, l)];
-                            let b = factor * self[(j, l)];
-                            let ab = a + b;
-                            self[(k, l)] = ab;
-                        }
-                    }
-                    break;
+            if max == 0.into() {
+                panic!("ERROR :: in solve_on :: max == 0")
+            }
+            //Swap the pivot line to the right place
+            self.swap_lines(max_row, j);
+            let inverse = self[(j, j)].invert();
+            //Normalize the pivot line
+            for k in 0..self.cols {
+                self[(j, k)] = self[(j, k)] * inverse;
+            }
+
+            //Set 0 under the pivot
+            for k in j + 1..self.rows {
+                let factor = self[(k, j)];
+                for l in 0..self.cols {
+                    let a = self[(k, l)];
+                    let b = factor * self[(j, l)];
+                    let ab = a + b;
+                    self[(k, l)] = ab;
                 }
             }
         }
@@ -283,6 +281,9 @@ impl Matrix {
             self.cols,
             self
         );
+        if i == j {
+            return;
+        }
         for k in 0..self.cols {
             let temp = self[(i, k)];
             self[(i, k)] = self[(j, k)];

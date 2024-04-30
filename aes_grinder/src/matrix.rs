@@ -400,6 +400,7 @@ impl Matrix {
     }
 
     fn get_nb_ligne_zero_borded_from_bottom(&self, nb_vars: usize) -> usize {
+        assert!(nb_vars <= self.cols, "ERROR :: in get_nb_ligne_zero_borded_from_bottom :: nb_vars > self.cols \n vars : {}\n matrix:\n {}", nb_vars, self);
         let max = self.cols - nb_vars;
         let mut nb_ligne = 1;
         for i in (0..self.rows - 1).rev() {

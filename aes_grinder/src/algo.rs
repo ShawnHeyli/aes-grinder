@@ -1,14 +1,15 @@
 //! Struc Algo permettant de représenter des Algo
 use crate::matrix::Matrix;
 use core::cmp::Ordering;
+use std::collections::hash_map::DefaultHasher;
 use std::fs::File;
+use std::hash::Hash;
 use std::hash::Hasher;
 use std::io::Write;
 use std::{
     cmp::{max, min},
     collections::HashSet,
 };
-use std::{hash::Hash, vec};
 
 #[derive(Eq, Clone, Debug)]
 pub struct Algo {
@@ -86,20 +87,20 @@ impl Algo {
                 )
                 .as_bytes(),
             )?;
+        } else if self.vars.len() == 1 {
+            dot_file.write_all(
+                format!(
+                    "\t{}[style=\"filled\" label=\"{}\nnb_sol = {}\" color=\"chartreuse\"];\n",
+                    *cmpt,
+                    self.vars.iter().next().unwrap(),
+                    self.nb_solutions
+                )
+                .as_bytes(),
+            )?;
         } else {
-            if self.vars.len() == 1 {
-                dot_file.write_all(
-                    format!(
-                        "\t{}[style=\"filled\" label=\"{}\nnb_sol = {}\" color=\"chartreuse\"];\n",
-                        *cmpt, self.vars.iter().next().unwrap(), self.nb_solutions
-                    )
-                    .as_bytes(),
-                )?;
-            } else {
-                dot_file.write_all(
-                    format!("\t{}[label=\"nb_sol = {}\"];\n", *cmpt, self.nb_solutions).as_bytes(),
-                )?;
-            }
+            dot_file.write_all(
+                format!("\t{}[label=\"nb_sol = {}\"];\n", *cmpt, self.nb_solutions).as_bytes(),
+            )?;
         }
 
         if let Some(son_left) = &self.son1 {
@@ -134,11 +135,11 @@ impl Algo {
         let mut file = File::create(filename)?;
 
         // Write data to the file
-        file.write_all(format!("digraph {{\n").as_bytes())?;
+        file.write_all("digraph {\n".to_string().as_bytes())?;
 
         self.browse_algo_for_write(&mut file, &mut 0)?;
 
-        file.write_all(format!("}}\n").as_bytes())?;
+        file.write_all("}\n".to_string().as_bytes())?;
 
         Ok(())
     }
@@ -164,7 +165,13 @@ impl Algo {
         let union_vars = vars1.union(&vars2);
         //Remove duplicates
         let union_vars: HashSet<String> = union_vars.cloned().collect();
-        assert!(union_vars.len() <= 40, "Error: too many variables a1 vars = {:?}\n a2 vars = {:?}\n union = {:?} ", a1.vars, a2.vars, union_vars);
+        assert!(
+            union_vars.len() <= 40,
+            "Error: too many variables a1 vars = {:?}\n a2 vars = {:?}\n union = {:?} ",
+            a1.vars,
+            a2.vars,
+            union_vars
+        );
 
         let nb_sol = Matrix::number_solutions(matrix, union_vars.clone());
         let alg = Algo {
@@ -185,19 +192,16 @@ impl Algo {
             son1: Some(a1),
             son2: Some(a2),
         };
-        let mut h = std::hash::DefaultHasher::new();
+        let mut h = DefaultHasher::new();
         alg.hash(&mut h);
         alg
     }
 
-    /// Compares two algorithms if they have the same variables, 
+    /// Compares two algorithms if they have the same variables,
     /// the one with the smallest time is better
     /// Corresponds to comparaison1 in the paper
     pub fn compare1(&self, other: &Self) -> Option<Ordering> {
-        let vec1:HashSet<String> = self.get_all_variables();
-        let vec2:HashSet<String> = other.get_all_variables();
-
-        if vec1.is_subset(&vec2) && vec2.is_subset(&vec1) {
+        if self.vars == other.vars {
             if self.time <= other.time {
                 Some(Ordering::Greater)
             } else {

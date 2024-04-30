@@ -1,5 +1,8 @@
 use crate::utils::{Invertible, Number};
-use std::{cmp::min, collections::{HashMap, HashSet}};
+use std::{
+    cmp::min,
+    collections::{HashMap, HashSet},
+};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Matrix {
@@ -142,7 +145,10 @@ impl Matrix {
         if column >= self.cols {
             panic!("Column index out of bounds");
         }
-        println!("Deleted variable: {}", self.vars_map.iter().find(|(_, v)| **v == column).unwrap().0);
+        println!(
+            "Deleted variable: {}",
+            self.vars_map.iter().find(|(_, v)| **v == column).unwrap().0
+        );
         // update the vars_map
         self.vars_map.retain(|_, v| *v != column);
         // update the column index in the vars_map after column
@@ -183,7 +189,7 @@ impl Matrix {
             if max == 0.into() {
                 continue;
             }
-            
+
             //Swap the pivot line to the right place
             self.swap_lines(max_row, pivot_line);
             let inverse = self[(pivot_line, pivot_line)].invert();
@@ -220,7 +226,10 @@ impl Matrix {
 
     /// Perform gaussian elimination with inversion on the given variables and return the number of echelon rows
     pub fn solve_on(&mut self, vars: Vec<String>) -> usize {
-        assert!(vars.len() <= self.cols, "ERROR :: in solve_on :: vars.len() > self.cols");
+        assert!(
+            vars.len() <= self.cols,
+            "ERROR :: in solve_on :: vars.len() > self.cols"
+        );
         self.sort_left(vars.clone());
         let nb_echelon_rows = 0;
         for j in 0..min(vars.len(), self.rows) {
@@ -333,7 +342,10 @@ impl Matrix {
 
     /// Row reduce the matrix on the given variables
     pub fn scale_on(&mut self, vars: Vec<String>) -> () {
-        assert!(vars.len() <= self.cols, "ERROR :: in scale_on :: vars.len() > self.cols");
+        assert!(
+            vars.len() <= self.cols,
+            "ERROR :: in scale_on :: vars.len() > self.cols"
+        );
         self.sort_left(vars.clone());
         for j in 0..min(vars.len(), self.rows) {
             //Find the max
@@ -478,7 +490,6 @@ impl Matrix {
         self.delete_alone_variables();
         println!("Matrix aft drop\n {}", self);
 
-
         // let mut has_been_update: bool = true;
         // //tant que la matrice a ete mise a jour on continue d'eliminer les variables lineraires
         // // let variable_of_max_rank: Vec<String> = self.get_variable_of_max_rank(1);
@@ -520,7 +531,6 @@ impl Matrix {
     }
 
     fn delete_alone_variables(&mut self) {
-        
         let mut variables: Vec<String> = Vec::new();
         for (name, _) in &self.vars_map {
             for (str, _) in &self.vars_map {
@@ -703,7 +713,7 @@ impl From<Vec<Vec<u8>>> for Matrix {
         let mut matrix = Matrix::new(rows, cols);
         matrix.data.clear();
         //Name the columns with alphabet
-        for i in 0..rows {
+        for i in 0..cols {
             matrix.vars_map.insert(format!("X_{}", i), i);
         }
 
@@ -782,24 +792,13 @@ mod tests {
     }
 
     #[test]
-    fn delete_column_simple() {
+    fn delete_column() {
         let mut matrix = Matrix::from(vec![vec![1, 2], vec![3, 4]]);
         matrix.delete_column(0);
-        let expected = Matrix::from(vec![vec![2], vec![4]]);
-        assert_eq!(matrix, expected);
-    }
+        let mut expected = Matrix::from(vec![vec![2], vec![4]]);
+        expected.vars_map.clear();
+        expected.vars_map.insert("X_1".to_string(), 0);
 
-    #[test]
-    fn delete_column_vars_map() {
-        let mut matrix = Matrix::from(vec![vec![0, 1, 1], vec![1, 0, 0], vec![0, 0, 1]]);
-        matrix.vars_map.insert("a".to_string(), 0);
-        matrix.vars_map.insert("b".to_string(), 1);
-        matrix.vars_map.insert("c".to_string(), 2);
-        matrix.delete_column(0);
-        let mut expected = Matrix::from(vec![vec![1, 1], vec![0, 0], vec![0, 1]]);
-        expected.vars_map = HashMap::new();
-        expected.vars_map.insert("b".to_string(), 0);
-        expected.vars_map.insert("c".to_string(), 1);
         assert_eq!(matrix, expected);
     }
 
@@ -814,10 +813,12 @@ mod tests {
     }
 
     #[test]
-    fn delete_empty_colums() {
+    fn delete_empty_columns() {
         let mut matrix = Matrix::from(vec![vec![0, 2], vec![0, 4]]);
         matrix.delete_empty_colums();
-        let expected = Matrix::from(vec![vec![2], vec![4]]);
+        let mut expected = Matrix::from(vec![vec![2], vec![4]]);
+        expected.vars_map.clear();
+        expected.vars_map.insert("X_1".to_string(), 0);
         assert_eq!(matrix, expected);
     }
 
@@ -1243,7 +1244,8 @@ mod test_fn_swap {
         vars_maps.insert("D".to_string(), 3);
         matrix.set_vars_map(vars_maps);
         println!(" m : {}", matrix);
-        let nb_sol = matrix.number_solutions(HashSet::<String>::from(["C".to_string(), "D".to_string()]));
+        let nb_sol =
+            matrix.number_solutions(HashSet::<String>::from(["C".to_string(), "D".to_string()]));
         print!("sol : {}", nb_sol);
         println!(" m : {}", matrix);
         assert_eq!(1, nb_sol);
@@ -1264,7 +1266,8 @@ mod test_fn_swap {
         vars_maps.insert("D".to_string(), 3);
         matrix.set_vars_map(vars_maps);
         println!(" m : {}", matrix);
-        let nb_sol = matrix.number_solutions(HashSet::<String>::from(["C".to_string(), "D".to_string()]));
+        let nb_sol =
+            matrix.number_solutions(HashSet::<String>::from(["C".to_string(), "D".to_string()]));
         print!("sol : {}", nb_sol);
         println!(" m : {}", matrix);
         assert_eq!(2, nb_sol);

@@ -158,12 +158,13 @@ impl Algo {
     }
 
     ///Fonction de fusion de deux algo
-    pub fn fusion_two_algo(a1: Box<Algo>, a2: Box<Algo>, mut matrix: &mut Matrix) -> Algo {
-        let mut union_vars: Vec<String> = a1.vars.clone();
-        let union_vars2: Vec<String> = a2.vars.clone();
-        union_vars.extend(union_vars2);
-        union_vars.dedup();
-        let union_varstmp = union_vars.clone();
+    pub fn fusion_two_algo(a1: Box<Algo>, a2: Box<Algo>, matrix: &mut Matrix) -> Algo {
+        let vars1: HashSet<String> = a1.vars.clone().into_iter().collect();
+        let vars2: HashSet<String> = a2.vars.clone().into_iter().collect();
+        let union_vars = vars1.union(&vars2);
+        //Remove duplicates
+        let union_vars: Vec<String> = union_vars.cloned().collect();
+        assert!(union_vars.len() <= 40, "Error: too many variables a1 vars = {:?}\n a2 vars = {:?}\n union = {:?} ", a1.vars, a2.vars, union_vars);
 
         let nb_sol = Matrix::number_solutions(matrix, union_vars.clone());
         let alg = Algo {
@@ -186,13 +187,6 @@ impl Algo {
         };
         let mut h = std::hash::DefaultHasher::new();
         alg.hash(&mut h);
-
-        let name = format!("/tmp/algo{}", h.finish());
-        println!(
-            "fusion {:?} cardinal algo : {}",
-            alg.to_dot(&name),
-            union_varstmp.len()
-        );
         alg
     }
 
@@ -200,13 +194,10 @@ impl Algo {
     /// the one with the smallest time is better
     /// Corresponds to comparaison1 in the paper
     pub fn compare1(&self, other: &Self) -> Option<Ordering> {
-        let mut vec1 = self.vars.clone();
-        let mut vec2 = other.vars.clone();
+        let vec1:HashSet<String> = self.vars.clone().into_iter().collect();
+        let vec2:HashSet<String> = other.vars.clone().into_iter().collect();
 
-        vec1.sort();
-        vec2.sort();
-
-        if vec1 == vec2 {
+        if vec1.is_subset(&vec2) && vec2.is_subset(&vec1) {
             if self.time <= other.time {
                 Some(Ordering::Greater)
             } else {
@@ -372,6 +363,28 @@ mod tests {
         assert_eq!(Some(0), status.code());
 
         Ok(())
+    }
+
+    #[test]
+    fn test_compare1() {
+        let algo1 = Algo {
+            vars: vec!["x".to_string(), "y".to_string()],
+            time: 1,
+            memory: 1,
+            nb_solutions: 1,
+            son1: None,
+            son2: None,
+        };
+        let algo2 = Algo {
+            vars: vec!["x".to_string(), "y".to_string()],
+            time: 3,
+            memory: 1,
+            nb_solutions: 1,
+            son1: None,
+            son2: None,
+        };
+
+        assert_eq!(Some(Ordering::Greater), algo1.compare1(&algo2));
     }
 
     #[test]

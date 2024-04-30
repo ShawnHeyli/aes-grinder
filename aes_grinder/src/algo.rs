@@ -21,6 +21,12 @@ pub struct Algo {
     son2: Option<Box<Algo>>,
 }
 
+impl Ord for Algo {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.partial_cmp(other).unwrap()
+    }
+}
+
 impl Hash for Algo {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.vars.hasher();

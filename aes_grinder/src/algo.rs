@@ -12,7 +12,7 @@ use std::{hash::Hash, vec};
 
 #[derive(Eq, Clone, Debug)]
 pub struct Algo {
-    vars: Vec<String>,
+    vars: HashSet<String>,
     time: usize,
     memory: u32,
     nb_solutions: usize,
@@ -22,7 +22,7 @@ pub struct Algo {
 
 impl Hash for Algo {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.vars.hash(state);
+        self.vars.hasher();
         self.time.hash(state);
         self.memory.hash(state);
         self.nb_solutions.hash(state);
@@ -45,15 +45,7 @@ impl PartialEq for Algo {
 ///Implemtation de l'ordre partiel pour comparer deux algo entre eux
 impl PartialOrd for Algo {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        if <Vec<std::string::String> as Clone>::clone(&other.vars)
-            .into_iter()
-            .collect::<HashSet<_>>()
-            .is_subset(
-                &<Vec<std::string::String> as Clone>::clone(&self.vars)
-                    .into_iter()
-                    .collect::<HashSet<_>>(),
-            )
-        {
+        if other.vars.is_subset(&self.vars) {
             match self.time.cmp(&other.time) {
                 Ordering::Equal => match self.memory.cmp(&other.memory) {
                     Ordering::Equal => match self.nb_solutions.cmp(&other.nb_solutions) {
@@ -93,7 +85,7 @@ impl Algo {
                 dot_file.write_all(
                     format!(
                         "\t{}[style=\"filled\" label=\"{}\nnb_sol = {}\" color=\"chartreuse\"];\n",
-                        *cmpt, self.vars[0], self.nb_solutions
+                        *cmpt, self.vars.iter().next().unwrap(), self.nb_solutions
                     )
                     .as_bytes(),
                 )?;
@@ -147,11 +139,13 @@ impl Algo {
 
     ///Constructeur d'un base solver
     pub fn base_solver(matrix: &mut Matrix, var: String) -> Algo {
+        let mut vars = HashSet::<String>::new();
+        vars.insert(var);
         Algo {
-            vars: vec![var.clone()],
+            vars: vars.clone(),
             time: 1,
             memory: 1,
-            nb_solutions: matrix.number_solutions(vec![var]),
+            nb_solutions: matrix.number_solutions(vars),
             son1: None,
             son2: None,
         }
@@ -163,7 +157,7 @@ impl Algo {
         let vars2: HashSet<String> = a2.vars.clone().into_iter().collect();
         let union_vars = vars1.union(&vars2);
         //Remove duplicates
-        let union_vars: Vec<String> = union_vars.cloned().collect();
+        let union_vars: HashSet<String> = union_vars.cloned().collect();
         assert!(union_vars.len() <= 40, "Error: too many variables a1 vars = {:?}\n a2 vars = {:?}\n union = {:?} ", a1.vars, a2.vars, union_vars);
 
         let nb_sol = Matrix::number_solutions(matrix, union_vars.clone());
@@ -227,7 +221,7 @@ mod tests {
     #[test]
     fn compare_algo() {
         let algo_sad = Algo {
-            vars: vec!["x".to_string()],
+            vars: HashSet::<String>::from(["x".to_string()]),
             time: 100,
             memory: 100,
             nb_solutions: 20,
@@ -235,7 +229,7 @@ mod tests {
             son2: None,
         };
         let algo_good = Algo {
-            vars: vec!["x".to_string()],
+            vars: HashSet::<String>::from(["x".to_string()]),
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -248,7 +242,7 @@ mod tests {
     #[test]
     fn compare_algo_time() {
         let algo_sad = Algo {
-            vars: vec!["x".to_string()],
+            vars: HashSet::<String>::from(["x".to_string()]),
             time: 2,
             memory: 1,
             nb_solutions: 1,
@@ -256,7 +250,7 @@ mod tests {
             son2: None,
         };
         let algo_good = Algo {
-            vars: vec!["x".to_string()],
+            vars: HashSet::<String>::from(["x".to_string()]),
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -270,7 +264,7 @@ mod tests {
     #[test]
     fn compare_algo_memory_for_same_time() {
         let algo_sad = Algo {
-            vars: vec!["x".to_string()],
+            vars: HashSet::<String>::from(["x".to_string()]),
             time: 1,
             memory: 2,
             nb_solutions: 1,
@@ -278,7 +272,7 @@ mod tests {
             son2: None,
         };
         let algo_good = Algo {
-            vars: vec!["x".to_string()],
+            vars: HashSet::<String>::from(["x".to_string()]),
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -291,7 +285,7 @@ mod tests {
     #[test]
     fn compare_algo_time_and_memory() {
         let algo_sad = Algo {
-            vars: vec!["x".to_string()],
+            vars: HashSet::<String>::from(["x".to_string()]),
             time: 2,
             memory: 2,
             nb_solutions: 1,
@@ -299,7 +293,7 @@ mod tests {
             son2: None,
         };
         let algo_good = Algo {
-            vars: vec!["x".to_string()],
+            vars: HashSet::<String>::from(["x".to_string()]),
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -313,7 +307,7 @@ mod tests {
     #[test]
     fn compare_algo_nb_solution() {
         let algo_sad = Algo {
-            vars: vec!["x".to_string()],
+            vars: HashSet::<String>::from(["x".to_string()]),
             time: 1,
             memory: 1,
             nb_solutions: 2,
@@ -321,7 +315,7 @@ mod tests {
             son2: None,
         };
         let algo_good = Algo {
-            vars: vec!["x".to_string()],
+            vars: HashSet::<String>::from(["x".to_string()]),
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -344,7 +338,7 @@ mod tests {
     #[test]
     fn to_dot_00() -> std::io::Result<()> {
         let algo_good = Algo {
-            vars: vec!["x".to_string()],
+            vars: HashSet::<String>::from(["x".to_string()]),
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -368,7 +362,7 @@ mod tests {
     #[test]
     fn test_compare1() {
         let algo1 = Algo {
-            vars: vec!["x".to_string(), "y".to_string()],
+            vars: HashSet::<String>::from(["x".to_string(), "y".to_string()]),
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -376,7 +370,7 @@ mod tests {
             son2: None,
         };
         let algo2 = Algo {
-            vars: vec!["x".to_string(), "y".to_string()],
+            vars: HashSet::<String>::from(["x".to_string(), "y".to_string()]),
             time: 3,
             memory: 1,
             nb_solutions: 1,
@@ -390,7 +384,7 @@ mod tests {
     #[test]
     fn to_dot_01() -> std::io::Result<()> {
         let left = Algo {
-            vars: vec!["x".to_string()],
+            vars: HashSet::<String>::from(["x".to_string()]),
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -398,7 +392,7 @@ mod tests {
             son2: None,
         };
         let right = Algo {
-            vars: vec!["x".to_string(), "y".to_string()],
+            vars: HashSet::<String>::from(["x".to_string(), "y".to_string()]),
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -406,7 +400,7 @@ mod tests {
             son2: None,
         };
         let root = Algo {
-            vars: vec!["x".to_string(), "y".to_string()],
+            vars: HashSet::<String>::from(["x".to_string(), "y".to_string()]),
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -430,7 +424,7 @@ mod tests {
     #[test]
     fn to_dot_02() -> std::io::Result<()> {
         let c1_left = Algo {
-            vars: vec!["x".to_string()],
+            vars: HashSet::<String>::from(["x".to_string()]),
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -438,7 +432,7 @@ mod tests {
             son2: None,
         };
         let c1_right = Algo {
-            vars: vec!["x".to_string()],
+            vars: HashSet::<String>::from(["x".to_string()]),
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -446,7 +440,7 @@ mod tests {
             son2: None,
         };
         let c0_left = Algo {
-            vars: vec!["x".to_string(), "y".to_string()],
+            vars: HashSet::<String>::from(["x".to_string(), "y".to_string()]),
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -454,7 +448,7 @@ mod tests {
             son2: Some(Box::new(c1_right)),
         };
         let c0_right = Algo {
-            vars: vec!["x".to_string()],
+            vars: HashSet::<String>::from(["x".to_string()]),
             time: 1,
             memory: 1,
             nb_solutions: 1,
@@ -462,7 +456,7 @@ mod tests {
             son2: None,
         };
         let root = Algo {
-            vars: vec!["x".to_string()],
+            vars: HashSet::<String>::from(["x".to_string()]),
             time: 1,
             memory: 1,
             nb_solutions: 1,

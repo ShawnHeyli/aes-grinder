@@ -1,5 +1,5 @@
 use crate::utils::{Invertible, Number};
-use std::{cmp::min, collections::HashMap};
+use std::{cmp::min, collections::{HashMap, HashSet}};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Matrix {
@@ -377,7 +377,7 @@ impl Matrix {
      * Compute the number of solution of the system of equations for the given variables
      * Compute |vars| - dim(M(vars))
      */
-    pub fn number_solutions(&mut self, vars: Vec<String>) -> usize {
+    pub fn number_solutions(&mut self, vars: HashSet<String>) -> usize {
         //Echelonner matrice sur les non vars
         //Compter nombre d'equation en bas (0 sous non vars, en dessous matrice echellonée)
         //C'est cette partie à gérer
@@ -1013,7 +1013,7 @@ mod tests {
         vars_maps.insert("A".to_string(), 0);
         vars_maps.insert("B".to_string(), 1);
         matrix.set_vars_map(vars_maps);
-        let nb_sol = matrix.number_solutions(vec!["B".to_string()]);
+        let nb_sol = matrix.number_solutions(HashSet::<String>::from(["B".to_string()]));
         assert_eq!(1, nb_sol);
     }
 }
@@ -1243,7 +1243,7 @@ mod test_fn_swap {
         vars_maps.insert("D".to_string(), 3);
         matrix.set_vars_map(vars_maps);
         println!(" m : {}", matrix);
-        let nb_sol = matrix.number_solutions(vec!["C".to_string(), "D".to_string()]);
+        let nb_sol = matrix.number_solutions(HashSet::<String>::from(["C".to_string(), "D".to_string()]));
         print!("sol : {}", nb_sol);
         println!(" m : {}", matrix);
         assert_eq!(1, nb_sol);
@@ -1264,7 +1264,7 @@ mod test_fn_swap {
         vars_maps.insert("D".to_string(), 3);
         matrix.set_vars_map(vars_maps);
         println!(" m : {}", matrix);
-        let nb_sol = matrix.number_solutions(vec!["C".to_string(), "D".to_string()]);
+        let nb_sol = matrix.number_solutions(HashSet::<String>::from(["C".to_string(), "D".to_string()]));
         print!("sol : {}", nb_sol);
         println!(" m : {}", matrix);
         assert_eq!(2, nb_sol);

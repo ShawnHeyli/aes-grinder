@@ -31,6 +31,16 @@ pub fn random_search(mut matrix: Matrix) -> Box<Algo> {
     lst_algo.pop().unwrap()
 }
 
+pub fn search_best_multiple_random(mut matrix: Matrix, nb_algo: usize) -> Box<Algo> {
+    let mut g: HashSet<Box<Algo>> = HashSet::new();
+    for _ in 0..nb_algo {
+        g.insert(random_search(matrix.clone()));
+    }
+    //Find the best algo
+    let best_algo = g.iter().max().unwrap().clone();
+    best_algo
+}
+
 pub fn exhaustive_search(mut x: Matrix, time_complexity: usize) -> HashSet<Box<Algo>> {
     //Set of base solvers
     let mut g: HashSet<Box<Algo>> = HashSet::new();

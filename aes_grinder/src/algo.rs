@@ -194,8 +194,8 @@ impl Algo {
     /// the one with the smallest time is better
     /// Corresponds to comparaison1 in the paper
     pub fn compare1(&self, other: &Self) -> Option<Ordering> {
-        let vec1:HashSet<String> = self.vars.clone().into_iter().collect();
-        let vec2:HashSet<String> = other.vars.clone().into_iter().collect();
+        let vec1:HashSet<String> = self.get_all_variables();
+        let vec2:HashSet<String> = other.get_all_variables();
 
         if vec1.is_subset(&vec2) && vec2.is_subset(&vec1) {
             if self.time <= other.time {

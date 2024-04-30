@@ -58,7 +58,7 @@ pub fn exhaustive_search(mut x: Matrix, time_complexity: usize) -> HashSet<Box<A
     print_pair_algo_set(&p);
     let mut rng = rand::thread_rng();
     // While g dont contains an algo with 20 variables
-    while !g.iter().fold(false, |b, elt| b || elt.get_all_variables().len() == 20) {
+    while !p.is_empty() {
         //Take a pair of algo from p
         //println!(" plen : {:?}", p.len());
         let a = p.iter().choose(&mut rng).unwrap().clone();

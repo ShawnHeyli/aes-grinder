@@ -440,13 +440,13 @@ impl Matrix {
             .unwrap_or(2);
         //Display var name above columns
         for (s, _) in &self.vars_map {
-            res.push_str(&format!("{:^width$} ", s));
+            res.push_str(&format!("{:<width$} ", s));
         }
         res.push_str("\n");
         //Display the matrix
         for i in 0..self.rows {
             for j in 0..self.cols {
-                res.push_str(&format!("{:^width$}", self[(i, j)].get_value()));
+                res.push_str(&format!("{:<width$}", self[(i, j)].get_value()));
             }
             res.push_str("\n");
         }

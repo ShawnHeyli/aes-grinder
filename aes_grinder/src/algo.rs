@@ -77,7 +77,7 @@ impl Algo {
     fn build_string_vars_list (&self, str_to_build: &mut String) {
         let mut iter_vars = self.vars.iter();
 
-        str_to_build.push('[');
+        str_to_build.push('{');
         if let Some (var) = iter_vars.next() {
             str_to_build.push_str(var);
         }
@@ -85,7 +85,7 @@ impl Algo {
             str_to_build.push(',');
             str_to_build.push_str(var);
         }
-        str_to_build.push(']');
+        str_to_build.push('}');
     }
 
     fn browse_algo_for_write(&self, dot_file: &mut File, cmpt: &mut u64, dbg_mode: bool) -> std::io::Result<()> {
@@ -127,9 +127,25 @@ impl Algo {
                 )?;
             }
         } else {
-            dot_file.write_all(
-                format!("\t{}[label=\"nb_sol = {}\"];\n", *cmpt, self.nb_solutions).as_bytes(),
-            )?;
+            if dbg_mode {
+                let mut full_vars_list = String::new();
+                self.build_string_vars_list(&mut full_vars_list);
+
+                dot_file.write_all(
+                    format!(
+                        "\t{}[style=\"filled\" label=\"lst_vars = {}\nnb_sol = {}\" color=\"chartreuse\"];\n",
+                        *cmpt,
+                        full_vars_list,
+                        self.nb_solutions
+                    )
+                    .as_bytes(),
+                )?;
+            }
+            else {
+                dot_file.write_all(
+                    format!("\t{}[label=\"nb_sol = {}\"];\n", *cmpt, self.nb_solutions).as_bytes(),
+                )?;
+            }
         }
 
         if let Some(son_left) = &self.son1 {

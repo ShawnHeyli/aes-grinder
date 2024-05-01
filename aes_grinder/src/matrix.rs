@@ -418,7 +418,7 @@ impl Matrix {
         nb_ligne
     }
 
-    pub fn get_matrix_generated_by(&self, vars: HashSet<String>) -> Matrix {
+    pub fn get_matrix_generated_by(&self, vars: &HashSet<String>) -> Matrix {
         let mut matrix = Matrix::new(self.rows, vars.len());
         for (j, s) in vars.iter().enumerate() {
             for i in 0..self.rows {

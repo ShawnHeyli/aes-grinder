@@ -31,7 +31,7 @@ pub fn random_search(mut matrix: Matrix) -> Box<Algo> {
     lst_algo.pop().unwrap()
 }
 
-pub fn search_best_multiple_random(mut matrix: Matrix, nb_algo: usize) -> Box<Algo> {
+pub fn search_best_multiple_random(mut matrix: &Matrix, nb_algo: usize) -> Box<Algo> {
     let mut g: HashSet<Box<Algo>> = HashSet::new();
     for _ in 0..nb_algo {
         g.insert(random_search(matrix.clone()));

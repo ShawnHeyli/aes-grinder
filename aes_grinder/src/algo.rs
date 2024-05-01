@@ -195,7 +195,7 @@ impl Algo {
             vars: vars.clone(),
             time: 1,
             memory: 1,
-            nb_solutions: matrix.number_solutions(vars),
+            nb_solutions: 1,
             son1: None,
             son2: None,
         }

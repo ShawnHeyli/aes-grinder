@@ -51,8 +51,8 @@ pub fn exhaustive_search(mut x: Matrix, time_complexity: usize) -> HashSet<Box<A
         }
         g.insert(Box::new(Algo::base_solver(&mut x, x_var)));
     }
-    println!("G init");
-    print_algo_set(&g);
+    // println!("G init");
+    // print_algo_set(&g);
     //Set of pair of algo
     let mut p: HashSet<(Box<Algo>, Box<Algo>)> = HashSet::new();
     g.clone().iter().enumerate().for_each(|(i, a1)| {
@@ -64,8 +64,8 @@ pub fn exhaustive_search(mut x: Matrix, time_complexity: usize) -> HashSet<Box<A
             }
         });
     });
-    println!("P init");
-    print_pair_algo_set(&p);
+    // println!("P init");
+    // print_pair_algo_set(&p);
     let mut rng = rand::thread_rng();
     // While g dont contains an algo with 20 variables
     while !p.is_empty() {
@@ -117,7 +117,7 @@ fn print_pair_algo_set(p: &HashSet<(Box<Algo>, Box<Algo>)>) {
 fn update_queue(g: &mut HashSet<Box<Algo>>, p: &mut HashSet<(Box<Algo>, Box<Algo>)>, c: Box<Algo>) {
     //Check if there exists an Algo worth than c
     for aprim in g.iter() {
-        if !(aprim >= &c) {
+        if aprim.compare1(&c) != Some(Ordering::Greater)  {
             continue;
         } else {
             return;

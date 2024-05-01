@@ -421,6 +421,7 @@ impl Matrix {
     pub fn get_matrix_generated_by(&self, vars: &HashSet<String>) -> Matrix {
         let mut matrix = Matrix::new(self.rows, vars.len());
         for (j, s) in vars.iter().enumerate() {
+            matrix.vars_map.insert(s.clone(), j);
             for i in 0..self.rows {
                 matrix[(i, j)] = self[(i, self.vars_map[s])];
             }

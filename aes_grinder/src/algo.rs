@@ -95,8 +95,9 @@ impl Algo {
         let mut mark_son_left = None;
         let mut mark_son_right = None;
 
-        let m_str = matrix.get_matrix_generated_by(&self.vars).to_string();
-
+        let mut m_str = matrix.get_matrix_generated_by(&self.vars);
+        m_str.solve();
+        let m_str = m_str.to_string();
         if mark_father == 0 {
             if dbg_mode {
                 dot_file.write_all(

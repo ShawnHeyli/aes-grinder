@@ -2,7 +2,7 @@ use crate::{algo::Algo, matrix::Matrix};
 use rand::{seq::IteratorRandom, Rng};
 use std::{cmp::Ordering, collections::HashSet};
 
-pub fn random_search(mut matrix: Matrix) -> Box<Algo> {
+pub fn random_search(mut matrix: &mut Matrix) -> Box<Algo> {
     //Set of base solvers
     let mut lst_algo: Vec<Box<Algo>> = vec![];
 
@@ -31,10 +31,10 @@ pub fn random_search(mut matrix: Matrix) -> Box<Algo> {
     lst_algo.pop().unwrap()
 }
 
-pub fn search_best_multiple_random(mut matrix: &Matrix, nb_algo: usize) -> Box<Algo> {
+pub fn search_best_multiple_random(mut matrix: &mut Matrix, nb_algo: usize) -> Box<Algo> {
     let mut g: HashSet<Box<Algo>> = HashSet::new();
     for _ in 0..nb_algo {
-        g.insert(random_search(matrix.clone()));
+        g.insert(random_search(matrix));
     }
     //Find the best algo
     let best_algo = g.iter().max().unwrap().clone();

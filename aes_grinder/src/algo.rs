@@ -101,8 +101,8 @@ impl Algo {
             if dbg_mode {
                 dot_file.write_all(
                     format!(
-                        "\t{}[style=\"filled\" label=\"{}\nnb_sol = {}\" color=\"firebrick1\"];\n",
-                        m_str, *cmpt, self.nb_solutions
+                        "\t{}[style=\"filled\" label=\"{}nb_sol = {}\" color=\"firebrick1\"];\n",
+                        *cmpt, m_str, self.nb_solutions
                     )
                     .as_bytes(),
                 )?;
@@ -123,8 +123,8 @@ impl Algo {
 
                 dot_file.write_all(
                     format!(
-                        "\t{}[style=\"filled\" label=\"{}\n{}\nnb_sol = {}\" color=\"chartreuse\"];\n",
-                        m_str, *cmpt,
+                        "\t{}[style=\"filled\" label=\"{}{}\nnb_sol = {}\" color=\"chartreuse\"];\n",
+                        *cmpt, m_str,
                         full_vars_list,
                         self.nb_solutions
                     )
@@ -133,7 +133,7 @@ impl Algo {
             } else {
                 dot_file.write_all(
                     format!(
-                        "\t{}[style=\"filled\" label=\"{}\nnb_sol = {}\" color=\"chartreuse\"];\n",
+                        "\t{}[style=\"filled\" label=\"{}nb_sol = {}\" color=\"chartreuse\"];\n",
                         *cmpt,
                         self.vars.iter().next().unwrap(),
                         self.nb_solutions
@@ -148,8 +148,8 @@ impl Algo {
 
                 dot_file.write_all(
                     format!(
-                        "\t{}[style=\"filled\" label=\"{}\n{}\nnb_sol = {}\"];\n",
-                        m_str, *cmpt,
+                        "\t{}[style=\"filled\" label=\"{}{}\nnb_sol = {}\"];\n",
+                        *cmpt, m_str,
                         full_vars_list,
                         self.nb_solutions
                     )

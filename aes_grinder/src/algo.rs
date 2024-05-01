@@ -108,7 +108,7 @@ impl Algo {
 
                 dot_file.write_all(
                     format!(
-                        "\t{}[style=\"filled\" label=\"lst_vars = {}\nnb_sol = {}\" color=\"chartreuse\"];\n",
+                        "\t{}[style=\"filled\" label=\"{}\nnb_sol = {}\" color=\"chartreuse\"];\n",
                         *cmpt,
                         full_vars_list,
                         self.nb_solutions
@@ -133,7 +133,7 @@ impl Algo {
 
                 dot_file.write_all(
                     format!(
-                        "\t{}[style=\"filled\" label=\"lst_vars = {}\nnb_sol = {}\" color=\"chartreuse\"];\n",
+                        "\t{}[style=\"filled\" label=\"{}\nnb_sol = {}\"];\n",
                         *cmpt,
                         full_vars_list,
                         self.nb_solutions

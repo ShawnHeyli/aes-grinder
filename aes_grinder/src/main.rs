@@ -48,5 +48,5 @@ fn main() {
     let graph = exhaustive_search(matrix, 6);
      assert!(graph.len()==1);
     //println!("LEN GRAPH{:?}",graph);
-    graph.iter().next().unwrap().to_dot("/tmp/algo.dot");
+    graph.iter().next().unwrap().to_dot_debug("/tmp/algo.dot").unwrap();
 }

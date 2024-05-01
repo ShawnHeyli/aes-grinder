@@ -74,7 +74,21 @@ impl PartialOrd for Algo {
 
 ///Implementation de la struc algo
 impl Algo {
-    fn browse_algo_for_write(&self, dot_file: &mut File, cmpt: &mut u64) -> std::io::Result<()> {
+    fn build_string_vars_list (&self, str_to_build: &mut String) {
+        let mut iter_vars = self.vars.iter();
+
+        str_to_build.push('[');
+        if let Some (var) = iter_vars.next() {
+            str_to_build.push_str(var);
+        }
+        while let Some(var) = iter_vars.next() {
+            str_to_build.push(',');
+            str_to_build.push_str(var);
+        }
+        str_to_build.push(']');
+    }
+
+    fn browse_algo_for_write(&self, dot_file: &mut File, cmpt: &mut u64, dbg_mode: bool) -> std::io::Result<()> {
         let mark_father = *cmpt;
         let mut mark_son_left = None;
         let mut mark_son_right = None;
@@ -88,15 +102,30 @@ impl Algo {
                 .as_bytes(),
             )?;
         } else if self.vars.len() == 1 {
-            dot_file.write_all(
-                format!(
-                    "\t{}[style=\"filled\" label=\"{}\nnb_sol = {}\" color=\"chartreuse\"];\n",
-                    *cmpt,
-                    self.vars.iter().next().unwrap(),
-                    self.nb_solutions
-                )
-                .as_bytes(),
-            )?;
+            if dbg_mode {
+                let mut full_vars_list = String::new();
+                self.build_string_vars_list(&mut full_vars_list);
+
+                dot_file.write_all(
+                    format!(
+                        "\t{}[style=\"filled\" label=\"lst_vars = {}\nnb_sol = {}\" color=\"chartreuse\"];\n",
+                        *cmpt,
+                        full_vars_list,
+                        self.nb_solutions
+                    )
+                    .as_bytes(),
+                )?;
+            } else {
+                dot_file.write_all(
+                    format!(
+                        "\t{}[style=\"filled\" label=\"{}\nnb_sol = {}\" color=\"chartreuse\"];\n",
+                        *cmpt,
+                        self.vars.iter().next().unwrap(),
+                        self.nb_solutions
+                    )
+                    .as_bytes(),
+                )?;
+            }
         } else {
             dot_file.write_all(
                 format!("\t{}[label=\"nb_sol = {}\"];\n", *cmpt, self.nb_solutions).as_bytes(),
@@ -106,12 +135,12 @@ impl Algo {
         if let Some(son_left) = &self.son1 {
             *cmpt += 1;
             mark_son_left = Some(*cmpt);
-            son_left.browse_algo_for_write(dot_file, cmpt)?;
+            son_left.browse_algo_for_write(dot_file, cmpt, dbg_mode)?;
         }
         if let Some(son_right) = &self.son2 {
             *cmpt += 1;
             mark_son_right = Some(*cmpt);
-            son_right.browse_algo_for_write(dot_file, cmpt)?;
+            son_right.browse_algo_for_write(dot_file, cmpt, dbg_mode)?;
         }
 
         if mark_son_left.is_some() || mark_son_right.is_some() {
@@ -125,7 +154,21 @@ impl Algo {
             }
 
             dot_file.write_all("}\n".to_string().as_bytes())?;
-        } // Je suis SAMUEL LE ROBOT
+        }
+
+        Ok(())
+    }
+
+    /// Print into filename the dot corresponding to self Algo
+    pub fn to_dot_debug(&self, filename: &str) -> std::io::Result<()> {
+        let mut file = File::create(filename)?;
+
+        // Write data to the file
+        file.write_all("digraph {\n".to_string().as_bytes())?;
+
+        self.browse_algo_for_write(&mut file, &mut 0, true)?;
+
+        file.write_all("}\n".to_string().as_bytes())?;
 
         Ok(())
     }
@@ -137,7 +180,7 @@ impl Algo {
         // Write data to the file
         file.write_all("digraph {\n".to_string().as_bytes())?;
 
-        self.browse_algo_for_write(&mut file, &mut 0)?;
+        self.browse_algo_for_write(&mut file, &mut 0, false)?;
 
         file.write_all("}\n".to_string().as_bytes())?;
 
@@ -152,7 +195,7 @@ impl Algo {
             vars: vars.clone(),
             time: 1,
             memory: 1,
-            nb_solutions: matrix.number_solutions(vars),
+            nb_solutions: 1,
             son1: None,
             son2: None,
         }

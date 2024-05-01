@@ -128,16 +128,8 @@ impl Matrix {
             panic!("Row index out of bounds");
         }
 
-        // Remove the row
-        let new_data = self
-            .data
-            .iter()
-            .enumerate()
-            .filter(|(i, _)| i / self.cols != row)
-            .map(|(_, x)| *x)
-            .collect();
-
-        self.data = new_data;
+        // Remove the row in place
+        self.data.drain(row * self.cols..(row + 1) * self.cols);
         self.rows -= 1;
     }
 

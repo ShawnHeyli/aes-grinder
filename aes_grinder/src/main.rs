@@ -42,11 +42,11 @@ fn main() {
     matrix.drop_linear_variable();
     println!("{}", matrix);
 
-    //let graph = random_search(matrix);
-    //graph.to_dot("/tmp/algo.dot");
-    
-    let graph = exhaustive_search(matrix, 6);
-     assert!(graph.len()==1);
+    let graph = exaustive_search::search_best_multiple_random(matrix, 1000000);
+    let _ = graph.to_dot_debug("/tmp/sac");
+
+    // let graph = exhaustive_search(matrix, 6);
+    //  assert!(graph.len()==1);
     //println!("LEN GRAPH{:?}",graph);
-    graph.iter().next().unwrap().to_dot("/tmp/algo.dot");
+    // graph.iter().next().unwrap().to_dot_debug("/tmp/algo.dot").unwrap();
 }

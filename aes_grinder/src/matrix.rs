@@ -438,6 +438,30 @@ impl Matrix {
         matrix
     }
 
+    pub fn to_string(&self) -> String {
+        let mut res = String::new();
+        //Set width to the max length of the variable name
+        let width = self
+            .vars_map
+            .keys()
+            .map(|s| s.len())
+            .max()
+            .unwrap_or(2);
+        //Display var name above columns
+        for (s, _) in &self.vars_map {
+            res.push_str(&format!("{:^width$} ", s));
+        }
+        res.push_str("\n");
+        //Display the matrix
+        for i in 0..self.rows {
+            for j in 0..self.cols {
+                res.push_str(&format!("{:^width$}", self[(i, j)].get_value()));
+            }
+            res.push_str("\n");
+        }
+        res
+    }
+
     /// Compute the dimension of the solution space of the system of equations
     fn dimension_solution_space(&mut self) -> usize {
         self.scale();

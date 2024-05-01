@@ -1,7 +1,7 @@
 use crate::utils::{Invertible, Number};
 use std::{
     cmp::min,
-    collections::{HashMap, HashSet},
+    collections::{HashMap, HashSet}, env::vars,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -432,23 +432,38 @@ impl Matrix {
     pub fn to_string(&self) -> String {
         let mut res = String::new();
         //Set width to the max length of the variable name
-        let width = self
+        let max_len_word = self
             .vars_map
             .keys()
             .map(|s| s.len())
             .max()
-            .unwrap_or(2);
+            .unwrap_or(1);
+
         //Display var name above columns
-        for (s, _) in &self.vars_map {
-            res.push_str(&format!("{:^width$} ", s));
+        let mut vars_iter = self.vars_map.iter();
+        if let Some (var) = vars_iter.next() {
+            let padding = max_len_word - var.0.len();
+            res.push_str(&format!("{}{}{}", " ".repeat(padding/2 + (padding & 1)), var.0, " ".repeat(padding/2)));
         }
-        res.push_str("\n");
+        while let Some (var) = vars_iter.next() {
+            let padding = max_len_word - var.0.len();
+            res.push_str(&format!(" {}{}{}", " ".repeat(padding/2 + (padding & 1)), var.0, " ".repeat(padding/2)));
+        }
+        res.push('\n');
+
         //Display the matrix
         for i in 0..self.rows {
             for j in 0..self.cols {
-                res.push_str(&format!("{:^width$}", self[(i, j)].get_value()));
+                let str_value = self[(i, j)].get_value().to_string();
+                let padding = max_len_word - str_value.len();
+                if j == 0 {
+                    res.push_str(&format!("{}{}{}", " ".repeat(padding/2 + (padding & 1)), str_value, " ".repeat(padding/2)));
+                }
+                else {
+                    res.push_str(&format!("-{}{}{}", " ".repeat(padding/2 + (padding & 1)), str_value, " ".repeat(padding/2)));
+                }
             }
-            res.push_str("\n");
+            res.push('\n');
         }
         res
     }

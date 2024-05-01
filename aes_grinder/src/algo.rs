@@ -101,7 +101,7 @@ impl Algo {
             if dbg_mode {
                 dot_file.write_all(
                     format!(
-                        "\t{}[style=\"filled\" label=\"{}nb_sol = {}\" color=\"firebrick1\"];\n",
+                        "\t{}[shape=\"circle\", fontname=\"Courier New\", style=\"filled\", label=\"\n{}\nnb_sol = {}\", color=\"firebrick1\"];\n",
                         *cmpt, m_str, self.nb_solutions
                     )
                     .as_bytes(),
@@ -110,7 +110,7 @@ impl Algo {
             else {
                 dot_file.write_all(
                     format!(
-                        "\t{}[style=\"filled\" label=\"nb_sol = {}\" color=\"firebrick1\"];\n",
+                        "\t{}[shape=\"circle\", fontname=\"Courier New\", style=\"filled\", label=\"nb_sol = {}\", color=\"firebrick1\"];\n",
                         *cmpt, self.nb_solutions
                     )
                     .as_bytes(),
@@ -123,7 +123,7 @@ impl Algo {
 
                 dot_file.write_all(
                     format!(
-                        "\t{}[style=\"filled\" label=\"{}{}\nnb_sol = {}\" color=\"chartreuse\"];\n",
+                        "\t{}[shape=\"circle\", fontname=\"Courier New\", style=\"filled\", label=\"\n{}{}\nnb_sol = {}\", color=\"chartreuse\"];\n",
                         *cmpt, m_str,
                         full_vars_list,
                         self.nb_solutions
@@ -133,7 +133,7 @@ impl Algo {
             } else {
                 dot_file.write_all(
                     format!(
-                        "\t{}[style=\"filled\" label=\"{}nb_sol = {}\" color=\"chartreuse\"];\n",
+                        "\t{}[shape=\"circle\", fontname=\"Courier New\", style=\"filled\", label=\"{}\nnb_sol = {}\", color=\"chartreuse\"];\n",
                         *cmpt,
                         self.vars.iter().next().unwrap(),
                         self.nb_solutions
@@ -148,7 +148,7 @@ impl Algo {
 
                 dot_file.write_all(
                     format!(
-                        "\t{}[style=\"filled\" label=\"{}{}\nnb_sol = {}\"];\n",
+                        "\t{}[shape=\"circle\", fontname=\"Courier New\", label=\"\n{}{}\nnb_sol = {}\"];\n",
                         *cmpt, m_str,
                         full_vars_list,
                         self.nb_solutions
@@ -158,7 +158,7 @@ impl Algo {
             }
             else {
                 dot_file.write_all(
-                    format!("\t{}[label=\"nb_sol = {}\"];\n", *cmpt, self.nb_solutions).as_bytes(),
+                    format!("\t{}[shape=\"circle\", fontname=\"Courier New\", label=\"nb_sol = {}\"];\n", *cmpt, self.nb_solutions).as_bytes(),
                 )?;
             }
         }

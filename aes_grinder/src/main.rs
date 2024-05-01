@@ -43,7 +43,7 @@ fn main() {
     println!("{}", matrix);
 
     let graph = exaustive_search::random_search(&mut matrix);
-    let _ = graph.to_dot_debug("output.dot", &matrix);
+    let _ = graph.to_dot_debug("/tmp/sac", &matrix);
 
     // let graph = exhaustive_search(matrix, 6);
     //  assert!(graph.len()==1);

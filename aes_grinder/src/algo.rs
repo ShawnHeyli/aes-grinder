@@ -1,4 +1,5 @@
 //! Struc Algo permettant de représenter des Algo
+use crate::matrix;
 use crate::matrix::Matrix;
 use core::cmp::Ordering;
 use std::collections::hash_map::DefaultHasher;
@@ -83,24 +84,38 @@ impl Algo {
         }
         while let Some(var) = iter_vars.next() {
             str_to_build.push(',');
+            str_to_build.push(' ');
             str_to_build.push_str(var);
         }
         str_to_build.push('}');
     }
 
-    fn browse_algo_for_write(&self, dot_file: &mut File, cmpt: &mut u64, dbg_mode: bool) -> std::io::Result<()> {
+    fn browse_algo_for_write(&self, dot_file: &mut File, cmpt: &mut u64, matrix: &Matrix, dbg_mode: bool) -> std::io::Result<()> {
         let mark_father = *cmpt;
         let mut mark_son_left = None;
         let mut mark_son_right = None;
 
+        let m_str = matrix.get_matrix_generated_by(self.vars).to_string();
+
         if mark_father == 0 {
-            dot_file.write_all(
-                format!(
-                    "\t{}[style=\"filled\" label=\"nb_sol = {}\" color=\"firebrick1\"];\n",
-                    *cmpt, self.nb_solutions
-                )
-                .as_bytes(),
-            )?;
+            if dbg_mode {
+                dot_file.write_all(
+                    format!(
+                        "\t{}[style=\"filled\" label=\"{}\nnb_sol = {}\" color=\"firebrick1\"];\n",
+                        m_str, *cmpt, self.nb_solutions
+                    )
+                    .as_bytes(),
+                )?;
+            }
+            else {
+                dot_file.write_all(
+                    format!(
+                        "\t{}[style=\"filled\" label=\"nb_sol = {}\" color=\"firebrick1\"];\n",
+                        *cmpt, self.nb_solutions
+                    )
+                    .as_bytes(),
+                )?;
+            }
         } else if self.vars.len() == 1 {
             if dbg_mode {
                 let mut full_vars_list = String::new();
@@ -108,8 +123,8 @@ impl Algo {
 
                 dot_file.write_all(
                     format!(
-                        "\t{}[style=\"filled\" label=\"{}\nnb_sol = {}\" color=\"chartreuse\"];\n",
-                        *cmpt,
+                        "\t{}[style=\"filled\" label=\"{}\n{}\nnb_sol = {}\" color=\"chartreuse\"];\n",
+                        m_str, *cmpt,
                         full_vars_list,
                         self.nb_solutions
                     )
@@ -133,8 +148,8 @@ impl Algo {
 
                 dot_file.write_all(
                     format!(
-                        "\t{}[style=\"filled\" label=\"{}\nnb_sol = {}\"];\n",
-                        *cmpt,
+                        "\t{}[style=\"filled\" label=\"{}\n{}\nnb_sol = {}\"];\n",
+                        m_str, *cmpt,
                         full_vars_list,
                         self.nb_solutions
                     )
@@ -151,12 +166,12 @@ impl Algo {
         if let Some(son_left) = &self.son1 {
             *cmpt += 1;
             mark_son_left = Some(*cmpt);
-            son_left.browse_algo_for_write(dot_file, cmpt, dbg_mode)?;
+            son_left.browse_algo_for_write(dot_file, cmpt, matrix, dbg_mode)?;
         }
         if let Some(son_right) = &self.son2 {
             *cmpt += 1;
             mark_son_right = Some(*cmpt);
-            son_right.browse_algo_for_write(dot_file, cmpt, dbg_mode)?;
+            son_right.browse_algo_for_write(dot_file, cmpt, matrix, dbg_mode)?;
         }
 
         if mark_son_left.is_some() || mark_son_right.is_some() {
@@ -176,13 +191,13 @@ impl Algo {
     }
 
     /// Print into filename the dot corresponding to self Algo
-    pub fn to_dot_debug(&self, filename: &str) -> std::io::Result<()> {
+    pub fn to_dot_debug(&self, filename: &str, matrix: &Matrix) -> std::io::Result<()> {
         let mut file = File::create(filename)?;
 
         // Write data to the file
         file.write_all("digraph {\n".to_string().as_bytes())?;
 
-        self.browse_algo_for_write(&mut file, &mut 0, true)?;
+        self.browse_algo_for_write(&mut file, &mut 0, matrix, true)?;
 
         file.write_all("}\n".to_string().as_bytes())?;
 
@@ -196,7 +211,8 @@ impl Algo {
         // Write data to the file
         file.write_all("digraph {\n".to_string().as_bytes())?;
 
-        self.browse_algo_for_write(&mut file, &mut 0, false)?;
+        let matrix = Matrix::new(0, 0);
+        self.browse_algo_for_write(&mut file, &mut 0, &matrix, false)?;
 
         file.write_all("}\n".to_string().as_bytes())?;
 

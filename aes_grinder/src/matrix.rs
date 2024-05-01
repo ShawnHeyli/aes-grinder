@@ -418,15 +418,13 @@ impl Matrix {
         nb_ligne
     }
 
-    fn get_matrix_generated_by(&self, vars: Vec<String>) -> Matrix {
-        print!("get_matrix_generated_by in \n{}", self);
+    pub fn get_matrix_generated_by(&self, vars: HashSet<String>) -> Matrix {
         let mut matrix = Matrix::new(self.rows, vars.len());
-        for i in 0..self.rows {
-            for j in 0..vars.len() {
-                matrix[(i, j)] = self[(i, self.vars_map[&vars[j]])];
+        for (j, s) in vars.iter().enumerate() {
+            for i in 0..self.rows {
+                matrix[(i, j)] = self[(i, self.vars_map[s])];
             }
         }
-        print!("get_matrix_generated_by out \n{}", matrix);
         matrix
     }
 

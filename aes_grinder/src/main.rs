@@ -1,12 +1,12 @@
 mod algo;
 mod cli;
+mod exhaustive_search;
 mod matrix;
 mod parser;
 mod utils;
-mod exaustive_search;
 
+use crate::exhaustive_search::{exhaustive_search, random_search};
 use clap::Parser as ClapParser;
-use crate::exaustive_search::{exhaustive_search, random_search};
 
 struct GlobalInfos {
     filename_eq_sys: String,
@@ -37,12 +37,12 @@ fn main() {
         .expect("Error while parsing system");
     let mut matrix = matrix;
     matrix.set_vars_map(parser_mod.vars_map);
-    
+
     println!("{}", matrix);
     matrix.drop_linear_variable();
     println!("{}", matrix);
 
-    let graph = exaustive_search::random_search(&mut matrix);
+    let graph = exhaustive_search::random_search(&mut matrix);
     let _ = graph.to_dot_debug("/tmp/sac", &matrix);
 
     // let graph = exhaustive_search(matrix, 6);

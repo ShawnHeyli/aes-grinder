@@ -11,7 +11,7 @@ pub fn random_search(mut matrix: &mut Matrix) -> Box<Algo> {
         if x_var.contains('(') {
             continue;
         }
-        lst_algo.push(Box::new(Algo::base_solver(&mut matrix, x_var)));
+        lst_algo.push(Box::new(Algo::base_solver(matrix, x_var)));
     }
 
     let mut size_of_lst = lst_algo.len();
@@ -24,7 +24,7 @@ pub fn random_search(mut matrix: &mut Matrix) -> Box<Algo> {
         lst_algo.push(Box::new(Algo::fusion_two_algo(
             first_algo,
             second_algo,
-            &mut matrix,
+            matrix,
         )));
     }
 
@@ -117,7 +117,7 @@ fn print_pair_algo_set(p: &HashSet<(Box<Algo>, Box<Algo>)>) {
 fn update_queue(g: &mut HashSet<Box<Algo>>, p: &mut HashSet<(Box<Algo>, Box<Algo>)>, c: Box<Algo>) {
     //Check if there exists an Algo worth than c
     for aprim in g.iter() {
-        if aprim.compare1(&c) != Some(Ordering::Greater)  {
+        if aprim.compare1(&c) != Some(Ordering::Greater) {
             continue;
         } else {
             return;
@@ -125,31 +125,21 @@ fn update_queue(g: &mut HashSet<Box<Algo>>, p: &mut HashSet<(Box<Algo>, Box<Algo
     }
 
     // Keep all algo that are better or equal to c
-    g.retain(|elt| {
-        if Some(Ordering::Less) == elt.compare1(&c) {
-            false
-        } else {
-            true
-        }
-    });
+    g.retain(|elt| Some(Ordering::Less) != elt.compare1(&c));
 
     // Add the new algo to the set
     g.insert(c.clone());
 
     // Keep all pair that are better or equal to c
     p.retain(|(a1, a2)| {
-        if a1.compare1(&c) == Some(Ordering::Less) || a2.compare1(&c) == Some(Ordering::Less)
-        {
-            false
-        } else {
-            true
-        }
+        !(a1.compare1(&c) == Some(Ordering::Less) || a2.compare1(&c) == Some(Ordering::Less))
     });
 
-    //Form new pairs with the algos such as the variables of one are not a subset of the other 
+    //Form new pairs with the algos such as the variables of one are not a subset of the other
     let pairs = g.iter().flat_map(|a| {
-        if c.get_all_variables().is_subset(&a.get_all_variables()) ||
-            a.get_all_variables().is_subset(&c.get_all_variables()) {
+        if c.get_all_variables().is_subset(&a.get_all_variables())
+            || a.get_all_variables().is_subset(&c.get_all_variables())
+        {
             None
         } else {
             Some((c.clone(), a.clone()))

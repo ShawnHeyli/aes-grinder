@@ -1,3 +1,5 @@
+use crate::matrix::Matrix;
+use crate::GlobalInfos;
 use log::debug;
 use log::info;
 use log::trace;
@@ -7,11 +9,9 @@ use std::fs::File;
 use std::io::Read;
 use std::num::ParseIntError;
 use std::vec;
-use crate::matrix::Matrix;
-use crate::GlobalInfos;
 
-const MAX_NB_TERM: u8 = 5;
-const MAX_NB_MATRIX: u32 = 5;
+const MAX_NB_TERM: u8 = 10;
+const MAX_NB_MATRIX: u32 = 10;
 
 struct Reader {
     line: usize,
@@ -600,10 +600,7 @@ impl Parser {
                       OR
                       Err with parsing error
     */
-    pub fn parse_system(
-        &mut self,
-        global_infos: &mut GlobalInfos,
-    ) -> Result<Matrix, ParserError> {
+    pub fn parse_system(&mut self, global_infos: &mut GlobalInfos) -> Result<Matrix, ParserError> {
         info!("Start parsing system");
         debug!("Parser::parse_system");
 
@@ -653,7 +650,11 @@ impl Parser {
                 debug!("Matrix :: {:?}", self.matrix);
                 let matrix = &self.matrix;
                 let vars_map = &self.vars_map;
-                return Ok(Matrix::new_from_vec(matrix.to_vec(), vars_map.clone(), global_infos.polynomial));
+                return Ok(Matrix::new_from_vec(
+                    matrix.to_vec(),
+                    vars_map.clone(),
+                    global_infos.polynomial,
+                ));
             } else {
                 // CONTINUE TO BUILD MATRIX
                 match self.parse_line().expect("Error while processing line") {
@@ -678,7 +679,11 @@ impl Parser {
         debug!("Matrix :: {:?}", self.matrix);
         let matrix = &self.matrix;
         let vars_map = &self.vars_map;
-        Ok(Matrix::new_from_vec(matrix.to_vec(), vars_map.clone(), global_infos.polynomial))
+        Ok(Matrix::new_from_vec(
+            matrix.to_vec(),
+            vars_map.clone(),
+            global_infos.polynomial,
+        ))
     }
 }
 
@@ -688,9 +693,7 @@ mod tests {
 
     #[test]
     fn empty_system() {
-        let mut global_infos = GlobalInfos::new(
-            String::from("test/empty.eqs")
-        );
+        let mut global_infos = GlobalInfos::new(String::from("test/empty.eqs"));
         let mut parser_mod = Parser::new(&global_infos);
 
         assert!(parser_mod.parse_system(&mut global_infos).is_err());
@@ -698,9 +701,7 @@ mod tests {
 
     #[test]
     fn only_commentary() {
-        let mut global_infos = GlobalInfos::new(
-            String::from("test/only_comments.eqs")
-        );
+        let mut global_infos = GlobalInfos::new(String::from("test/only_comments.eqs"));
         let mut parser_mod = Parser::new(&global_infos);
 
         assert!(parser_mod.parse_system(&mut global_infos).is_err());
@@ -708,9 +709,7 @@ mod tests {
 
     #[test]
     fn valid_system() {
-        let mut global_infos = GlobalInfos::new(
-            String::from("test/valid.eqs")
-        );
+        let mut global_infos = GlobalInfos::new(String::from("test/valid.eqs"));
         let mut parser_mod = Parser::new(&global_infos);
 
         assert!(parser_mod.parse_system(&mut global_infos).is_ok());
@@ -718,9 +717,7 @@ mod tests {
 
     #[test]
     fn simple_00() {
-        let mut global_infos = GlobalInfos::new(
-            String::from("test/simple_00.eqs")
-        );
+        let mut global_infos = GlobalInfos::new(String::from("test/simple_00.eqs"));
         let mut parser_mod = Parser::new(&global_infos);
 
         let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
@@ -732,9 +729,7 @@ mod tests {
 
     #[test]
     fn simple_01() {
-        let mut global_infos = GlobalInfos::new(
-            String::from("test/simple_01.eqs")
-        );
+        let mut global_infos = GlobalInfos::new(String::from("test/simple_01.eqs"));
         let mut parser_mod = Parser::new(&global_infos);
 
         let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
@@ -746,9 +741,7 @@ mod tests {
 
     #[test]
     fn simple_02() {
-        let mut global_infos = GlobalInfos::new(
-            String::from("test/simple_02.eqs")
-        );
+        let mut global_infos = GlobalInfos::new(String::from("test/simple_02.eqs"));
         let mut parser_mod = Parser::new(&global_infos);
 
         let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
@@ -757,12 +750,10 @@ mod tests {
         assert_eq!(mtr.get_row(0), [1.into(), 1.into(), 1.into(), 0.into()]);
         assert_eq!(mtr.get_row(1), [0.into(), 1.into(), 1.into(), 1.into()]);
     }
- 
+
     #[test]
     fn simple_03() {
-        let mut global_infos = GlobalInfos::new(
-            String::from("test/simple_03.eqs")
-        );
+        let mut global_infos = GlobalInfos::new(String::from("test/simple_03.eqs"));
         let mut parser_mod = Parser::new(&global_infos);
 
         let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
@@ -774,9 +765,7 @@ mod tests {
 
     #[test]
     fn simple_04() {
-        let mut global_infos = GlobalInfos::new(
-            String::from("test/simple_04.eqs")
-        );
+        let mut global_infos = GlobalInfos::new(String::from("test/simple_04.eqs"));
         let mut parser_mod = Parser::new(&global_infos);
 
         let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
@@ -788,9 +777,7 @@ mod tests {
 
     #[test]
     fn simple_05() {
-        let mut global_infos = GlobalInfos::new(
-            String::from("test/simple_05.eqs")
-        );
+        let mut global_infos = GlobalInfos::new(String::from("test/simple_05.eqs"));
         let mut parser_mod = Parser::new(&global_infos);
 
         let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
@@ -802,23 +789,25 @@ mod tests {
 
     #[test]
     fn simple_06() {
-        let mut global_infos = GlobalInfos::new(
-            String::from("test/simple_06.eqs")
-        );
+        let mut global_infos = GlobalInfos::new(String::from("test/simple_06.eqs"));
         let mut parser_mod = Parser::new(&global_infos);
 
         let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
 
         assert_eq!(mtr.get_row_number(), 2);
-        assert_eq!(mtr.get_row(0), [1.into(), 1.into(), 2.into(), 0.into(), 0.into()]);
-        assert_eq!(mtr.get_row(1), [0.into(), 1.into(), 3.into(), 1.into(), 20.into()]);
+        assert_eq!(
+            mtr.get_row(0),
+            [1.into(), 1.into(), 2.into(), 0.into(), 0.into()]
+        );
+        assert_eq!(
+            mtr.get_row(1),
+            [0.into(), 1.into(), 3.into(), 1.into(), 20.into()]
+        );
     }
 
     #[test]
     fn simple_07() {
-        let mut global_infos = GlobalInfos::new(
-            String::from("test/simple_07.eqs")
-        );
+        let mut global_infos = GlobalInfos::new(String::from("test/simple_07.eqs"));
         let mut parser_mod = Parser::new(&global_infos);
 
         let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
@@ -830,9 +819,7 @@ mod tests {
 
     #[test]
     fn complex_00() {
-        let mut global_infos = GlobalInfos::new(
-            String::from("test/complex_00.eqs")
-        );
+        let mut global_infos = GlobalInfos::new(String::from("test/complex_00.eqs"));
         let mut parser_mod = Parser::new(&global_infos);
 
         let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
@@ -844,19 +831,71 @@ mod tests {
         */
 
         assert_eq!(mtr.get_row_number(), 3);
-        assert_eq!(mtr.get_row(0), [100.into(), 1.into(), 1.into(), 1.into(), 1.into(), 0.into(),
-            0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into()]);
-        assert_eq!(mtr.get_row(1), [0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 200.into(),
-            1.into(), 1.into(), 1.into(), 1.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into()]);
-        assert_eq!(mtr.get_row(2), [0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(),
-            0.into(), 0.into(), 0.into(), 0.into(), 255.into(), 1.into(), 1.into(), 1.into(), 1.into()]);
+        assert_eq!(
+            mtr.get_row(0),
+            [
+                100.into(),
+                1.into(),
+                1.into(),
+                1.into(),
+                1.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into()
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(1),
+            [
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                200.into(),
+                1.into(),
+                1.into(),
+                1.into(),
+                1.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into()
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(2),
+            [
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                255.into(),
+                1.into(),
+                1.into(),
+                1.into(),
+                1.into()
+            ]
+        );
     }
 
     #[test]
     fn complex_01() {
-        let mut global_infos = GlobalInfos::new(
-            String::from("test/complex_01.eqs")
-        );
+        let mut global_infos = GlobalInfos::new(String::from("test/complex_01.eqs"));
         let mut parser_mod = Parser::new(&global_infos);
 
         let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
@@ -868,19 +907,71 @@ mod tests {
         */
 
         assert_eq!(mtr.get_row_number(), 3);
-        assert_eq!(mtr.get_row(0), [100.into(), 1.into(), 1.into(), 1.into(), 0.into(), 0.into(),
-            0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into()]);
-        assert_eq!(mtr.get_row(1), [0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 200.into(),
-            1.into(), 1.into(), 1.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into()]);
-        assert_eq!(mtr.get_row(2), [0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(),
-             0.into(), 0.into(), 0.into(), 255.into(), 1.into(), 1.into(), 1.into(), 0.into()]);
+        assert_eq!(
+            mtr.get_row(0),
+            [
+                100.into(),
+                1.into(),
+                1.into(),
+                1.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into()
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(1),
+            [
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                200.into(),
+                1.into(),
+                1.into(),
+                1.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into()
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(2),
+            [
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                255.into(),
+                1.into(),
+                1.into(),
+                1.into(),
+                0.into()
+            ]
+        );
     }
 
     #[test]
     fn complex_02() {
-        let mut global_infos = GlobalInfos::new(
-            String::from("test/complex_02.eqs"
-        ));
+        let mut global_infos = GlobalInfos::new(String::from("test/complex_02.eqs"));
         let mut parser_mod = Parser::new(&global_infos);
 
         let mtr = parser_mod.parse_system(&mut global_infos).unwrap();
@@ -893,14 +984,82 @@ mod tests {
         */
 
         assert_eq!(mtr.get_row_number(), 4);
-        assert_eq!(mtr.get_row(0), [0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(),
-            0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into()]);
-        assert_eq!(mtr.get_row(1), [1.into(), 0.into(), 0.into(), 0.into(), 1.into(), 0.into(),
-            0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into()]);
-        assert_eq!(mtr.get_row(2), [2.into(), 0.into(), 0.into(), 0.into(), 2.into(), 0.into(),
-            0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into()]);
-        assert_eq!(mtr.get_row(3), [3.into(), 0.into(), 0.into(), 0.into(), 3.into(), 0.into(), 
-            0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into(), 0.into()]);
+        assert_eq!(
+            mtr.get_row(0),
+            [
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into()
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(1),
+            [
+                1.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                1.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into()
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(2),
+            [
+                2.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                2.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into()
+            ]
+        );
+        assert_eq!(
+            mtr.get_row(3),
+            [
+                3.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                3.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into(),
+                0.into()
+            ]
+        );
     }
 
     #[test]
@@ -912,146 +1071,102 @@ mod tests {
 
         assert_eq!(mtr.get_row_number(), 64);
 
-        assert_eq!( /* line 3 */
+        assert_eq!(
+            /* line 3 */
             mtr.get_row(0),
-            [
-                vec![1.into(); 3],
-                vec![0.into(); 114]
-            ].concat()
+            [vec![1.into(); 3], vec![0.into(); 114]].concat()
         );
 
-        assert_eq!( /* line 4 */
+        assert_eq!(
+            /* line 4 */
             mtr.get_row(1),
-            [
-                vec![0.into(); 3],
-                vec![1.into(); 3],
-                vec![0.into(); 111]
-            ].concat()
+            [vec![0.into(); 3], vec![1.into(); 3], vec![0.into(); 111]].concat()
         );
-        
-        assert_eq!( /* line 5 */
+
+        assert_eq!(
+            /* line 5 */
             mtr.get_row(2),
-            [
-                vec![0.into(); 6],
-                vec![1.into(); 3],
-                vec![0.into(); 108]
-            ].concat()
+            [vec![0.into(); 6], vec![1.into(); 3], vec![0.into(); 108]].concat()
         );
-        
-        assert_eq!( /* line 6 */
+
+        assert_eq!(
+            /* line 6 */
             mtr.get_row(3),
-            [
-                vec![0.into(); 9],
-                vec![1.into(); 3],
-                vec![0.into(); 105]
-            ].concat()
+            [vec![0.into(); 9], vec![1.into(); 3], vec![0.into(); 105]].concat()
         );
-        assert_eq!( /* line 7 */
+        assert_eq!(
+            /* line 7 */
             mtr.get_row(4),
-            [
-                vec![0.into(); 12],
-                vec![1.into(); 3],
-                vec![0.into(); 102]
-            ].concat()
+            [vec![0.into(); 12], vec![1.into(); 3], vec![0.into(); 102]].concat()
         );
-        assert_eq!( /* line 8 */
+        assert_eq!(
+            /* line 8 */
             mtr.get_row(5),
-            [
-                vec![0.into(); 15],
-                vec![1.into(); 3],
-                vec![0.into(); 99]
-            ].concat()
+            [vec![0.into(); 15], vec![1.into(); 3], vec![0.into(); 99]].concat()
         );
-        assert_eq!( /* line 9 */
+        assert_eq!(
+            /* line 9 */
             mtr.get_row(6),
-            [
-                vec![0.into(); 18],
-                vec![1.into(); 3],
-                vec![0.into(); 96]
-            ].concat()
+            [vec![0.into(); 18], vec![1.into(); 3], vec![0.into(); 96]].concat()
         );
-        assert_eq!( /* line 10 */
+        assert_eq!(
+            /* line 10 */
             mtr.get_row(7),
-            [
-                vec![0.into(); 21],
-                vec![1.into(); 3],
-                vec![0.into(); 93]
-            ].concat()
+            [vec![0.into(); 21], vec![1.into(); 3], vec![0.into(); 93]].concat()
         );
-        assert_eq!( /* line 11 */
+        assert_eq!(
+            /* line 11 */
             mtr.get_row(8),
-            [
-                vec![0.into(); 24],
-                vec![1.into(); 3],
-                vec![0.into(); 90]
-            ].concat()
+            [vec![0.into(); 24], vec![1.into(); 3], vec![0.into(); 90]].concat()
         );
-        assert_eq!( /* line 12 */
+        assert_eq!(
+            /* line 12 */
             mtr.get_row(9),
-            [
-                vec![0.into(); 27],
-                vec![1.into(); 3],
-                vec![0.into(); 87]
-            ].concat()
+            [vec![0.into(); 27], vec![1.into(); 3], vec![0.into(); 87]].concat()
         );
-        assert_eq!( /* line 13 */
+        assert_eq!(
+            /* line 13 */
             mtr.get_row(10),
-            [
-                vec![0.into(); 30],
-                vec![1.into(); 3],
-                vec![0.into(); 84]
-            ].concat()
+            [vec![0.into(); 30], vec![1.into(); 3], vec![0.into(); 84]].concat()
         );
-        assert_eq!( /* line 14 */
+        assert_eq!(
+            /* line 14 */
             mtr.get_row(11),
-            [
-                vec![0.into(); 33],
-                vec![1.into(); 3],
-                vec![0.into(); 81]
-            ].concat()
+            [vec![0.into(); 33], vec![1.into(); 3], vec![0.into(); 81]].concat()
         );
-        assert_eq!( /* line 15 */
+        assert_eq!(
+            /* line 15 */
             mtr.get_row(12),
-            [
-                vec![0.into(); 36],
-                vec![1.into(); 3],
-                vec![0.into(); 78]
-            ].concat()
+            [vec![0.into(); 36], vec![1.into(); 3], vec![0.into(); 78]].concat()
         );
-        assert_eq!( /* line 16 */
+        assert_eq!(
+            /* line 16 */
             mtr.get_row(13),
-            [
-                vec![0.into(); 39],
-                vec![1.into(); 3],
-                vec![0.into(); 75]
-            ].concat()
+            [vec![0.into(); 39], vec![1.into(); 3], vec![0.into(); 75]].concat()
         );
-        assert_eq!( /* line 17 */
+        assert_eq!(
+            /* line 17 */
             mtr.get_row(14),
-            [
-                vec![0.into(); 42],
-                vec![1.into(); 3],
-                vec![0.into(); 72]
-            ].concat()
+            [vec![0.into(); 42], vec![1.into(); 3], vec![0.into(); 72]].concat()
         );
-        assert_eq!( /* line 18 */
+        assert_eq!(
+            /* line 18 */
             mtr.get_row(15),
-            [
-                vec![0.into(); 45],
-                vec![1.into(); 3],
-                vec![0.into(); 69]
-            ].concat()
+            [vec![0.into(); 45], vec![1.into(); 3], vec![0.into(); 69]].concat()
         );
-        assert_eq!( /* line 19 */
+        assert_eq!(
+            /* line 19 */
             mtr.get_row(16),
             [
                 vec![1.into()],
                 vec![0.into(); 47],
                 vec![2.into(), 3.into(), 1.into(), 1.into()],
                 vec![0.into(); 65]
-            ].concat()
+            ]
+            .concat()
         );
-        assert_eq!( /* line 20 */
+        assert_eq!(
+            /* line 20 */
             mtr.get_row(17),
             [
                 vec![0.into(); 3],
@@ -1059,9 +1174,11 @@ mod tests {
                 vec![0.into(); 48],
                 vec![2.into(), 3.into(), 1.into(), 1.into()],
                 vec![0.into(); 61]
-            ].concat()
+            ]
+            .concat()
         );
-        assert_eq!( /* line 21 */
+        assert_eq!(
+            /* line 21 */
             mtr.get_row(18),
             [
                 vec![0.into(); 6],
@@ -1069,9 +1186,11 @@ mod tests {
                 vec![0.into(); 49],
                 vec![2.into(), 3.into(), 1.into(), 1.into()],
                 vec![0.into(); 57]
-            ].concat()
+            ]
+            .concat()
         );
-        assert_eq!( /* line 22 */
+        assert_eq!(
+            /* line 22 */
             mtr.get_row(19),
             [
                 vec![0.into(); 9],
@@ -1079,9 +1198,11 @@ mod tests {
                 vec![0.into(); 50],
                 vec![2.into(), 3.into(), 1.into(), 1.into()],
                 vec![0.into(); 53]
-            ].concat()
+            ]
+            .concat()
         );
-        assert_eq!( /* line 23 */
+        assert_eq!(
+            /* line 23 */
             mtr.get_row(20),
             [
                 vec![0.into(); 12],
@@ -1089,9 +1210,11 @@ mod tests {
                 vec![0.into(); 35],
                 vec![1.into(), 2.into(), 3.into(), 1.into()],
                 vec![0.into(); 65]
-            ].concat()
+            ]
+            .concat()
         );
-        assert_eq!( /* line 24 */
+        assert_eq!(
+            /* line 24 */
             mtr.get_row(21),
             [
                 vec![0.into(); 15],
@@ -1099,9 +1222,11 @@ mod tests {
                 vec![0.into(); 36],
                 vec![1.into(), 2.into(), 3.into(), 1.into()],
                 vec![0.into(); 61]
-            ].concat()
+            ]
+            .concat()
         );
-        assert_eq!( /* line 25 */
+        assert_eq!(
+            /* line 25 */
             mtr.get_row(22),
             [
                 vec![0.into(); 18],
@@ -1109,9 +1234,11 @@ mod tests {
                 vec![0.into(); 37],
                 vec![1.into(), 2.into(), 3.into(), 1.into()],
                 vec![0.into(); 57]
-            ].concat()
+            ]
+            .concat()
         );
-        assert_eq!( /* line 26 */
+        assert_eq!(
+            /* line 26 */
             mtr.get_row(23),
             [
                 vec![0.into(); 21],
@@ -1119,9 +1246,11 @@ mod tests {
                 vec![0.into(); 38],
                 vec![1.into(), 2.into(), 3.into(), 1.into()],
                 vec![0.into(); 53]
-            ].concat()
+            ]
+            .concat()
         );
-        assert_eq!( /* line 27 */
+        assert_eq!(
+            /* line 27 */
             mtr.get_row(24),
             [
                 vec![0.into(); 24],
@@ -1129,9 +1258,11 @@ mod tests {
                 vec![0.into(); 23],
                 vec![1.into(), 1.into(), 2.into(), 3.into()],
                 vec![0.into(); 65]
-            ].concat()
+            ]
+            .concat()
         );
-        assert_eq!( /* line 28 */
+        assert_eq!(
+            /* line 28 */
             mtr.get_row(25),
             [
                 vec![0.into(); 27],
@@ -1139,9 +1270,11 @@ mod tests {
                 vec![0.into(); 24],
                 vec![1.into(), 1.into(), 2.into(), 3.into()],
                 vec![0.into(); 61]
-            ].concat()
+            ]
+            .concat()
         );
-        assert_eq!( /* line 29 */
+        assert_eq!(
+            /* line 29 */
             mtr.get_row(26),
             [
                 vec![0.into(); 30],
@@ -1149,9 +1282,11 @@ mod tests {
                 vec![0.into(); 25],
                 vec![1.into(), 1.into(), 2.into(), 3.into()],
                 vec![0.into(); 57]
-            ].concat()
+            ]
+            .concat()
         );
-        assert_eq!( /* line 30 */
+        assert_eq!(
+            /* line 30 */
             mtr.get_row(27),
             [
                 vec![0.into(); 33],
@@ -1159,9 +1294,11 @@ mod tests {
                 vec![0.into(); 26],
                 vec![1.into(), 1.into(), 2.into(), 3.into()],
                 vec![0.into(); 53]
-            ].concat()
+            ]
+            .concat()
         );
-        assert_eq!( /* line 31 */
+        assert_eq!(
+            /* line 31 */
             mtr.get_row(28),
             [
                 vec![0.into(); 36],
@@ -1169,9 +1306,11 @@ mod tests {
                 vec![0.into(); 11],
                 vec![3.into(), 1.into(), 1.into(), 2.into()],
                 vec![0.into(); 65]
-            ].concat()
+            ]
+            .concat()
         );
-        assert_eq!( /* line 32 */
+        assert_eq!(
+            /* line 32 */
             mtr.get_row(29),
             [
                 vec![0.into(); 39],
@@ -1179,9 +1318,11 @@ mod tests {
                 vec![0.into(); 12],
                 vec![3.into(), 1.into(), 1.into(), 2.into()],
                 vec![0.into(); 61]
-            ].concat()
+            ]
+            .concat()
         );
-        assert_eq!( /* line 33 */
+        assert_eq!(
+            /* line 33 */
             mtr.get_row(30),
             [
                 vec![0.into(); 42],
@@ -1189,9 +1330,11 @@ mod tests {
                 vec![0.into(); 13],
                 vec![3.into(), 1.into(), 1.into(), 2.into()],
                 vec![0.into(); 57]
-            ].concat()
+            ]
+            .concat()
         );
-        assert_eq!( /* line 34 */
+        assert_eq!(
+            /* line 34 */
             mtr.get_row(31),
             [
                 vec![0.into(); 45],
@@ -1199,137 +1342,91 @@ mod tests {
                 vec![0.into(); 14],
                 vec![3.into(), 1.into(), 1.into(), 2.into()],
                 vec![0.into(); 53]
-            ].concat()
+            ]
+            .concat()
         );
-        assert_eq!( /* line 35 */
+        assert_eq!(
+            /* line 35 */
             mtr.get_row(32),
-            [
-                vec![0.into(); 64],
-                vec![1.into(); 3],
-                vec![0.into(); 50]
-            ].concat()
+            [vec![0.into(); 64], vec![1.into(); 3], vec![0.into(); 50]].concat()
         );
-        assert_eq!( /* line 36 */
+        assert_eq!(
+            /* line 36 */
             mtr.get_row(33),
-            [
-                vec![0.into(); 67],
-                vec![1.into(); 3],
-                vec![0.into(); 47]
-            ].concat()
+            [vec![0.into(); 67], vec![1.into(); 3], vec![0.into(); 47]].concat()
         );
-        assert_eq!( /* line 37 */
+        assert_eq!(
+            /* line 37 */
             mtr.get_row(34),
-            [
-                vec![0.into(); 70],
-                vec![1.into(); 3],
-                vec![0.into(); 44]
-            ].concat()
+            [vec![0.into(); 70], vec![1.into(); 3], vec![0.into(); 44]].concat()
         );
-        assert_eq!( /* line 38 */
+        assert_eq!(
+            /* line 38 */
             mtr.get_row(35),
-            [
-                vec![0.into(); 73],
-                vec![1.into(); 3],
-                vec![0.into(); 41]
-            ].concat()
+            [vec![0.into(); 73], vec![1.into(); 3], vec![0.into(); 41]].concat()
         );
-        assert_eq!( /* line 39 */
+        assert_eq!(
+            /* line 39 */
             mtr.get_row(36),
-            [
-                vec![0.into(); 76],
-                vec![1.into(); 3],
-                vec![0.into(); 38]
-            ].concat()
+            [vec![0.into(); 76], vec![1.into(); 3], vec![0.into(); 38]].concat()
         );
-        assert_eq!( /* line 40 */
+        assert_eq!(
+            /* line 40 */
             mtr.get_row(37),
-            [
-                vec![0.into(); 79],
-                vec![1.into(); 3],
-                vec![0.into(); 35]
-            ].concat()
+            [vec![0.into(); 79], vec![1.into(); 3], vec![0.into(); 35]].concat()
         );
-        assert_eq!( /* line 41 */
+        assert_eq!(
+            /* line 41 */
             mtr.get_row(38),
-            [
-                vec![0.into(); 82],
-                vec![1.into(); 3],
-                vec![0.into(); 32]
-            ].concat()
+            [vec![0.into(); 82], vec![1.into(); 3], vec![0.into(); 32]].concat()
         );
-        assert_eq!( /* line 42 */
+        assert_eq!(
+            /* line 42 */
             mtr.get_row(39),
-            [
-                vec![0.into(); 85],
-                vec![1.into(); 3],
-                vec![0.into(); 29]
-            ].concat()
+            [vec![0.into(); 85], vec![1.into(); 3], vec![0.into(); 29]].concat()
         );
-        assert_eq!( /* line 43 */
+        assert_eq!(
+            /* line 43 */
             mtr.get_row(40),
-            [
-                vec![0.into(); 88],
-                vec![1.into(); 3],
-                vec![0.into(); 26]
-            ].concat()
+            [vec![0.into(); 88], vec![1.into(); 3], vec![0.into(); 26]].concat()
         );
-        assert_eq!( /* line 44 */
+        assert_eq!(
+            /* line 44 */
             mtr.get_row(41),
-            [
-                vec![0.into(); 91],
-                vec![1.into(); 3],
-                vec![0.into(); 23]
-            ].concat()
+            [vec![0.into(); 91], vec![1.into(); 3], vec![0.into(); 23]].concat()
         );
-        assert_eq!( /* line 45 */
+        assert_eq!(
+            /* line 45 */
             mtr.get_row(42),
-            [
-                vec![0.into(); 94],
-                vec![1.into(); 3],
-                vec![0.into(); 20]
-            ].concat()
+            [vec![0.into(); 94], vec![1.into(); 3], vec![0.into(); 20]].concat()
         );
-        assert_eq!( /* line 46 */
+        assert_eq!(
+            /* line 46 */
             mtr.get_row(43),
-            [
-                vec![0.into(); 97],
-                vec![1.into(); 3],
-                vec![0.into(); 17]
-            ].concat()
+            [vec![0.into(); 97], vec![1.into(); 3], vec![0.into(); 17]].concat()
         );
-        assert_eq!( /* line 47 */
+        assert_eq!(
+            /* line 47 */
             mtr.get_row(44),
-            [
-                vec![0.into(); 100],
-                vec![1.into(); 3],
-                vec![0.into(); 14]
-            ].concat()
+            [vec![0.into(); 100], vec![1.into(); 3], vec![0.into(); 14]].concat()
         );
-        assert_eq!( /* line 48 */
+        assert_eq!(
+            /* line 48 */
             mtr.get_row(45),
-            [
-                vec![0.into(); 103],
-                vec![1.into(); 3],
-                vec![0.into(); 11]
-            ].concat()
+            [vec![0.into(); 103], vec![1.into(); 3], vec![0.into(); 11]].concat()
         );
-        assert_eq!( /* line 49 */
+        assert_eq!(
+            /* line 49 */
             mtr.get_row(46),
-            [
-                vec![0.into(); 106],
-                vec![1.into(); 3],
-                vec![0.into(); 8]
-            ].concat()
+            [vec![0.into(); 106], vec![1.into(); 3], vec![0.into(); 8]].concat()
         );
-        assert_eq!( /* line 50 */
+        assert_eq!(
+            /* line 50 */
             mtr.get_row(47),
-            [
-                vec![0.into(); 109],
-                vec![1.into(); 3],
-                vec![0.into(); 5]
-            ].concat()
+            [vec![0.into(); 109], vec![1.into(); 3], vec![0.into(); 5]].concat()
         );
-        assert_eq!( /* line 51 */
+        assert_eq!(
+            /* line 51 */
             mtr.get_row(48),
             [
                 vec![0.into(); 43],
@@ -1337,9 +1434,11 @@ mod tests {
                 vec![0.into(); 63],
                 vec![1.into()],
                 vec![0.into(); 6]
-            ].concat()
+            ]
+            .concat()
         );
-        assert_eq!( /* line 52 */
+        assert_eq!(
+            /* line 52 */
             mtr.get_row(49),
             [
                 vec![0.into(); 40],
@@ -1347,9 +1446,11 @@ mod tests {
                 vec![0.into(); 63],
                 vec![1.into()],
                 vec![0.into(); 9]
-            ].concat()
+            ]
+            .concat()
         );
-        assert_eq!( /* line 53 */
+        assert_eq!(
+            /* line 53 */
             mtr.get_row(50),
             [
                 vec![0.into(); 37],
@@ -1357,9 +1458,11 @@ mod tests {
                 vec![0.into(); 63],
                 vec![1.into()],
                 vec![0.into(); 12]
-            ].concat()
+            ]
+            .concat()
         );
-        assert_eq!( /* line 54 */
+        assert_eq!(
+            /* line 54 */
             mtr.get_row(51),
             [
                 vec![0.into(); 37],
@@ -1369,9 +1472,11 @@ mod tests {
                 vec![0.into(); 10],
                 vec![1.into()],
                 vec![0.into(); 4]
-            ].concat()
+            ]
+            .concat()
         );
-        assert_eq!( /* line 55 */
+        assert_eq!(
+            /* line 55 */
             mtr.get_row(52),
             [
                 vec![0.into(); 31],
@@ -1379,9 +1484,11 @@ mod tests {
                 vec![0.into(); 63],
                 vec![1.into()],
                 vec![0.into(); 18]
-            ].concat()
+            ]
+            .concat()
         );
-        assert_eq!( /* line 56 */
+        assert_eq!(
+            /* line 56 */
             mtr.get_row(53),
             [
                 vec![0.into(); 28],
@@ -1389,9 +1496,11 @@ mod tests {
                 vec![0.into(); 63],
                 vec![1.into()],
                 vec![0.into(); 21]
-            ].concat()
+            ]
+            .concat()
         );
-        assert_eq!( /* line 57 */
+        assert_eq!(
+            /* line 57 */
             mtr.get_row(54),
             [
                 vec![0.into(); 25],
@@ -1399,9 +1508,11 @@ mod tests {
                 vec![0.into(); 63],
                 vec![1.into()],
                 vec![0.into(); 24]
-            ].concat()
+            ]
+            .concat()
         );
-        assert_eq!( /* line 58 */
+        assert_eq!(
+            /* line 58 */
             mtr.get_row(55),
             [
                 vec![0.into(); 25],
@@ -1411,9 +1522,11 @@ mod tests {
                 vec![0.into(); 23],
                 vec![1.into()],
                 vec![0.into(); 3]
-            ].concat()
+            ]
+            .concat()
         );
-        assert_eq!( /* line 59 */
+        assert_eq!(
+            /* line 59 */
             mtr.get_row(56),
             [
                 vec![0.into(); 19],
@@ -1421,9 +1534,11 @@ mod tests {
                 vec![0.into(); 63],
                 vec![1.into()],
                 vec![0.into(); 30],
-            ].concat()
+            ]
+            .concat()
         );
-        assert_eq!( /* line 60 */
+        assert_eq!(
+            /* line 60 */
             mtr.get_row(57),
             [
                 vec![0.into(); 16],
@@ -1431,9 +1546,11 @@ mod tests {
                 vec![0.into(); 63],
                 vec![1.into()],
                 vec![0.into(); 33],
-            ].concat()
+            ]
+            .concat()
         );
-        assert_eq!( /* line 61 */
+        assert_eq!(
+            /* line 61 */
             mtr.get_row(58),
             [
                 vec![0.into(); 13],
@@ -1441,9 +1558,11 @@ mod tests {
                 vec![0.into(); 63],
                 vec![1.into()],
                 vec![0.into(); 36],
-            ].concat()
+            ]
+            .concat()
         );
-        assert_eq!( /* line 62 */
+        assert_eq!(
+            /* line 62 */
             mtr.get_row(59),
             [
                 vec![0.into(); 13],
@@ -1453,9 +1572,11 @@ mod tests {
                 vec![0.into(); 36],
                 vec![1.into()],
                 vec![0.into(); 2]
-            ].concat()
+            ]
+            .concat()
         );
-        assert_eq!( /* line 63 */
+        assert_eq!(
+            /* line 63 */
             mtr.get_row(60),
             [
                 vec![0.into(); 7],
@@ -1463,9 +1584,11 @@ mod tests {
                 vec![0.into(); 63],
                 vec![1.into()],
                 vec![0.into(); 42]
-            ].concat()
+            ]
+            .concat()
         );
-        assert_eq!( /* line 64 */
+        assert_eq!(
+            /* line 64 */
             mtr.get_row(61),
             [
                 vec![0.into(); 4],
@@ -1473,9 +1596,11 @@ mod tests {
                 vec![0.into(); 63],
                 vec![1.into()],
                 vec![0.into(); 45]
-            ].concat()
+            ]
+            .concat()
         );
-        assert_eq!( /* line 65 */
+        assert_eq!(
+            /* line 65 */
             mtr.get_row(62),
             [
                 vec![0.into(); 1],
@@ -1483,9 +1608,11 @@ mod tests {
                 vec![0.into(); 63],
                 vec![1.into()],
                 vec![0.into(); 48]
-            ].concat()
+            ]
+            .concat()
         );
-        assert_eq!( /* line 66 */
+        assert_eq!(
+            /* line 66 */
             mtr.get_row(63),
             [
                 vec![0.into(); 1],
@@ -1494,8 +1621,8 @@ mod tests {
                 vec![1.into()],
                 vec![0.into(); 49],
                 vec![1.into(), 1.into()],
-            ].concat()
+            ]
+            .concat()
         );
     }
-
 }

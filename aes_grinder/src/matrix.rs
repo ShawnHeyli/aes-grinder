@@ -1375,6 +1375,11 @@ mod test_fn_sort_left {
 
 #[cfg(test)]
 mod test_fn_sort_right {
+    use crate::{
+        parser::{self, Parser},
+        GlobalInfos,
+    };
+
     use super::*;
 
     #[test]
@@ -1435,5 +1440,33 @@ mod test_fn_sort_right {
         assert_eq!(matrix[(0, 2)], 0.into());
         assert_eq!(matrix[(1, 2)], 0.into());
         assert_eq!(matrix[(2, 2)], 0.into());
+    }
+
+    #[test]
+    fn mateub() {
+        let system: &str = "equation_system/dp_example.eqs";
+
+        let mut globals: GlobalInfos = GlobalInfos::new(system.to_owned());
+        let mut parser_mod = Parser::new(&globals);
+
+        let mut matrix = parser_mod
+            .parse_system(&mut globals)
+            .expect("Error while parsing system");
+        matrix.set_vars_map(parser_mod.vars_map);
+
+        matrix.drop_linear_variable();
+
+        let system2: &str = "equation_system/1r_3.txt";
+        let mut globals: GlobalInfos = GlobalInfos::new(system2.to_owned());
+        let mut parser_mod = Parser::new(&globals);
+
+        let mut matrix2 = parser_mod
+            .parse_system(&mut globals)
+            .expect("Error while parsing system");
+        matrix2.set_vars_map(parser_mod.vars_map);
+
+        println!("{}", matrix.to_dot_string());
+        println!("{}", matrix2.to_dot_string());
+        assert_eq!(matrix, matrix2);
     }
 }

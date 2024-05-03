@@ -47,3 +47,8 @@ Rereading all the code to check the specification is consistent with the paper a
 ### 26/04/2024
 Start writing project report.
 Patch tentative issues
+
+### 03/05/2024
+Extending the .dot model
+Fix error encountered by asking the supervisor
+Oral presentation training and "script" writing

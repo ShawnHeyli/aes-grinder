@@ -2,7 +2,6 @@ use crate::utils::{Invertible, Number};
 use std::{
     cmp::min,
     collections::{HashMap, HashSet},
-    env::vars,
     fmt::Display,
 };
 
@@ -28,13 +27,13 @@ impl Matrix {
     fn sort_left(&mut self, vars: Vec<String>) {
         let mut swap_ndx: usize = 0;
         let vars_iter = vars.iter();
-        for var in vars_iter {
+        vars_iter.for_each(|var| {
             let ndx = self.vars_map.get(var).unwrap();
             self.swap_columns(swap_ndx, *ndx);
 
             assert_ne!(self.cols, swap_ndx);
             swap_ndx += 1;
-        }
+        });
     }
 
     /// put argument vars to right of matrix
@@ -61,7 +60,7 @@ impl Matrix {
         let mut matrix = Matrix::new(rows, cols);
         matrix.data.clear();
 
-        for i in 0..rows {
+        (0..rows).for_each(|i| {
             for j in 0..cols {
                 if data[i][j] >= 2u32.pow(16 - polynomial.leading_zeros()) {
                     panic!("Invalid number for the given polynomial");
@@ -70,7 +69,7 @@ impl Matrix {
                     .data
                     .push(Number::new(data[i][j].try_into().unwrap(), polynomial));
             }
-        }
+        });
 
         matrix
     }
@@ -335,7 +334,7 @@ impl Matrix {
     }
 
     /// Row reduce the matrix on the given variables
-    pub fn scale_on(&mut self, vars: Vec<String>) -> () {
+    pub fn scale_on(&mut self, vars: Vec<String>) {
         assert!(
             vars.len() <= self.cols,
             "ERROR :: in scale_on :: vars.len() > self.cols"
@@ -401,8 +400,7 @@ impl Matrix {
         //nb sol = nb_ var-nb_eq
 
         let nb_eq = self.get_nb_ligne_zero_borded_from_bottom(vars.len());
-        let nb_sol = vars.len() - nb_eq;
-        nb_sol
+        vars.len() - nb_eq
     }
 
     fn get_nb_ligne_zero_borded_from_bottom(&self, nb_vars: usize) -> usize {
@@ -429,59 +427,6 @@ impl Matrix {
             }
         }
         matrix
-    }
-
-    pub fn to_string(&self) -> String {
-        let mut res = String::new();
-        //Set width to the max length of the variable name
-        let max_len_word = self.vars_map.keys().map(|s| s.len()).max().unwrap_or(1);
-
-        //Display var name above columns
-        let mut vars_iter = self.vars_map.iter();
-        if let Some(var) = vars_iter.next() {
-            let padding = max_len_word - var.0.len();
-            res.push_str(&format!(
-                "{}{}{}",
-                " ".repeat(padding / 2 + (padding & 1)),
-                var.0,
-                " ".repeat(padding / 2)
-            ));
-        }
-        while let Some(var) = vars_iter.next() {
-            let padding = max_len_word - var.0.len();
-            res.push_str(&format!(
-                " {}{}{}",
-                " ".repeat(padding / 2 + (padding & 1)),
-                var.0,
-                " ".repeat(padding / 2)
-            ));
-        }
-        res.push('\n');
-
-        //Display the matrix
-        for i in 0..self.rows {
-            for j in 0..self.cols {
-                let str_value = self[(i, j)].get_value().to_string();
-                let padding = max_len_word - str_value.len();
-                if j == 0 {
-                    res.push_str(&format!(
-                        "{}{}{}",
-                        " ".repeat(padding / 2 + (padding & 1)),
-                        str_value,
-                        " ".repeat(padding / 2)
-                    ));
-                } else {
-                    res.push_str(&format!(
-                        "-{}{}{}",
-                        " ".repeat(padding / 2 + (padding & 1)),
-                        str_value,
-                        " ".repeat(padding / 2)
-                    ));
-                }
-            }
-            res.push('\n');
-        }
-        res
     }
 
     /// Compute the dimension of the solution space of the system of equations
@@ -578,19 +523,19 @@ impl Matrix {
 
     fn delete_alone_variables(&mut self) {
         let mut variables: Vec<String> = Vec::new();
-        for (name, _) in &self.vars_map {
-            for (str, _) in &self.vars_map {
+        self.vars_map.iter().for_each(|(name, _)| {
+            self.vars_map.iter().for_each(|(str, _)| {
                 if name.contains(str) && name != str {
                     variables.push(str.to_string());
                     variables.push(name.to_string());
                 }
-            }
-        }
+            });
+        });
 
         //Get all variables that doesnt appear under the sbox
         let mut variables_alone: Vec<String> = self.get_all_variables();
         variables_alone.retain(|s| !variables.contains(s));
-        while variables_alone.len() > 0 {
+        while !variables_alone.is_empty() {
             println!("Variables left to remove {:?}", variables_alone);
             //Choose a variable
             let x = variables_alone.pop().unwrap();
@@ -676,7 +621,7 @@ impl Matrix {
         self.solve_on(vec![variable.clone()]);
         //Remove first line and first column
         assert!(self.is_only_one_1_on_column(0));
-        if variable.contains("P") || variable.contains("C") || variable.contains("KV") {
+        if variable.contains('P') || variable.contains('C') || variable.contains("KV") {
             self.delete_column(0);
         } else {
             self.delete_row(0);
@@ -806,11 +751,11 @@ impl From<Vec<Vec<u8>>> for Matrix {
             matrix.vars_map.insert(format!("X_{}", i), i);
         }
 
-        for i in 0..rows {
+        (0..rows).for_each(|i| {
             for j in 0..cols {
                 matrix.data.push(data[i][j].into());
             }
-        }
+        });
 
         matrix
     }

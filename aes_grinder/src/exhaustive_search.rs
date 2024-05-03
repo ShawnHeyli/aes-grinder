@@ -27,7 +27,7 @@ pub fn random_search(matrix: &mut Matrix) -> Box<Algo> {
         if x_var.contains('(') {
             continue;
         }
-        lst_algo.push(Box::new(Algo::base_solver(matrix, x_var)));
+        lst_algo.push(Box::new(Algo::base_solver(x_var)));
     }
 
     let mut size_of_lst = lst_algo.len();
@@ -65,7 +65,7 @@ pub fn exhaustive_search(x: &mut Matrix, time_complexity: usize) -> HashSet<Box<
         if x_var.contains('(') {
             continue;
         }
-        g.insert(Box::new(Algo::base_solver(x, x_var)));
+        g.insert(Box::new(Algo::base_solver(x_var)));
     }
     // println!("G init");
     // print_algo_set(&g);
@@ -196,10 +196,10 @@ mod test_exhaustive {
         vars_maps.insert("C".to_string(), 2);
         vars_maps.insert("D".to_string(), 3);
         matrix.set_vars_map(vars_maps.clone());
-        let c1 = Algo::base_solver(&mut matrix, "A".to_string());
-        let c2 = Algo::base_solver(&mut matrix, "B".to_string());
-        let c3 = Algo::base_solver(&mut matrix, "C".to_string());
-        let c4 = Algo::base_solver(&mut matrix, "D".to_string());
+        let c1 = Algo::base_solver("A".to_string());
+        let c2 = Algo::base_solver("B".to_string());
+        let c3 = Algo::base_solver("C".to_string());
+        let c4 = Algo::base_solver("D".to_string());
         let c = Algo::fusion_two_algo(Box::new(c1.clone()), Box::new(c2.clone()), &mut matrix);
 
         let mut g: HashSet<Box<Algo>> = HashSet::new();

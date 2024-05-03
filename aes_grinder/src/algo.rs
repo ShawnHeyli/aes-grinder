@@ -81,7 +81,7 @@ impl Algo {
         if let Some(var) = iter_vars.next() {
             str_to_build.push_str(var);
         }
-        while let Some(var) = iter_vars.next() {
+        for var in iter_vars {
             str_to_build.push(',');
             str_to_build.push(' ');
             str_to_build.push_str(var);
@@ -146,25 +146,27 @@ impl Algo {
                     .as_bytes(),
                 )?;
             }
-        } else {
-            if dbg_mode {
-                let mut full_vars_list = String::new();
-                self.build_string_vars_list(&mut full_vars_list);
+        } else if dbg_mode {
+            let mut full_vars_list = String::new();
+            self.build_string_vars_list(&mut full_vars_list);
 
-                dot_file.write_all(
-                    format!(
-                        "\t{}[shape=\"circle\", fontname=\"Courier New\", label=\"\n{}{}\nnb_sol = {}\"];\n",
-                        *cmpt, m_str,
-                        full_vars_list,
-                        self.nb_solutions
-                    )
-                    .as_bytes(),
-                )?;
-            } else {
-                dot_file.write_all(
-                    format!("\t{}[shape=\"circle\", fontname=\"Courier New\", label=\"nb_sol = {}\"];\n", *cmpt, self.nb_solutions).as_bytes(),
-                )?;
-            }
+            dot_file.write_all(
+                format!(
+                    "\t{}[shape=\"circle\", fontname=\"Courier New\", label=\"\n{}{}\nnb_sol = {}\"];\n",
+                    *cmpt, m_str,
+                    full_vars_list,
+                    self.nb_solutions
+                )
+                .as_bytes(),
+            )?;
+        } else {
+            dot_file.write_all(
+                format!(
+                    "\t{}[shape=\"circle\", fontname=\"Courier New\", label=\"nb_sol = {}\"];\n",
+                    *cmpt, self.nb_solutions
+                )
+                .as_bytes(),
+            )?;
         }
 
         if let Some(son_left) = &self.son1 {
@@ -224,7 +226,7 @@ impl Algo {
     }
 
     ///Constructeur d'un base solver
-    pub fn base_solver(matrix: &mut Matrix, var: String) -> Algo {
+    pub fn base_solver(var: String) -> Algo {
         let mut vars = HashSet::<String>::new();
         vars.insert(var);
         Algo {
@@ -418,8 +420,8 @@ mod tests {
     #[test]
     fn test_number_solutions() {
         println!("Test number solutions");
-        let mut matrix = Matrix::from(vec![vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]);
-        let algo = Algo::base_solver(&mut matrix, "X_1".to_string());
+        let matrix = Matrix::from(vec![vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]);
+        let algo = Algo::base_solver("X_1".to_string());
         println!("After num sol\n{}", matrix);
         assert_eq!(1, algo.nb_solutions);
     }
@@ -438,7 +440,7 @@ mod tests {
         algo_good.to_dot("test/to_dot_00.dot")?;
 
         let status = Command::new("diff")
-            .args(&["-q", "test/to_dot_00.dot", "test/to_dot_00_valid.dot"])
+            .args(["-q", "test/to_dot_00.dot", "test/to_dot_00_valid.dot"])
             .status()
             .expect("failed to execute diff");
 
@@ -500,7 +502,7 @@ mod tests {
         root.to_dot("test/to_dot_01.dot")?;
 
         let status = Command::new("diff")
-            .args(&["-q", "test/to_dot_01.dot", "test/to_dot_01_valid.dot"])
+            .args(["-q", "test/to_dot_01.dot", "test/to_dot_01_valid.dot"])
             .status()
             .expect("failed to execute diff");
 
@@ -556,7 +558,7 @@ mod tests {
         root.to_dot("test/to_dot_02.dot")?;
 
         let status = Command::new("diff")
-            .args(&["-q", "test/to_dot_02.dot", "test/to_dot_02_valid.dot"])
+            .args(["-q", "test/to_dot_02.dot", "test/to_dot_02_valid.dot"])
             .status()
             .expect("failed to execute diff");
 

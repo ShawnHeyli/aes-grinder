@@ -12,3 +12,7 @@ clap-verbosity-flag = "2.2.0"
 env_logger = "0.11.2"
 log = "0.4.20"
 num-integer = "0.1.46"
+console = "0.15.8"
+dialoguer = { version = "0.11.0", features = ["fuzzy-select"] }
+indicatif = "0.17.8"
+strum = { version = "0.26.2", features = ["derive"] }

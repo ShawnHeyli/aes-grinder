@@ -5,8 +5,13 @@ mod matrix;
 mod parser;
 mod utils;
 
-use crate::exhaustive_search::{exhaustive_search, random_search};
+use std::fs::read_dir;
+
+use crate::cli::Cli;
 use clap::Parser as ClapParser;
+use dialoguer::FuzzySelect;
+use exhaustive_search::{exhaustive_search, random_search, Search};
+use strum::IntoEnumIterator;
 
 struct GlobalInfos {
     filename_eq_sys: String,
@@ -25,13 +30,46 @@ impl GlobalInfos {
 }
 
 fn main() {
-    let mut cli = cli::Cli::parse();
-    cli::cli_check(&mut cli);
+    // Sets the verbosity flag
+    Cli::parse();
 
-    let mut globals: GlobalInfos = GlobalInfos::new(cli.equation_system);
+    let selection = FuzzySelect::new()
+        .with_prompt("What type of search ?")
+        .items(
+            &Search::iter()
+                .map(|x| x.to_string())
+                .collect::<Vec<String>>(),
+        )
+        .interact()
+        .unwrap();
+    let search: Search = Search::iter().nth(selection).unwrap();
+
+    // files <directory>/<filename>
+    let files = &["test", "equation_system"]
+        .into_iter()
+        .flat_map(|dir| {
+            read_dir(dir).unwrap().map(move |file| {
+                format!(
+                    "{}/{}",
+                    dir,
+                    file.unwrap().file_name().into_string().unwrap()
+                )
+            })
+        })
+        .collect::<Vec<String>>();
+    let selection: usize = FuzzySelect::new()
+        .with_prompt("With which system ?")
+        .items(
+            // files in test/ and equation_system/
+            files,
+        )
+        .interact()
+        .unwrap();
+    let system: &str = files.get(selection).unwrap();
+
+    let mut globals: GlobalInfos = GlobalInfos::new(system.to_owned());
     let mut parser_mod = parser::Parser::new(&globals);
 
-    // NEED TO CATCH MATRIX
     let matrix = parser_mod
         .parse_system(&mut globals)
         .expect("Error while parsing system");
@@ -42,11 +80,19 @@ fn main() {
     matrix.drop_linear_variable();
     println!("{}", matrix);
 
-    let graph = exhaustive_search::random_search(&mut matrix);
-    let _ = graph.to_dot_debug("/tmp/sac", &matrix);
-
-    // let graph = exhaustive_search(matrix, 6);
-    //  assert!(graph.len()==1);
-    //println!("LEN GRAPH{:?}",graph);
-    // graph.iter().next().unwrap().to_dot_debug("/tmp/algo.dot").unwrap();
+    match search {
+        Search::Exhaustive => {
+            exhaustive_search(&mut matrix, 6)
+                .iter()
+                .next()
+                .unwrap()
+                .to_dot_debug("/tmp/algo.dot", &matrix)
+                .unwrap();
+        }
+        Search::Random => {
+            random_search(&mut matrix)
+                .to_dot_debug("/tmp/algo.dot", &matrix)
+                .unwrap();
+        }
+    }
 }

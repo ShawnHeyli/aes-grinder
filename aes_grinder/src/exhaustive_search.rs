@@ -1,8 +1,24 @@
 use crate::{algo::Algo, matrix::Matrix};
 use rand::{seq::IteratorRandom, Rng};
-use std::{cmp::Ordering, collections::HashSet};
+use std::{cmp::Ordering, collections::HashSet, fmt::Display};
+use strum::{EnumCount, EnumIter};
 
-pub fn random_search(mut matrix: &mut Matrix) -> Box<Algo> {
+#[derive(EnumIter, EnumCount)]
+pub enum Search {
+    Exhaustive,
+    Random,
+}
+
+impl Display for Search {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Search::Exhaustive => f.write_str("Exhaustive search"),
+            Search::Random => f.write_str("Random search"),
+        }
+    }
+}
+
+pub fn random_search(matrix: &mut Matrix) -> Box<Algo> {
     //Set of base solvers
     let mut lst_algo: Vec<Box<Algo>> = vec![];
 
@@ -31,7 +47,7 @@ pub fn random_search(mut matrix: &mut Matrix) -> Box<Algo> {
     lst_algo.pop().unwrap()
 }
 
-pub fn search_best_multiple_random(mut matrix: &mut Matrix, nb_algo: usize) -> Box<Algo> {
+pub fn search_best_multiple_random(matrix: &mut Matrix, nb_algo: usize) -> Box<Algo> {
     let mut g: HashSet<Box<Algo>> = HashSet::new();
     for _ in 0..nb_algo {
         g.insert(random_search(matrix));
@@ -41,7 +57,7 @@ pub fn search_best_multiple_random(mut matrix: &mut Matrix, nb_algo: usize) -> B
     best_algo
 }
 
-pub fn exhaustive_search(mut x: Matrix, time_complexity: usize) -> HashSet<Box<Algo>> {
+pub fn exhaustive_search(x: &mut Matrix, time_complexity: usize) -> HashSet<Box<Algo>> {
     //Set of base solvers
     let mut g: HashSet<Box<Algo>> = HashSet::new();
     for x_var in x.get_all_variables() {
@@ -49,7 +65,7 @@ pub fn exhaustive_search(mut x: Matrix, time_complexity: usize) -> HashSet<Box<A
         if x_var.contains('(') {
             continue;
         }
-        g.insert(Box::new(Algo::base_solver(&mut x, x_var)));
+        g.insert(Box::new(Algo::base_solver(x, x_var)));
     }
     // println!("G init");
     // print_algo_set(&g);
@@ -75,7 +91,7 @@ pub fn exhaustive_search(mut x: Matrix, time_complexity: usize) -> HashSet<Box<A
         let (a1, a2) = p.take(&a).unwrap();
 
         //println!("take : \n{:?} and {:?}", a1.get_all_variables(),a2.get_all_variables());
-        let c = Box::new(Algo::fusion_two_algo(a1.clone(), a2.clone(), &mut x));
+        let c = Box::new(Algo::fusion_two_algo(a1.clone(), a2.clone(), x));
         //println!("New algo : \n{:?}", c);
         if c.get_time_complexity() <= time_complexity {
             update_queue(&mut g, &mut p, c);
@@ -164,7 +180,7 @@ mod test_exhaustive {
         vars_maps.insert("B".to_string(), 1);
         vars_maps.insert("C".to_string(), 2);
         matrix.set_vars_map(vars_maps.clone());
-        exhaustive_search(matrix, 50);
+        exhaustive_search(&mut matrix, 50);
     }
     #[test]
     fn test_update_queue() {

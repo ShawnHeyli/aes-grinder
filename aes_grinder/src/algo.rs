@@ -75,11 +75,11 @@ impl PartialOrd for Algo {
 
 ///Implementation de la struc algo
 impl Algo {
-    fn build_string_vars_list (&self, str_to_build: &mut String) {
+    fn build_string_vars_list(&self, str_to_build: &mut String) {
         let mut iter_vars = self.vars.iter();
 
         str_to_build.push('{');
-        if let Some (var) = iter_vars.next() {
+        if let Some(var) = iter_vars.next() {
             str_to_build.push_str(var);
         }
         while let Some(var) = iter_vars.next() {
@@ -90,14 +90,20 @@ impl Algo {
         str_to_build.push('}');
     }
 
-    fn browse_algo_for_write(&self, dot_file: &mut File, cmpt: &mut u64, matrix: &Matrix, dbg_mode: bool) -> std::io::Result<()> {
+    fn browse_algo_for_write(
+        &self,
+        dot_file: &mut File,
+        cmpt: &mut u64,
+        matrix: &Matrix,
+        dbg_mode: bool,
+    ) -> std::io::Result<()> {
         let mark_father = *cmpt;
         let mut mark_son_left = None;
         let mut mark_son_right = None;
 
         let mut m_str = matrix.get_matrix_generated_by(&self.vars);
         m_str.solve();
-        let m_str = m_str.to_string();
+        let m_str = matrix.to_dot_string();
         if mark_father == 0 {
             if dbg_mode {
                 dot_file.write_all(
@@ -107,8 +113,7 @@ impl Algo {
                     )
                     .as_bytes(),
                 )?;
-            }
-            else {
+            } else {
                 dot_file.write_all(
                     format!(
                         "\t{}[shape=\"circle\", fontname=\"Courier New\", style=\"filled\", label=\"nb_sol = {}\", color=\"firebrick1\"];\n",
@@ -156,8 +161,7 @@ impl Algo {
                     )
                     .as_bytes(),
                 )?;
-            }
-            else {
+            } else {
                 dot_file.write_all(
                     format!("\t{}[shape=\"circle\", fontname=\"Courier New\", label=\"nb_sol = {}\"];\n", *cmpt, self.nb_solutions).as_bytes(),
                 )?;

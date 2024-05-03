@@ -732,14 +732,14 @@ impl Matrix {
         for i in 0..self.rows {
             for j in 0..self.cols {
                 if self.data[i * self.cols + j] < 10.into() {
-                    write!(f, "{}   ", self.data[i * self.cols + j])?;
+                    res.push_str(&format!("{}   ", self.data[i * self.cols + j]));
                 } else if self.data[i * self.cols + j] < 100.into() {
-                    write!(f, "{}  ", self.data[i * self.cols + j])?;
+                    res.push_str(&format!("{}  ", self.data[i * self.cols + j]));
                 } else {
-                    write!(f, "{} ", self.data[i * self.cols + j])?;
+                    res.push_str(&format!("{} ", self.data[i * self.cols + j]));
                 }
             }
-            writeln!(f)?;
+            res.push('\n');
         }
         res
     }

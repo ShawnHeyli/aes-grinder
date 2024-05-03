@@ -1,5 +1,4 @@
 //! Struc Algo permettant de représenter des Algo
-use crate::matrix;
 use crate::matrix::Matrix;
 use core::cmp::Ordering;
 use std::collections::hash_map::DefaultHasher;

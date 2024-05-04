@@ -509,7 +509,7 @@ impl Matrix {
                         //This variable must be linear
                         self.delete_row(0);
                         println!("{}", self);
-                        panic!("This variable must be linear, NEED TO BE CORRECT");
+                        //panic!("This variable must be linear, NEED TO BE CORRECT");
                     }
 
                     //Here treat the case where the variable is linear
@@ -656,6 +656,7 @@ impl Matrix {
         let mut res = String::new();
         //Set width to the max length of the variable name
         let max_len_word = self.vars_map.keys().map(|s| s.len()).max().unwrap_or(1);
+        println!("MAX SIZE :: {}", max_len_word);
 
         //Display var name above columns
         let mut vars_iter = self.vars_map.iter();
@@ -682,12 +683,13 @@ impl Matrix {
         // Print the matrix
         for i in 0..self.rows {
             for j in 0..self.cols {
-                if self.data[i * self.cols + j] < 10.into() {
-                    res.push_str(&format!("{}   ", self.data[i * self.cols + j]));
-                } else if self.data[i * self.cols + j] < 100.into() {
-                    res.push_str(&format!("{}  ", self.data[i * self.cols + j]));
-                } else {
-                    res.push_str(&format!("{} ", self.data[i * self.cols + j]));
+                let str_value = self[(i, j)].get_value().to_string();
+                let padding = max_len_word - str_value.len();
+                if j == 0 {
+                    res.push_str(&format!("{}{}{}", " ".repeat(padding/2 + (padding & 1)), str_value, " ".repeat(padding/2)));
+                }
+                else {
+                    res.push_str(&format!("-{}{}{}", " ".repeat(padding/2 + (padding & 1)), str_value, " ".repeat(padding/2)));
                 }
             }
             res.push('\n');

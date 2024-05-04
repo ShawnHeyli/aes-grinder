@@ -483,13 +483,12 @@ impl Matrix {
 
         let mut has_been_update: bool = true;
         //tant que la matrice a ete mise a jour on continue d'eliminer les variables lineraires
-        // let variable_of_max_rank: Vec<String> = self.get_variable_of_max_rank(1);
-        // let mut variable_sboxed_max_rank_1 = get_variable_if_sboxed(&variable_of_max_rank);
-        let mut variable_sboxed_max_rank_1 = get_variable_if_sboxed(&self.get_all_variables());
+
+        let mut variable_sboxed = get_variable_if_sboxed(&self.get_all_variables());
         if debug {
             println!(
                 "tout les variable sboxed : {:?}",
-                variable_sboxed_max_rank_1
+                variable_sboxed
             );
             println!(
                 "Apres suppression des variables linéaires (sans sbox) \n{}",
@@ -499,7 +498,7 @@ impl Matrix {
         while has_been_update {
             self.delete_empty_rows();
             self.delete_empty_colums();
-            match variable_sboxed_max_rank_1.pop() {
+            match variable_sboxed.pop() {
                 Some((x, sx)) => {
                     if debug {
                         println!("VARIABLE ECHELONNE {x} et {sx}\n");
@@ -507,9 +506,13 @@ impl Matrix {
                     self.scale_on(vec![x.clone(), sx]);
                     if x == "X_0[2,3]" {
                         //This variable must be linear
-                        self.delete_row(0);
                         println!("{}", self);
+                        println!("{}", self.to_dot_string());
+                        self.delete_row(0);
                         //panic!("This variable must be linear, NEED TO BE CORRECT");
+                    }else {
+                        println!("{}", self);
+                        println!("{}", self.to_dot_string());
                     }
 
                     //Here treat the case where the variable is linear
@@ -656,10 +659,16 @@ impl Matrix {
         let mut res = String::new();
         //Set width to the max length of the variable name
         let max_len_word = self.vars_map.keys().map(|s| s.len()).max().unwrap_or(1);
-        println!("MAX SIZE :: {}", max_len_word);
 
         //Display var name above columns
-        let mut vars_iter = self.vars_map.iter();
+        let vars_iter = self.vars_map.iter();
+        //Put iter in a vec to sort it
+        let mut vars_to_display: Vec<(String, usize)> = Vec::new();
+        for var in vars_iter {
+            vars_to_display.push((var.0.clone(), *var.1));
+        }
+        vars_to_display.sort_by(|a, b| a.1.cmp(&b.1));
+        let mut vars_iter = vars_to_display.iter();
         if let Some(var) = vars_iter.next() {
             let padding = max_len_word - var.0.len();
             res.push_str(&format!(

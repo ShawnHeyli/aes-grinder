@@ -77,7 +77,7 @@ fn main() {
     matrix.set_vars_map(parser_mod.vars_map);
 
     println!("{}", matrix);
-    matrix.drop_linear_variable();
+    matrix.drop_linear_variables();
     println!("{}", matrix);
 
     match search {

@@ -475,7 +475,7 @@ impl Matrix {
     }
 
     ///Drop linear variable on the matrice, update the matrix self
-    pub fn drop_linear_variable(&mut self) {
+    pub fn drop_linear_variables(&mut self) {
         let debug = false;
         if debug {println!("Matrix before drop\n {}", self);}
         self.delete_alone_variables();
@@ -1451,7 +1451,7 @@ mod test_fn_sort_right {
     }
 
     #[test]
-    fn mateub() {
+    fn test_drop_linear_variables() {
         let system: &str = "equation_system/dp_example.eqs";
 
         let mut globals: GlobalInfos = GlobalInfos::new(system.to_owned());
@@ -1462,7 +1462,7 @@ mod test_fn_sort_right {
             .expect("Error while parsing system");
         matrix.set_vars_map(parser_mod.vars_map);
 
-        matrix.drop_linear_variable();
+        matrix.drop_linear_variables();
 
         let system2: &str = "equation_system/1r_3.txt";
         let mut globals: GlobalInfos = GlobalInfos::new(system2.to_owned());

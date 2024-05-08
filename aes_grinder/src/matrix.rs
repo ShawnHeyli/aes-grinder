@@ -421,7 +421,7 @@ impl Matrix {
     pub fn get_matrix_generated_by(&self, vars: &HashSet<String>) -> Matrix {
         let mut matrix = Matrix::new(self.rows, vars.len());
         for (j, s) in vars.iter().enumerate() {
-            matrix.vars_map.insert(s.clone(), j);
+            matrix.vars_map.insert(s.to_owned(), j);
             for i in 0..self.rows {
                 matrix[(i, j)] = self[(i, self.vars_map[s])];
             }
@@ -474,6 +474,25 @@ impl Matrix {
         count == 1
     }
 
+    pub fn rank(&mut self) -> usize {
+        self.scale();
+        let mut rank = 0;
+        for i in 0..self.rows {
+            let row = self.get_row(i);
+            let mut is_zero = true;
+            for num in row {
+                if num != 0.into() {
+                    is_zero = false;
+                    break;
+                }
+            }
+            if !is_zero {
+                rank += 1;
+            }
+        }
+        rank
+    }
+
     ///Drop linear variable on the matrice, update the matrix self
     pub fn drop_linear_variables(&mut self) {
         let debug = false;
@@ -500,22 +519,14 @@ impl Matrix {
             self.delete_empty_colums();
             match variable_sboxed.pop() {
                 Some((x, sx)) => {
-                    if debug {
-                        println!("VARIABLE ECHELONNE {x} et {sx}\n");
+                    let mut matrix = self.get_matrix_generated_by(&HashSet::from([x.clone(), sx]));
+                    if matrix.rank() == 1 {
+                        self.remove_variable(x);
+                        has_been_update = true;
+                    } else {
+                        has_been_update = false;
                     }
-                    self.scale_on(vec![x.clone(), sx]);
-                    if x == "X_0[2,3]" {
-                        //This variable must be linear
-                        println!("{}", self);
-                        println!("{}", self.to_dot_string());
-                        self.delete_row(0);
-                        //panic!("This variable must be linear, NEED TO BE CORRECT");
-                    }else {
-                        println!("{}", self);
-                        println!("{}", self.to_dot_string());
-                    }
-
-                    //Here treat the case where the variable is linear
+                    
                 }
                 None => has_been_update = false,
             }
@@ -629,7 +640,7 @@ impl Matrix {
         }
         self.solve_on(vec![variable.clone()]);
         //Remove first line and first column
-        assert!(self.is_only_one_1_on_column(0));
+        assert!(self.is_only_one_1_on_column(0), "ERROR :: in remove_variable :: we can only remove a variable if it is a combinaison of another variable");
         if variable.contains('P') || variable.contains('C') || variable.contains("KV") {
             self.delete_column(0);
         } else {
@@ -657,6 +668,7 @@ impl Matrix {
 
     pub fn to_dot_string(&self) -> String {
         let mut res = String::new();
+        res.push_str(&format!("Matrix ({}x{})\n", self.rows, self.cols));
         //Set width to the max length of the variable name
         let max_len_word = self.vars_map.keys().map(|s| s.len()).max().unwrap_or(1);
 
@@ -704,6 +716,12 @@ impl Matrix {
             res.push('\n');
         }
         res
+    }
+
+    pub fn sort_columns(&mut self) {
+        let mut vars: Vec<String> = self.vars_map.keys().cloned().collect();
+        vars.sort();
+        self.sort_left(vars);
     }
 }
 
@@ -789,6 +807,38 @@ pub fn get_variable_if_sboxed(variables: &Vec<String>) -> Vec<(String, String)> 
         }
     }
     sboxed_variable
+}
+
+pub fn to_equations(matrix: &Matrix) -> Vec<String> {
+    let mut equations: Vec<String> = Vec::new();
+    let mut matrix = matrix.clone();
+    matrix.sort_columns();
+    for i in 0..matrix.rows {
+        let mut equation = String::new();
+        for j in 0..matrix.cols {
+            if matrix[(i, j)] != 0.into() {
+                if matrix[(i, j)] != 1.into() {
+                    equation.push_str(&format!("{}*{}", matrix[(i, j)], matrix.vars_map.iter().find(|(_, v)| **v == j).unwrap().0));
+                } else {
+                    equation.push_str(&matrix.vars_map.iter().find(|(_, v)| **v == j).unwrap().0);
+                }
+                equation.push_str(" + ");
+            }
+        }
+        equation.pop();
+        equation.pop();
+        equation.pop();
+        equations.push(equation);
+    }
+    equations
+}
+
+pub fn print_equations(matrix: &Matrix) {
+    let mut equations = to_equations(matrix);
+    equations.sort();
+    for equation in equations {
+        println!("{}", equation);
+    }
 }
 
 #[cfg(test)]
@@ -1496,6 +1546,7 @@ mod test_fn_sort_right {
                 println!("Variable {} not found in matrix", var);
             }
         }
+        print_equations(&matrix);
         assert_eq!(matrix.cols, matrix2.cols);
         assert_eq!(matrix.rows, matrix2.rows);
     }

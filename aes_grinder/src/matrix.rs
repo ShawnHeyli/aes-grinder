@@ -723,6 +723,12 @@ impl Matrix {
         vars.sort();
         self.sort_left(vars);
     }
+
+    pub fn compare(&self, other: &Matrix) -> bool {
+        assert!(self.cols == other.cols, "ERROR :: in compare :: self.cols != other.cols");
+        assert!(self.rows == other.rows, "ERROR :: in compare :: self.rows != other.rows");
+        false
+    }
 }
 
 impl Display for Matrix {
@@ -1532,7 +1538,6 @@ mod test_fn_sort_right {
             .parse_system(&mut globals)
             .expect("Error while parsing system");
         matrix2.set_vars_map(parser_mod.vars_map);
-        matrix2.delete_empty_rows();
 
         // println!("{}", matrix.to_dot_string());
         // println!("{}", matrix2.to_dot_string());
@@ -1554,5 +1559,37 @@ mod test_fn_sort_right {
 
         assert_eq!(matrix.rows, matrix2.rows);
         assert_eq!(matrix.cols, matrix2.cols);
+    }
+
+    #[test]
+    fn compare_test() {
+        let system: &str = "equation_system/sub_our.txt";
+
+        let mut globals: GlobalInfos = GlobalInfos::new(system.to_owned());
+        let mut parser_mod = Parser::new(&globals);
+
+        let mut our = parser_mod
+            .parse_system(&mut globals)
+            .expect("Error while parsing system");
+        our.set_vars_map(parser_mod.vars_map);
+
+        let system2: &str = "equation_system/sub_true.txt";
+        let mut globals: GlobalInfos = GlobalInfos::new(system2.to_owned());
+        let mut parser_mod = Parser::new(&globals);
+
+        let mut true_mat = parser_mod
+            .parse_system(&mut globals)
+            .expect("Error while parsing system");
+        true_mat.set_vars_map(parser_mod.vars_map);
+
+        //Diff on vars_map
+        let our_set_vars: HashSet<String> = our.vars_map.iter().map(|(k, _)| k.clone()).collect();
+        let true_set_vars: HashSet<String> = true_mat.vars_map.iter().map(|(k, _)| k.clone()).collect();
+        let inter = true_set_vars.intersection(&our_set_vars).cloned().collect::<HashSet<String>>();
+        let union = true_set_vars.union(&our_set_vars).cloned().collect::<HashSet<String>>();
+        let diff = union.difference(&inter);
+        println!("Diff vars_map : {:?}", diff);
+
+        assert!(our.compare(&true_mat));
     }
 }

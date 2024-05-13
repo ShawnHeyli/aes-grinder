@@ -10,7 +10,7 @@ use std::io::Read;
 use std::num::ParseIntError;
 use std::vec;
 
-const MAX_NB_TERM: u8 = 10;
+const MAX_NB_TERM: u8 = 20;
 const MAX_NB_MATRIX: u32 = 10;
 
 struct Reader {

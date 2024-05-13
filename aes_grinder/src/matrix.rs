@@ -521,7 +521,7 @@ impl Matrix {
                 Some((x, sx)) => {
                     let mut matrix = self.get_matrix_generated_by(&HashSet::from([x.clone(), sx]));
                     if matrix.rank() == 1 {
-                        self.remove_variable(x);
+                        self.delete_row(0);
                         has_been_update = true;
                     } else {
                         has_been_update = false;
@@ -1521,6 +1521,7 @@ mod test_fn_sort_right {
             .expect("Error while parsing system");
         matrix.set_vars_map(parser_mod.vars_map);
 
+        print_equations(&matrix);
         matrix.drop_linear_variables();
 
         let system2: &str = "equation_system/1r_3.txt";
@@ -1531,9 +1532,10 @@ mod test_fn_sort_right {
             .parse_system(&mut globals)
             .expect("Error while parsing system");
         matrix2.set_vars_map(parser_mod.vars_map);
+        matrix2.delete_empty_rows();
 
-        println!("{}", matrix.to_dot_string());
-        println!("{}", matrix2.to_dot_string());
+        // println!("{}", matrix.to_dot_string());
+        // println!("{}", matrix2.to_dot_string());
         //Verify that each variable is present in the other matrix
         for (var, _) in matrix.vars_map.iter() {
             if !matrix2.vars_map.contains_key(var) {
@@ -1547,7 +1549,10 @@ mod test_fn_sort_right {
             }
         }
         print_equations(&matrix);
-        assert_eq!(matrix.cols, matrix2.cols);
+        print_equations(&matrix2);
+
+
         assert_eq!(matrix.rows, matrix2.rows);
+        assert_eq!(matrix.cols, matrix2.cols);
     }
 }

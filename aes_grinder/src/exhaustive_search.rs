@@ -57,8 +57,7 @@ pub fn search_best_multiple_random(matrix: &mut Matrix, nb_algo: usize) -> Box<A
     best_algo
 }
 
-pub fn exhaustive_search(x: &mut Matrix, time_complexity: usize) -> HashSet<Box<Algo>> {
-    //Set of base solvers
+fn generate_all_base_solver(x: &Matrix) -> HashSet<Box<Algo>> {
     let mut g: HashSet<Box<Algo>> = HashSet::new();
     for x_var in x.get_all_variables() {
         //We create a base solver for each variables for variables that are not S(x)
@@ -67,39 +66,40 @@ pub fn exhaustive_search(x: &mut Matrix, time_complexity: usize) -> HashSet<Box<
         }
         g.insert(Box::new(Algo::base_solver(x_var)));
     }
-    // println!("G init");
-    // print_algo_set(&g);
-    //Set of pair of algo
+    g
+}
+
+fn set_of_pair_of_algo(g: &HashSet<Box<Algo>>) -> HashSet<(Box<Algo>, Box<Algo>)> {
     let mut p: HashSet<(Box<Algo>, Box<Algo>)> = HashSet::new();
     g.clone().iter().enumerate().for_each(|(i, a1)| {
         g.clone().iter().enumerate().for_each(|(j, a2)| {
             if i < j {
-                // println!("a1 : {:?}", a1.clone());
-                // println!("a2 : {:?}", a2.clone());
                 p.insert((a1.clone(), a2.clone()));
             }
         });
     });
-    // println!("P init");
-    // print_pair_algo_set(&p);
-    let mut rng = rand::thread_rng();
+    p
+}
+
+pub fn exhaustive_search(x: &mut Matrix, time_complexity: usize) -> HashSet<Box<Algo>> {
+    //Set of base solvers
+    let mut g: HashSet<Box<Algo>> = generate_all_base_solver(x);
+
+    //Set of pair of algo
+    let mut p: HashSet<(Box<Algo>, Box<Algo>)> = set_of_pair_of_algo(&g);
+
     // While g dont contains an algo with 20 variables
     while !p.is_empty() {
         //Take a pair of algo from p
-        //println!(" plen : {:?}", p.len());
-        let a = p.iter().choose(&mut rng).unwrap().clone();
+        let a = p.iter().next().unwrap().clone();
         let (a1, a2) = p.take(&a).unwrap();
 
-        //println!("take : \n{:?} and {:?}", a1.get_all_variables(),a2.get_all_variables());
         let c = Box::new(Algo::fusion_two_algo(a1.clone(), a2.clone(), x));
-        //println!("New algo : \n{:?}", c);
         if c.get_time_complexity() <= time_complexity {
             update_queue(&mut g, &mut p, c);
         } else {
             println!("Time complexity reached")
         }
-        //print_algo_set(&g);
-        //print_pair_algo_set(&p);
     }
     g
 }
@@ -122,6 +122,35 @@ fn print_pair_algo_set(p: &HashSet<(Box<Algo>, Box<Algo>)>) {
     });
 }
 
+/// Keep all algo that are better or equal to c
+fn keep_better(g: &mut HashSet<Box<Algo>>, c: &Box<Algo>) {
+    g.retain(|elt| Some(Ordering::Less) != elt.compare1(&c));
+}
+///Keep all pair that are better or equal to c
+fn keep_all_pair_that_are_better(p: &mut HashSet<(Box<Algo>, Box<Algo>)>, c: &Box<Algo>) {
+    p.retain(|(a1, a2)| {
+        !(a1.compare1(c) == Some(Ordering::Less) || a2.compare1(c) == Some(Ordering::Less))
+    });
+}
+///Form new pairs with the algos such as the variables of one are not a subset of the other
+fn add_new_paire_no_doublon(
+    g: &mut HashSet<Box<Algo>>,
+    p: &mut HashSet<(Box<Algo>, Box<Algo>)>,
+    c: &Box<Algo>,
+) {
+    let pairs = g.iter().flat_map(|a| {
+        if c.get_all_variables().is_subset(&a.get_all_variables())
+            || a.get_all_variables().is_subset(&c.get_all_variables())
+        {
+            None
+        } else {
+            Some((c.clone(), a.clone()))
+        }
+    });
+    //Insert the new pairs in p
+    p.extend(pairs);
+}
+
 // function UPDATE-QUEUE(G, P, A):
 //     if there is no A' in G such that A' dominates A:
 //         G' = {A} union G minus {A' in G: A dominates A'}
@@ -141,28 +170,16 @@ fn update_queue(g: &mut HashSet<Box<Algo>>, p: &mut HashSet<(Box<Algo>, Box<Algo
     }
 
     // Keep all algo that are better or equal to c
-    g.retain(|elt| Some(Ordering::Less) != elt.compare1(&c));
+    keep_better(g, &c);
 
     // Add the new algo to the set
     g.insert(c.clone());
 
     // Keep all pair that are better or equal to c
-    p.retain(|(a1, a2)| {
-        !(a1.compare1(&c) == Some(Ordering::Less) || a2.compare1(&c) == Some(Ordering::Less))
-    });
+    keep_all_pair_that_are_better(p, &c);
 
     //Form new pairs with the algos such as the variables of one are not a subset of the other
-    let pairs = g.iter().flat_map(|a| {
-        if c.get_all_variables().is_subset(&a.get_all_variables())
-            || a.get_all_variables().is_subset(&c.get_all_variables())
-        {
-            None
-        } else {
-            Some((c.clone(), a.clone()))
-        }
-    });
-    //Insert the new pairs in p
-    p.extend(pairs);
+    add_new_paire_no_doublon(g, p, &c);
 }
 
 #[cfg(test)]
@@ -218,5 +235,34 @@ mod test_exhaustive {
         update_queue(&mut g, &mut p, Box::new(c.clone()));
         println!("p : {:?}", p);
         println!("g : {:?}", g);
+    }
+
+    #[test]
+    fn test_generate_all_base_solver() {
+        let mut matrix = Matrix::from(vec![
+            vec![1, 0],
+            vec![0, 1],
+        ]);
+        let mut vars_maps: HashMap<String, usize> = HashMap::new();
+        vars_maps.insert("A".to_string(), 0);
+        vars_maps.insert("B".to_string(), 1);
+        matrix.set_vars_map(vars_maps.clone());
+        print!("{:?}", generate_all_base_solver(&matrix));
+        todo!()
+    }
+
+    #[test]
+    fn test_keep_better() {
+        todo!()
+    }
+
+    #[test]
+    fn test_keep_all_pair_that_are_better() {
+        todo!()
+    }
+
+    #[test]
+    fn test_add_new_paire_no_doublon() {
+        todo!()
     }
 }

@@ -100,9 +100,14 @@ impl Algo {
         let mut mark_son_left = None;
         let mut mark_son_right = None;
 
-        let mut m_str = matrix.get_matrix_generated_by(&self.vars);
-        m_str.solve();
-        let m_str = matrix.to_dot_string();
+        let not_vars: Vec<String> = self
+            .get_all_variables()
+            .into_iter()
+            .filter(|x| !self.vars.contains(x))
+            .collect();
+        let mut matrix_scaled = matrix.clone();
+        matrix_scaled.scale_on(not_vars);
+        let m_str = matrix_scaled.to_dot_string();
         if mark_father == 0 {
             if dbg_mode {
                 dot_file.write_all(

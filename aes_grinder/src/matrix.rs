@@ -378,6 +378,32 @@ impl Matrix {
         }
     }
 
+    fn is_in_echelon_form(&self) -> bool {
+        let mut index = 0;
+        let mut only_zeros_allowed = false;
+        for i in 0..self.rows {
+            let row = self.get_row(i);
+            let index_first_non_zero = row.iter().position(|x| x.get_value() != 0);
+            match index_first_non_zero {
+                Some(first) => {
+                    if only_zeros_allowed {
+                        return false;
+                    }
+                    if first <= index {
+                        return false;
+                    }
+                    index = first;
+                }
+                None => {
+                    if !only_zeros_allowed {
+                        only_zeros_allowed = true;
+                    }
+                }
+            }
+        }
+        true
+    }
+
     /**
      * Compute the number of solution of the system of equations for the given variables
      * Compute |vars| - dim(M(vars))
@@ -385,20 +411,15 @@ impl Matrix {
     pub fn number_solutions(&mut self, vars: HashSet<String>) -> usize {
         //Echelonner matrice sur les non vars
         //Compter nombre d'equation en bas (0 sous non vars, en dessous matrice echellonée)
-        //C'est cette partie à gérer
-        //Retourner |vars| - nombre d'equation en bas
         //Get variables from matrix that are not in vars
         let not_vars: Vec<String> = self
             .get_all_variables()
             .into_iter()
             .filter(|x| !vars.contains(x))
             .collect();
-        self.scale_on(not_vars);
-
-        //vieux code de samumu
-        // vars.len() - (self.rows - echelon_rows)
-        //nb sol = nb_ var-nb_eq
-
+        self.scale_on(not_vars.clone());
+        let mat_by = self.get_matrix_generated_by(&not_vars);
+        assert!(mat_by.is_in_echelon_form(), "ERROR :: in number_solutions :: matrix is not in echelon form\n{}", mat_by);
         let nb_eq = self.get_nb_ligne_zero_borded_from_bottom(vars.len());
         vars.len() - nb_eq
     }
@@ -418,7 +439,7 @@ impl Matrix {
         nb_ligne
     }
 
-    pub fn get_matrix_generated_by(&self, vars: &HashSet<String>) -> Matrix {
+    pub fn get_matrix_generated_by(&self, vars: &Vec<String>) -> Matrix {
         let mut matrix = Matrix::new(self.rows, vars.len());
         for (j, s) in vars.iter().enumerate() {
             matrix.vars_map.insert(s.to_owned(), j);
@@ -519,7 +540,7 @@ impl Matrix {
             self.delete_empty_colums();
             match variable_sboxed.pop() {
                 Some((x, sx)) => {
-                    let mut matrix = self.get_matrix_generated_by(&HashSet::from([x.clone(), sx]));
+                    let mut matrix = self.get_matrix_generated_by(&vec![x.clone(), sx]);
                     if matrix.rank() == 1 {
                         self.delete_row(0);
                         has_been_update = true;
@@ -679,6 +700,7 @@ impl Matrix {
         for var in vars_iter {
             vars_to_display.push((var.0.clone(), *var.1));
         }
+        //Sort by column index
         vars_to_display.sort_by(|a, b| a.1.cmp(&b.1));
         let mut vars_iter = vars_to_display.iter();
         if let Some(var) = vars_iter.next() {

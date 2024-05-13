@@ -52,3 +52,7 @@ Patch tentative issues
 Extending the .dot model
 Fix error encountered by asking the supervisor
 Oral presentation training and "script" writing
+
+### 10/05/2024
+Fixed the drop linear function according to guidelines
+Beginning of the documentation and cleaning of the codebase

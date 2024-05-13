@@ -82,7 +82,7 @@ fn main() {
 
     match search {
         Search::Exhaustive => {
-            exhaustive_search(&mut matrix, 6)
+            exhaustive_search(&mut matrix, 25)
                 .iter()
                 .next()
                 .unwrap()

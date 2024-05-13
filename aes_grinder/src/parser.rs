@@ -510,8 +510,12 @@ impl Parser {
        Return      :: Ok
                       Err either
     */
-    fn store_term(&mut self) -> Result<(), ParserError> {
+    fn store_term(&mut self) -> Result<bool, ParserError> {
         debug!("Parser::store_term");
+
+        if self.redundancy.is_none() && self.var_name.is_none() {
+            return Ok(false);
+        }
 
         if let Some(index) = Parser::get_vec_ndx(self) {
             let rdd = self.redundancy.unwrap_or(1);
@@ -538,7 +542,7 @@ impl Parser {
         self.redundancy = None;
         self.var_name = None;
 
-        Ok(())
+        Ok(true)
     }
 
     /* parse_line
@@ -553,6 +557,7 @@ impl Parser {
         debug!("Parser::parse_line");
 
         let mut cmpt_iter: u8 = 0;
+        let mut add_term: bool = false;
         self.matrix.push(vec![0; self.vars_map.len()]);
 
         loop {
@@ -566,17 +571,21 @@ impl Parser {
             }
 
             let r_es: EndOfTermParse = self.get_term().expect("Error while getting term");
-            self.store_term().expect("Error while storing term");
+            add_term = self.store_term().expect("Error while storing term");
 
             match r_es {
                 EndOfTermParse::File => {
-                    if self.matrix[self.matrix.len() - 1].is_empty() {
+                    println!("FILE");
+                    println!("{:?}", self.matrix[self.matrix.len() - 1]);
+                    if !add_term {
                         self.matrix.pop();
                     }
                     return Ok(EndOfLineParse::File);
                 }
                 EndOfTermParse::Line => {
-                    if self.matrix[self.matrix.len() - 1].is_empty() {
+                    println!("LINE");
+                    println!("{:?}", self.matrix[self.matrix.len() - 1]);
+                    if !add_term {
                         self.matrix.pop();
                     }
                     return Ok(EndOfLineParse::Line);

@@ -1,7 +1,7 @@
 digraph {
-	0[style="filled" label="nb_sol = 1" color="firebrick1"];
-	1[style="filled" label="x
-nb_sol = 1" color="chartreuse"];
-	2[label="nb_sol = 1"];
+	0[shape="circle", fontname="Courier New", style="filled", label="nb_sol = 1", color="firebrick1"];
+	1[shape="circle", fontname="Courier New", style="filled", label="x
+nb_sol = 1", color="chartreuse"];
+	2[shape="circle", fontname="Courier New", label="nb_sol = 1"];
 	0 -> { 1 2}
 }

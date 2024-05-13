@@ -180,12 +180,12 @@ impl Matrix {
                 }
             }
             if max == 0.into() {
-                continue;
+                panic!("ERROR :: in solve :: max == 0")
             }
 
             //Swap the pivot line to the right place
             self.swap_lines(max_row, pivot_line);
-            let inverse = self[(pivot_line, pivot_line)].invert();
+            let inverse = self[(pivot_line, j)].invert();
             //Normalize the pivot line
             for k in 0..self.cols {
                 self[(pivot_line, k)] = self[(pivot_line, k)] * inverse;
@@ -193,7 +193,7 @@ impl Matrix {
 
             //Set 0 under the pivot
             for k in pivot_line + 1..self.rows {
-                let factor = self[(k, pivot_line)];
+                let factor = self[(k, j)];
                 for l in 0..self.cols {
                     let a = self[(k, l)];
                     let b = factor * self[(pivot_line, l)];
@@ -218,47 +218,52 @@ impl Matrix {
     }
 
     /// Perform gaussian elimination with inversion on the given variables and return the number of echelon rows
-    pub fn solve_on(&mut self, vars: Vec<String>) -> usize {
+    pub fn solve_on(&mut self, vars: Vec<String>) {
         assert!(
             vars.len() <= self.cols,
             "ERROR :: in solve_on :: vars.len() > self.cols"
         );
         self.sort_left(vars.clone());
-        let nb_echelon_rows = 0;
-        for j in 0..min(vars.len(), self.rows) {
+        let mut pivot_line = 0;
+        for j in 0..vars.len() {
+            if pivot_line >= self.rows {
+                break;
+            }
             //Find the max
             let mut max: Number = 0.into();
             let mut max_row = 0;
-            for i in j..self.rows {
+            for i in pivot_line..self.rows {
                 if self[(i, j)] > max {
                     max = self[(i, j)];
                     max_row = i;
                 }
             }
             if max == 0.into() {
-                panic!("ERROR :: in solve_on :: max == 0")
+                panic!("ERROR :: in solve_on :: max == 0");
             }
+
             //Swap the pivot line to the right place
-            self.swap_lines(max_row, j);
-            let inverse = self[(j, j)].invert();
+            self.swap_lines(max_row, pivot_line);
+            let inverse = self[(pivot_line, j)].invert();
             //Normalize the pivot line
             for k in 0..self.cols {
-                self[(j, k)] = self[(j, k)] * inverse;
+                self[(pivot_line, k)] = self[(pivot_line, k)] * inverse;
             }
 
             //Set 0 under the pivot
-            for k in j + 1..self.rows {
+            for k in pivot_line + 1..self.rows {
                 let factor = self[(k, j)];
                 for l in 0..self.cols {
                     let a = self[(k, l)];
-                    let b = factor * self[(j, l)];
+                    let b = factor * self[(pivot_line, l)];
                     let ab = a + b;
                     self[(k, l)] = ab;
                 }
             }
+            pivot_line += 1;
         }
         //Backward substitution
-        for j in (0..vars.len()).rev() {
+        for j in (0..pivot_line).rev() {
             for i in (0..j).rev() {
                 let factor = self[(i, j)];
                 for k in 0..self.cols {
@@ -269,7 +274,6 @@ impl Matrix {
                 }
             }
         }
-        nb_echelon_rows
     }
 
     fn swap_lines(&mut self, i: usize, j: usize) {
@@ -295,41 +299,43 @@ impl Matrix {
 
     /// Perform row reduction to get row echelon form
     pub fn scale(&mut self) {
-        for j in 0..min(self.cols, self.rows) {
+        let mut pivot_line = 0;
+        for j in 0..self.cols {
+            if pivot_line >= self.rows {
+                break;
+            }
             //Find the max
             let mut max: Number = 0.into();
             let mut max_row = 0;
-            for i in j..self.rows {
+            for i in pivot_line..self.rows {
                 if self[(i, j)] > max {
                     max = self[(i, j)];
                     max_row = i;
                 }
             }
-            for i in 0..self.rows {
-                if self[(i, j)] != 0.into() && i == max_row {
-                    //This is the pivot
-                    //Set the pivot to one by multiplying the inverse of it in the field
-                    let pivot = self[(i, j)];
-                    let inverse = pivot.invert();
-                    //Normalize the pivot line
-                    for k in 0..self.cols {
-                        self[(i, k)] = self[(i, k)] * inverse;
-                    }
-                    //Swap the line
-                    self.swap_lines(i, j);
-                    //Set 0 under the pivot
-                    for k in j + 1..self.rows {
-                        let factor = self[(k, j)];
-                        for l in 0..self.cols {
-                            let a = self[(k, l)];
-                            let b = factor * self[(j, l)];
-                            let ab = a + b;
-                            self[(k, l)] = ab;
-                        }
-                    }
-                    break;
+            if max == 0.into() {
+                continue;
+            }
+
+            //Swap the pivot line to the right place
+            self.swap_lines(max_row, pivot_line);
+            let inverse = self[(pivot_line, j)].invert();
+            //Normalize the pivot line
+            for k in 0..self.cols {
+                self[(pivot_line, k)] = self[(pivot_line, k)] * inverse;
+            }
+
+            //Set 0 under the pivot
+            for k in pivot_line + 1..self.rows {
+                let factor = self[(k, j)];
+                for l in 0..self.cols {
+                    let a = self[(k, l)];
+                    let b = factor * self[(pivot_line, l)];
+                    let ab = a + b;
+                    self[(k, l)] = ab;
                 }
             }
+            pivot_line += 1;
         }
     }
 
@@ -340,46 +346,48 @@ impl Matrix {
             "ERROR :: in scale_on :: vars.len() > self.cols"
         );
         self.sort_left(vars.clone());
-        for j in 0..min(vars.len(), self.rows) {
+        let mut pivot_line = 0;
+        for j in 0..vars.len() {
+            if pivot_line >= self.rows {
+                break;
+            }
             //Find the max
             let mut max: Number = 0.into();
             let mut max_row = 0;
-            for i in j..self.rows {
+            for i in pivot_line..self.rows {
                 if self[(i, j)] > max {
                     max = self[(i, j)];
                     max_row = i;
                 }
             }
-            for i in 0..self.rows {
-                if self[(i, j)] != 0.into() && i == max_row {
-                    //This is the pivot
-                    //Set the pivot to one by multiplying the inverse of it in the field
-                    let pivot = self[(i, j)];
-                    let inverse = pivot.invert();
-                    //Normalize the pivot line
-                    for k in 0..self.cols {
-                        self[(i, k)] = self[(i, k)] * inverse;
-                    }
-                    //Swap the line
-                    self.swap_lines(i, j);
-                    //Set 0 under the pivot
-                    for k in j + 1..self.rows {
-                        let factor = self[(k, j)];
-                        for l in 0..self.cols {
-                            let a = self[(k, l)];
-                            let b = factor * self[(j, l)];
-                            let ab = a + b;
-                            self[(k, l)] = ab;
-                        }
-                    }
-                    break;
+            if max == 0.into() {
+                continue;
+            }
+
+            //Swap the pivot line to the right place
+            self.swap_lines(max_row, pivot_line);
+            let inverse = self[(pivot_line, j)].invert();
+            //Normalize the pivot line
+            for k in 0..self.cols {
+                self[(pivot_line, k)] = self[(pivot_line, k)] * inverse;
+            }
+
+            //Set 0 under the pivot
+            for k in pivot_line + 1..self.rows {
+                let factor = self[(k, j)];
+                for l in 0..self.cols {
+                    let a = self[(k, l)];
+                    let b = factor * self[(pivot_line, l)];
+                    let ab = a + b;
+                    self[(k, l)] = ab;
                 }
             }
+            pivot_line += 1;
         }
     }
 
     fn is_in_echelon_form(&self) -> bool {
-        let mut index = 0;
+        let mut expected_index = 0;
         let mut only_zeros_allowed = false;
         for i in 0..self.rows {
             let row = self.get_row(i);
@@ -387,12 +395,14 @@ impl Matrix {
             match index_first_non_zero {
                 Some(first) => {
                     if only_zeros_allowed {
+                        println!("ERROR :: in is_in_echelon_form :: only_zeros_allowed");
                         return false;
                     }
-                    if first <= index {
+                    if first < expected_index {
+                        println!("ERROR :: in is_in_echelon_form :: first <= index, first : {}, index : {}", first, expected_index);
                         return false;
                     }
-                    index = first;
+                    expected_index = first+1;
                 }
                 None => {
                     if !only_zeros_allowed {
@@ -419,7 +429,11 @@ impl Matrix {
             .collect();
         self.scale_on(not_vars.clone());
         let mat_by = self.get_matrix_generated_by(&not_vars);
-        assert!(mat_by.is_in_echelon_form(), "ERROR :: in number_solutions :: matrix is not in echelon form\n{}", mat_by);
+        assert!(
+            mat_by.is_in_echelon_form(),
+            "ERROR :: in number_solutions :: matrix is not in echelon form\n{}",
+            mat_by
+        );
         let nb_eq = self.get_nb_ligne_zero_borded_from_bottom(vars.len());
         vars.len() - nb_eq
     }
@@ -517,19 +531,20 @@ impl Matrix {
     ///Drop linear variable on the matrice, update the matrix self
     pub fn drop_linear_variables(&mut self) {
         let debug = false;
-        if debug {println!("Matrix before drop\n {}", self);}
+        if debug {
+            println!("Matrix before drop\n {}", self);
+        }
         self.delete_alone_variables();
-        if debug {println!("Matrix after drop\n {}", self);}
+        if debug {
+            println!("Matrix after drop\n {}", self);
+        }
 
         let mut has_been_update: bool = true;
         //tant que la matrice a ete mise a jour on continue d'eliminer les variables lineraires
 
         let mut variable_sboxed = get_variable_if_sboxed(&self.get_all_variables());
         if debug {
-            println!(
-                "tout les variable sboxed : {:?}",
-                variable_sboxed
-            );
+            println!("tout les variable sboxed : {:?}", variable_sboxed);
             println!(
                 "Apres suppression des variables linéaires (sans sbox) \n{}",
                 self
@@ -547,7 +562,6 @@ impl Matrix {
                     } else {
                         has_been_update = false;
                     }
-                    
                 }
                 None => has_been_update = false,
             }
@@ -577,13 +591,19 @@ impl Matrix {
         variables_alone.retain(|s| !variables.contains(s));
         let debug = false;
         while !variables_alone.is_empty() {
-            if debug {println!("Variables left to remove {:?}", variables_alone);}
+            if debug {
+                println!("Variables left to remove {:?}", variables_alone);
+            }
             //Choose a variable
             let x = variables_alone.pop().unwrap();
-            if debug {println!("Variables selected {}", x);}
+            if debug {
+                println!("Variables selected {}", x);
+            }
             //remove (scale and delete the row)
             self.remove_variable(x.to_string());
-            if debug {println!("Matrix after removing {}\n{}", x, self);}
+            if debug {
+                println!("Matrix after removing {}\n{}", x, self);
+            }
             //Re computer the alone variable rest
             variables_alone.retain(|s| self.get_all_variables().contains(s));
         }
@@ -729,10 +749,19 @@ impl Matrix {
                 let str_value = self[(i, j)].get_value().to_string();
                 let padding = max_len_word - str_value.len();
                 if j == 0 {
-                    res.push_str(&format!("{}{}{}", " ".repeat(padding/2 + (padding & 1)), str_value, " ".repeat(padding/2)));
-                }
-                else {
-                    res.push_str(&format!("-{}{}{}", " ".repeat(padding/2 + (padding & 1)), str_value, " ".repeat(padding/2)));
+                    res.push_str(&format!(
+                        "{}{}{}",
+                        " ".repeat(padding / 2 + (padding & 1)),
+                        str_value,
+                        " ".repeat(padding / 2)
+                    ));
+                } else {
+                    res.push_str(&format!(
+                        "-{}{}{}",
+                        " ".repeat(padding / 2 + (padding & 1)),
+                        str_value,
+                        " ".repeat(padding / 2)
+                    ));
                 }
             }
             res.push('\n');
@@ -747,8 +776,14 @@ impl Matrix {
     }
 
     pub fn compare(&self, other: &Matrix) -> bool {
-        assert!(self.cols == other.cols, "ERROR :: in compare :: self.cols != other.cols");
-        assert!(self.rows == other.rows, "ERROR :: in compare :: self.rows != other.rows");
+        assert!(
+            self.cols == other.cols,
+            "ERROR :: in compare :: self.cols != other.cols"
+        );
+        assert!(
+            self.rows == other.rows,
+            "ERROR :: in compare :: self.rows != other.rows"
+        );
         false
     }
 }
@@ -846,7 +881,11 @@ pub fn to_equations(matrix: &Matrix) -> Vec<String> {
         for j in 0..matrix.cols {
             if matrix[(i, j)] != 0.into() {
                 if matrix[(i, j)] != 1.into() {
-                    equation.push_str(&format!("{}*{}", matrix[(i, j)], matrix.vars_map.iter().find(|(_, v)| **v == j).unwrap().0));
+                    equation.push_str(&format!(
+                        "{}*{}",
+                        matrix[(i, j)],
+                        matrix.vars_map.iter().find(|(_, v)| **v == j).unwrap().0
+                    ));
                 } else {
                     equation.push_str(&matrix.vars_map.iter().find(|(_, v)| **v == j).unwrap().0);
                 }
@@ -1570,14 +1609,12 @@ mod test_fn_sort_right {
             }
         }
         for (var, _) in matrix2.vars_map.iter() {
-
             if !matrix.vars_map.contains_key(var) {
                 println!("Variable {} not found in matrix", var);
             }
         }
         print_equations(&matrix);
         print_equations(&matrix2);
-
 
         assert_eq!(matrix.rows, matrix2.rows);
         assert_eq!(matrix.cols, matrix2.cols);
@@ -1606,9 +1643,16 @@ mod test_fn_sort_right {
 
         //Diff on vars_map
         let our_set_vars: HashSet<String> = our.vars_map.iter().map(|(k, _)| k.clone()).collect();
-        let true_set_vars: HashSet<String> = true_mat.vars_map.iter().map(|(k, _)| k.clone()).collect();
-        let inter = true_set_vars.intersection(&our_set_vars).cloned().collect::<HashSet<String>>();
-        let union = true_set_vars.union(&our_set_vars).cloned().collect::<HashSet<String>>();
+        let true_set_vars: HashSet<String> =
+            true_mat.vars_map.iter().map(|(k, _)| k.clone()).collect();
+        let inter = true_set_vars
+            .intersection(&our_set_vars)
+            .cloned()
+            .collect::<HashSet<String>>();
+        let union = true_set_vars
+            .union(&our_set_vars)
+            .cloned()
+            .collect::<HashSet<String>>();
         let diff = union.difference(&inter);
         println!("Diff vars_map : {:?}", diff);
 

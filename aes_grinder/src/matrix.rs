@@ -1521,7 +1521,7 @@ mod test_fn_sort_right {
             .expect("Error while parsing system");
         matrix.set_vars_map(parser_mod.vars_map);
 
-        print_equations(&matrix);
+        //Drop linear variables
         matrix.drop_linear_variables();
 
         let system2: &str = "equation_system/1r_3.txt";

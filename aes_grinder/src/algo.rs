@@ -13,12 +13,12 @@ use std::{
 
 #[derive(Eq, Clone, Debug)]
 pub struct Algo {
-    vars: HashSet<String>,
-    time: usize,
-    memory: u32,
-    nb_solutions: usize,
-    son1: Option<Box<Algo>>,
-    son2: Option<Box<Algo>>,
+    pub vars: HashSet<String>,
+    pub time: usize,
+    pub memory: u32,
+    pub nb_solutions: usize,
+    pub son1: Option<Box<Algo>>,
+    pub son2: Option<Box<Algo>>,
 }
 
 impl Ord for Algo {

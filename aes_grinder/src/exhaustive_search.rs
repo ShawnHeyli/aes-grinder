@@ -133,7 +133,7 @@ fn keep_all_pair_that_are_better(p: &mut HashSet<(Box<Algo>, Box<Algo>)>, c: &Bo
     });
 }
 ///Form new pairs with the algos such as the variables of one are not a subset of the other
-fn add_new_paire_no_doublon(
+fn add_new_pairs_no_doublon(
     g: &mut HashSet<Box<Algo>>,
     p: &mut HashSet<(Box<Algo>, Box<Algo>)>,
     c: &Box<Algo>,
@@ -179,13 +179,15 @@ fn update_queue(g: &mut HashSet<Box<Algo>>, p: &mut HashSet<(Box<Algo>, Box<Algo
     keep_all_pair_that_are_better(p, &c);
 
     //Form new pairs with the algos such as the variables of one are not a subset of the other
-    add_new_paire_no_doublon(g, p, &c);
+    add_new_pairs_no_doublon(g, p, &c);
 }
 
 #[cfg(test)]
 mod test_exhaustive {
 
     use std::collections::HashMap;
+
+    use crate::{parser::Parser, GlobalInfos};
 
     use super::*;
 
@@ -239,30 +241,117 @@ mod test_exhaustive {
 
     #[test]
     fn test_generate_all_base_solver() {
-        let mut matrix = Matrix::from(vec![
-            vec![1, 0],
-            vec![0, 1],
-        ]);
-        let mut vars_maps: HashMap<String, usize> = HashMap::new();
-        vars_maps.insert("A".to_string(), 0);
-        vars_maps.insert("B".to_string(), 1);
-        matrix.set_vars_map(vars_maps.clone());
-        print!("{:?}", generate_all_base_solver(&matrix));
-        todo!()
+        let system: &str = "equation_system/1r_3.txt";
+        let mut globals: GlobalInfos = GlobalInfos::new(system.to_owned());
+        let mut parser_mod = Parser::new(&globals);
+        let mut matrix = parser_mod
+            .parse_system(&mut globals)
+            .expect("Error while parsing system");
+        matrix.set_vars_map(parser_mod.vars_map);
+        
+        let g = generate_all_base_solver(&matrix);
+        assert_eq!(g.len(), matrix.get_all_variables().iter().filter(|x| !x.contains("S(")).count());
     }
 
     #[test]
     fn test_keep_better() {
-        todo!()
+        let system: &str = "equation_system/1r_3.txt";
+        let mut globals: GlobalInfos = GlobalInfos::new(system.to_owned());
+        let mut parser_mod = Parser::new(&globals);
+        let mut matrix = parser_mod
+            .parse_system(&mut globals)
+            .expect("Error while parsing system");
+        matrix.set_vars_map(parser_mod.vars_map);
+        
+        let g = generate_all_base_solver(&matrix);
+        let c = Algo {
+            vars: HashSet::from([matrix.get_all_variables().iter().filter(|x| !x.contains("S(")).next().unwrap().clone()]),
+            time: 100,
+            memory: 10,
+            nb_solutions: 10,
+            son1: None,
+            son2: None,
+        };
+        let mut gprim = g.clone();
+        keep_better(&mut gprim, &Box::new(c.clone()));
+        //C is really bad so it should not modify g
+        assert_eq!(g, gprim);
+
+        let c = Algo {
+            vars: HashSet::from([matrix.get_all_variables().iter().filter(|x| !x.contains("S(")).next().unwrap().clone()]),
+            time: 0,
+            memory: 10,
+            nb_solutions: 10,
+            son1: None,
+            son2: None,
+        };
+        let mut gprim = g.clone();
+        keep_better(&mut gprim, &Box::new(c.clone()));
+        //C is better than one algo so g should be modified
+        assert_eq!(gprim.len(),g.len() - 1);
     }
 
     #[test]
     fn test_keep_all_pair_that_are_better() {
-        todo!()
+        let system: &str = "equation_system/1r_3.txt";
+        let mut globals: GlobalInfos = GlobalInfos::new(system.to_owned());
+        let mut parser_mod = Parser::new(&globals);
+        let mut matrix = parser_mod
+            .parse_system(&mut globals)
+            .expect("Error while parsing system");
+        matrix.set_vars_map(parser_mod.vars_map);
+        
+        let g = generate_all_base_solver(&matrix);
+        let c = Algo {
+            vars: HashSet::from([matrix.get_all_variables().iter().filter(|x| !x.contains("S(")).next().unwrap().clone()]),
+            time: 100,
+            memory: 10,
+            nb_solutions: 10,
+            son1: None,
+            son2: None,
+        };
+        let p: HashSet<(Box<Algo>, Box<Algo>)> = set_of_pair_of_algo(&g);
+        let mut pprim = p.clone();
+        keep_all_pair_that_are_better(&mut pprim, &Box::new(c.clone()));
+        //C is really bad so it should not modify p
+        assert_eq!(p.len(), pprim.len());
+
+        let c = Algo {
+            vars: HashSet::from([matrix.get_all_variables().iter().filter(|x| !x.contains("S(")).next().unwrap().clone()]),
+            time: 0,
+            memory: 10,
+            nb_solutions: 10,
+            son1: None,
+            son2: None,
+        };
+        let mut pprim = p.clone();
+        keep_all_pair_that_are_better(&mut pprim, &Box::new(c.clone()));
+        //C is better than one algo so p should be modified
+        assert_ne!(p.len(), pprim.len());
     }
 
     #[test]
-    fn test_add_new_paire_no_doublon() {
-        todo!()
+    fn test_add_new_pairs_no_doublon() {
+        let system: &str = "equation_system/1r_3.txt";
+        let mut globals: GlobalInfos = GlobalInfos::new(system.to_owned());
+        let mut parser_mod = Parser::new(&globals);
+        let mut matrix = parser_mod
+            .parse_system(&mut globals)
+            .expect("Error while parsing system");
+        matrix.set_vars_map(parser_mod.vars_map);
+        
+        let mut g = generate_all_base_solver(&matrix);
+        let c = Algo {
+            vars: HashSet::from([matrix.get_all_variables().iter().filter(|x| !x.contains("S(")).next().unwrap().clone()]),
+            time: 100,
+            memory: 10,
+            nb_solutions: 10,
+            son1: None,
+            son2: None,
+        };
+        let p: HashSet<(Box<Algo>, Box<Algo>)> = set_of_pair_of_algo(&g);
+        let mut pprim = p.clone();
+        add_new_pairs_no_doublon(&mut g, &mut pprim, &Box::new(c.clone()));
+        assert!(false);
     }
 }

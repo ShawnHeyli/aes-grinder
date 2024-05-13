@@ -575,16 +575,12 @@ impl Parser {
 
             match r_es {
                 EndOfTermParse::File => {
-                    println!("FILE");
-                    println!("{:?}", self.matrix[self.matrix.len() - 1]);
                     if !add_term {
                         self.matrix.pop();
                     }
                     return Ok(EndOfLineParse::File);
                 }
                 EndOfTermParse::Line => {
-                    //println!("LINE");
-                    //println!("{:?}", self.matrix[self.matrix.len() - 1]);
                     if !add_term {
                         self.matrix.pop();
                     }

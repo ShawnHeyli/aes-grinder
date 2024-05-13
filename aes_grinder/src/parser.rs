@@ -583,8 +583,8 @@ impl Parser {
                     return Ok(EndOfLineParse::File);
                 }
                 EndOfTermParse::Line => {
-                    println!("LINE");
-                    println!("{:?}", self.matrix[self.matrix.len() - 1]);
+                    //println!("LINE");
+                    //println!("{:?}", self.matrix[self.matrix.len() - 1]);
                     if !add_term {
                         self.matrix.pop();
                     }

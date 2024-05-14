@@ -436,7 +436,6 @@ impl Matrix {
             .cloned()
             .collect();
         self.scale_on(not_vars.clone());
-        println!("Matrix after scaling on non vars\n{}", self);
         let mat_by = self.get_matrix_generated_by(&not_vars);
 
         assert!(
@@ -455,9 +454,6 @@ impl Matrix {
         }
 
         let nb_eq = self.get_nb_ligne_zero_borded_from_bottom(vars.len());
-        println!("Vars len : {}", vars.len());
-        println!("vars ({}) - nb_eq ({}) :", vars.len(), nb_eq);
-        println!("{}", vars.len() - nb_eq);
         vars.len() - nb_eq
     }
 

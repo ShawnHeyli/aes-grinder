@@ -89,9 +89,15 @@ pub fn exhaustive_search(x: &mut Matrix, time_complexity: usize) -> HashSet<Box<
     let mut p: HashSet<(Box<Algo>, Box<Algo>)> = set_of_pair_of_algo(&g);
 
     // While g dont contains an algo with 20 variables
+    let mut i = 0;
     while !p.is_empty() {
+        println!("-----------------");
+        print_algo_set(&g);
+        print_pair_algo_set(&p);
+        if i > 10 {break}
         //Take a pair of algo from p
-        let a = p.iter().next().unwrap().clone();
+        let mut rng = rand::thread_rng();
+        let a = p.iter().choose(&mut rng).unwrap().clone();
         let (a1, a2) = p.take(&a).unwrap();
 
         let c = Box::new(Algo::fusion_two_algo(a1.clone(), a2.clone(), x));
@@ -100,6 +106,7 @@ pub fn exhaustive_search(x: &mut Matrix, time_complexity: usize) -> HashSet<Box<
         } else {
             println!("Time complexity reached")
         }
+        i += 1;
     }
     g
 }

@@ -402,7 +402,7 @@ impl Matrix {
                         println!("ERROR :: in is_in_echelon_form :: first <= index, first : {}, index : {}", first, expected_index);
                         return false;
                     }
-                    expected_index = first+1;
+                    expected_index = first + 1;
                 }
                 None => {
                     if !only_zeros_allowed {
@@ -424,20 +424,44 @@ impl Matrix {
         //Get variables from matrix that are not in vars
         let not_vars: Vec<String> = self
             .get_all_variables()
-            .into_iter()
-            .filter(|x| !vars.contains(x))
+            .iter()
+            .filter(|v| {
+                let mut v = v.as_str();
+                if v.contains("S(") {
+                    //trim to get v such as S(v)
+                    v = &v[2..v.len() - 1];
+                }
+                !vars.contains(v)
+            })
+            .cloned()
             .collect();
         self.scale_on(not_vars.clone());
+        println!("Matrix after scaling on non vars\n{}", self);
         let mat_by = self.get_matrix_generated_by(&not_vars);
+
         assert!(
             mat_by.is_in_echelon_form(),
             "ERROR :: in number_solutions :: matrix is not in echelon form\n{}",
             mat_by
         );
+        if vars.len()
+            == self
+                .get_all_variables()
+                .iter()
+                .filter(|v| !v.contains("S("))
+                .count()
+        {
+            return 0;
+        }
+
         let nb_eq = self.get_nb_ligne_zero_borded_from_bottom(vars.len());
+        println!("Vars len : {}", vars.len());
+        println!("vars ({}) - nb_eq ({}) :", vars.len(), nb_eq);
+        println!("{}", vars.len() - nb_eq);
         vars.len() - nb_eq
     }
 
+    /// From the bottom of the matrix, get the number of lines that are only made of 0
     fn get_nb_ligne_zero_borded_from_bottom(&self, nb_vars: usize) -> usize {
         assert!(nb_vars <= self.cols, "ERROR :: in get_nb_ligne_zero_borded_from_bottom :: nb_vars > self.cols \n vars : {}\n matrix:\n {}", nb_vars, self);
         let max = self.cols - nb_vars;
@@ -720,7 +744,7 @@ impl Matrix {
         for var in vars_iter {
             vars_to_display.push((var.0.clone(), *var.1));
         }
-        //Sort by column index
+        //Sort names by column index
         vars_to_display.sort_by(|a, b| a.1.cmp(&b.1));
         let mut vars_iter = vars_to_display.iter();
         if let Some(var) = vars_iter.next() {
@@ -1438,7 +1462,7 @@ mod test_fn_swap {
             matrix.number_solutions(HashSet::<String>::from(["C".to_string(), "D".to_string()]));
         print!("sol : {}", nb_sol);
         println!(" m : {}", matrix);
-        assert_eq!(2, nb_sol);
+        assert_eq!(0, nb_sol);
     }
 }
 

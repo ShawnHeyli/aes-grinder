@@ -100,20 +100,23 @@ impl Algo {
         let mut mark_son_left = None;
         let mut mark_son_right = None;
 
-        let not_vars: Vec<String> = self
-            .get_all_variables()
-            .into_iter()
-            .filter(|x| !self.vars.contains(x))
-            .collect();
+        let not_vars: Vec<String> = matrix.get_all_variables().iter().filter(|v| {
+            let mut v = v.as_str();
+            if v.contains("S(") {
+                //trim to get v such as S(v)
+                v = &v[2..v.len() - 1];
+            }
+            !self.get_all_variables().contains(v)
+        }).cloned().collect();
         let mut matrix_scaled = matrix.clone();
-        matrix_scaled.scale_on(not_vars);
+        matrix_scaled.scale_on(not_vars.clone());
         let m_str = matrix_scaled.to_dot_string();
         if mark_father == 0 {
             if dbg_mode {
                 dot_file.write_all(
                     format!(
-                        "\t{}[shape=\"circle\", fontname=\"Courier New\", style=\"filled\", label=\"\n{}\nnb_sol = {}\", color=\"firebrick1\"];\n",
-                        *cmpt, m_str, self.nb_solutions
+                        "\t{}[shape=\"circle\", fontname=\"Courier New\", style=\"filled\", label=\"\n{}\nnb_sol = {}\nnot_vars={:?}\", color=\"firebrick1\"];\n",
+                        *cmpt, m_str, self.nb_solutions, not_vars
                     )
                     .as_bytes(),
                 )?;
